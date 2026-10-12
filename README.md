@@ -82,7 +82,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 - **Mark I:** bar glow at the first mark.
 - **Mark II:** brighter glow at the second mark.
 - Marks are a percent of max rage (100 for warriors).
-- Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (thin iron frame).
+- Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (stone frame with molten cracks).
 
 ## Disclaimer
 
