@@ -10,14 +10,12 @@ local db, GOLD, Button = ns.db, ns.GOLD, ns.Button
 -- once; Sync() reloads all controls from the settings when the page is shown.
 -- All rage bar settings are in Edit Mode (see RageBar.lua).
 -- The header shows the addon version from the TOC's ## Version line.
--- WU_Open is global because the TOC's AddonCompartmentFunc needs a global
--- function name; /wu uses it too.
 -- SavedVariables: cdmBackup (shown, not edited)
 --------------------------------------------------------------------------------
 local opt, category
 
 -- Opens the Settings panel on this addon's page (only built on warriors).
-function WU_Open()
+local function Open()
   if category then Settings.OpenToCategory(category:GetID()) end
 end
 
@@ -109,8 +107,7 @@ function ns.BuildOptions()
     "Drag the rage bar to move it, or click it and use the arrow keys "
       .. "(hold Shift to move 10).",
     "Each Edit Mode layout keeps its own rage bar position.",
-    "Open this page from Esc > Options > AddOns, the addon compartment button "
-      .. "by the minimap, or by typing /wu.",
+    "Open this page from Esc > Options > AddOns, or by typing /wu.",
     "Type /wu 30 60 to set the marks.",
   }
   local prev
@@ -174,7 +171,7 @@ SlashCmdList.WU = function(msg)
   msg = strtrim(msg:lower())
   local a, b = msg:match("^(%d+)%s+(%d+)$")
   if msg == "" then
-    WU_Open()
+    Open()
   elseif msg == "reset" then
     local keep = { cdmBackup = db.cdmBackup }
     wipe(db)
