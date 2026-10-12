@@ -1,0 +1,16 @@
+## Interface: 16001
+## Title: WU - Warrior Utilities
+## Notes: Rage bar with marks and styles, set up and moved in Edit Mode, and a WU Cooldown Manager layout for Battle Shout, Demoralizing Shout and Sunder Armor.
+## Author: WU
+## Version: 3.4.0
+## IconTexture: Interface\AddOns\WU - Warrior Utilities\icon
+## SavedVariablesPerCharacter: WUDB
+## AddonCompartmentFunc: WU_Open
+
+Libs\LibEditMode\namespaced.lua
+Libs\LibEditMode\embed.xml
+
+Core.lua
+RageBar.lua
+CDM.lua
+Options.lua
