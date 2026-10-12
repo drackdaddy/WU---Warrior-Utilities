@@ -1,6 +1,8 @@
 # WU - Warrior Utilities
 
-Warrior rage bar for WoW Forever.
+A lightweight rage bar and Cooldown Manager setup (Optional) for warriors on **World of Warcraft: Forever**.
+
+WU keeps your rage on screen with marks at the amounts you care about. Sets up Blizzard's Cooldown Manager (Optional) so Battle Shout, Demoralizing Shout and Sunder Armor are tracked right where you need them. The addon only loads on warriors, and settings are saved per character.
 
 ## Install
 
