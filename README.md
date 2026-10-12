@@ -39,7 +39,7 @@ Plus **Reset To Default** and **Reset To Default Position**.
 
 ## Options
 
-**Esc > Options > AddOns > WU - Warrior Utilities**. The addon compartment button by the minimap and `/wu` open the same page.
+**Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
 
 - **General** — how to use the addon
 - **CDM** — Create WU Layout, Restore Backup
