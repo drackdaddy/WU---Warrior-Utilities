@@ -81,3 +81,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 - **Mark II:** brighter glow at the second mark.
 - Marks are a percent of max rage (100 for warriors).
 - Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (thin iron frame).
+
+## Disclaimer
+
+This addon was made with the assistance of Claude AI.
