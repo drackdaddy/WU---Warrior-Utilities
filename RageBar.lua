@@ -4,15 +4,15 @@ local db, WHITE, BORDER, LEM = ns.db, ns.WHITE, ns.BORDER, ns.LibEditMode
 --------------------------------------------------------------------------------
 -- Rage bar
 -- The bar: rage fill and number, two marks with a glow past each, three
--- styles, four colors, size, "only show in combat", and switches to turn off
--- the marks or the whole bar. It is moved and set up in Blizzard's Edit Mode
--- (see Edit Mode below).
+-- styles (Rage has a choice of borders), four colors, size, "only show in
+-- combat", and switches to turn off the marks or the whole bar. It is moved
+-- and set up in Blizzard's Edit Mode (see Edit Mode below).
 -- Marks are a percent of max rage (100 for warriors). The glow alpha comes
 -- from UnitPowerPercent curves, so it works even when rage is secret.
 -- Events: UNIT_POWER_UPDATE, UNIT_MAXPOWER (player), PLAYER_ENTERING_WORLD,
 --   PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED
 -- SavedVariables: barOff, marksOff, mark1, mark2, hideTicks, layouts,
---   combatOnly, scale, style, color
+--   combatOnly, scale, style, color, border
 --------------------------------------------------------------------------------
 local RAGE = Enum.PowerType.Rage
 local ASSET = ns.ROOT .. "Assets\\"
@@ -91,7 +91,8 @@ ns.On("PLAYER_REGEN_ENABLED", Update)
 --------------------------------------------------------------------------------
 -- inset: bar inset in the holder (left, top, right, bottom)
 -- fill / tint: bar texture for red / other colors
--- frame: overlay art; trough: background art (Classic also uses full-size glow)
+-- frame: overlay art (Rage uses the chosen border instead, see BORDERS)
+-- trough: background art (Classic also uses full-size glow)
 -- label: anchor point, x offset, width; font: size bonus
 local STYLES = {
   modern = {
@@ -105,9 +106,23 @@ local STYLES = {
   },
   rage = {
     inset = { 6, 6, 6, 6 }, fill = ASSET .. "fury-fill", tint = ASSET .. "fury-tint", bg = { 0.05, 0.02, 0.01, 0.9 },
-    frame = ASSET .. "fury-frame",
     label = { "RIGHT", -10, 40 }, font = 1, outline = "OUTLINE", text = { 1, 0.9, 0.72 }, tick = { 1, 0.42, 0.18, 2 },
   },
+}
+
+-- Rage style borders ("none" has no entry). out: how far the art sticks out
+-- past the holder (left, top, right, bottom) in px at 100% size, for spikes,
+-- chains and blade tips. Every border leaves the bar's 6 px inset clear.
+local NO_OUT = { 0, 0, 0, 0 }
+local BORDERS = {
+  iron = { file = "border-iron", out = NO_OUT },
+  riveted = { file = "border-riveted", out = { 2, 2, 2, 2 } },
+  spiked = { file = "border-spiked", out = { 1, 8, 1, 8 } },
+  bronze = { file = "border-bronze", out = { 1, 1, 1, 1 } },
+  chain = { file = "border-chain", out = { 2, 5, 2, 5 } },
+  molten = { file = "border-molten", out = NO_OUT },
+  lava = { file = "border-lava", out = { 4, 4, 4, 4 } },
+  blade = { file = "border-blade", out = { 12, 4, 12, 4 } },
 }
 
 local COLORS = {
@@ -123,10 +138,16 @@ local function ApplyStyle()
   local tex = red and s.fill or s.tint
 
   -- Background: Modern draws the holder panel; the others use their art.
-  holder:SetBackdropColor(0.07, 0.07, 0.08, s.frame and 0 or 0.82)
-  holder:SetBackdropBorderColor(BORDER[1], BORDER[2], BORDER[3], s.frame and 0 or 1)
-  plate:SetTexture(s.frame)
-  plate:SetShown(s.frame ~= nil)
+  local panel = db.style == "modern"
+  holder:SetBackdropColor(0.07, 0.07, 0.08, panel and 0.82 or 0)
+  holder:SetBackdropBorderColor(BORDER[1], BORDER[2], BORDER[3], panel and 1 or 0)
+  local b = db.style == "rage" and BORDERS[db.border]
+  local frame, out, p = b and ASSET .. b.file or s.frame, b and b.out or NO_OUT, db.scale / 100
+  plate:ClearAllPoints()
+  plate:SetPoint("TOPLEFT", -out[1] * p, out[2] * p)
+  plate:SetPoint("BOTTOMRIGHT", out[3] * p, -out[4] * p)
+  plate:SetTexture(frame)
+  plate:SetShown(frame ~= nil)
   trough:SetTexture(s.trough)
   trough:SetShown(s.trough ~= nil)
 
@@ -221,6 +242,7 @@ local function Choices(key)
 end
 
 local function BarOff() return db.barOff end
+local function NotRage() return db.style ~= "rage" end
 local function MarksOff() return db.barOff or db.marksOff end
 
 local function ApplyMarkValues()
@@ -231,12 +253,15 @@ end
 local function RegisterEditMode()
   local T = LEM.SettingType
   local mark = { minValue = 1, maxValue = 99, valueStep = 1 }
+  local borders = Choices("border")
+  borders.hidden = NotRage -- the Style dropdown refreshes the panel, so this follows it
   LEM:AddFrame(holder, OnMoved, DEFAULT_POS, "WU Rage Bar")
   LEM:AddFrameSettings(holder, {
     Option(T.Checkbox, "Disable Rage Bar", "barOff", Update),
     Option(T.Checkbox, "Only Show in Combat", "combatOnly", Update, BarOff),
     Option(T.Slider, "Bar Size (%)", "scale", ns.ApplySize, BarOff, { minValue = 50, maxValue = 200, valueStep = 5 }),
     Option(T.Dropdown, "Style", "style", ApplyStyle, BarOff, Choices("style")),
+    Option(T.Dropdown, "Border", "border", ApplyStyle, BarOff, borders),
     Option(T.Dropdown, "Color", "color", ApplyStyle, BarOff, Choices("color")),
     Option(T.Checkbox, "Disable Marks", "marksOff", ApplyMarks, BarOff),
     Option(T.Slider, "Mark I", "mark1", ApplyMarkValues, MarksOff, mark),
@@ -316,8 +341,7 @@ function ns.BuildBar()
   glow = FlashLayer(0.22, 0.55, 0.70)
   glow2 = FlashLayer(0.16, 0.38, 0.36)
 
-  plate = Layer(12):CreateTexture(nil, "ARTWORK")
-  plate:SetAllPoints()
+  plate = Layer(12):CreateTexture(nil, "ARTWORK") -- anchored by ApplyStyle
   label = Layer(14):CreateFontString(nil, "OVERLAY")
   ticks[1], ticks[2] = MakeTick(), MakeTick()
 

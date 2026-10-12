@@ -25,6 +25,7 @@ Open Edit Mode (**Esc > Edit Mode**) and drag the bar, or click it and use the a
 | Only Show in Combat | |
 | Bar Size (%) | 50 to 200 |
 | Style | Modern, Classic, Rage (default Rage) |
+| Border | Rage style only: Iron, Riveted Plate, Spiked, Bloodied Bronze, Chain Link, Molten Cracks, Lava Rock, Blade Ends, None (default Molten Cracks) |
 | Color | Red, Blue, Yellow, Green (default Red) |
 | Disable Marks | Hides both marks and the glow |
 | Mark I / Mark II | 1 to 99 (default 30 / 60) |
@@ -73,7 +74,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | --- | --- |
 | `Libs\LibEditMode` | LibEditMode by p3lim (Edit Mode support), embedded unmodified; see its `LICENSE.txt` |
 | `Core.lua` | Settings, shared helpers, event dispatch |
-| `RageBar.lua` | Rage bar, marks, glow, styles, size, Edit Mode position and settings |
+| `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
 | `CDM.lua` | WU Cooldown Manager layout (create, restore) |
 | `Options.lua` | Options page in Esc > Options > AddOns, slash commands |
 
@@ -82,7 +83,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 - **Mark I:** bar glow at the first mark.
 - **Mark II:** brighter glow at the second mark.
 - Marks are a percent of max rage (100 for warriors).
-- Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (stone frame with molten cracks).
+- Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (fiery fill with a choice of eight borders, or none).
 
 ## Disclaimer
 

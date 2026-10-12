@@ -36,7 +36,7 @@ local defaults = {
   barOff = false, marksOff = false, mark1 = 30, mark2 = 60, hideTicks = false,
   layouts = {}, -- rage bar position per Edit Mode layout name: { point, x, y }
   combatOnly = false, scale = 100,
-  style = "rage", color = "red",
+  style = "rage", color = "red", border = "molten",
   cdmBackup = false, -- Cooldown Manager layout data from before the first Create
 }
 
@@ -44,6 +44,11 @@ local defaults = {
 ns.LISTS = {
   style = { { "modern", "Modern" }, { "classic", "Classic" }, { "rage", "Rage" } },
   color = { { "red", "Red" }, { "blue", "Blue" }, { "yellow", "Yellow" }, { "green", "Green" } },
+  border = {
+    { "iron", "Iron" }, { "riveted", "Riveted Plate" }, { "spiked", "Spiked" },
+    { "bronze", "Bloodied Bronze" }, { "chain", "Chain Link" }, { "molten", "Molten Cracks" },
+    { "lava", "Lava Rock" }, { "blade", "Blade Ends" }, { "none", "None" },
+  },
 }
 
 ns.DEFAULTS = defaults -- read by the Edit Mode panel's Reset To Default
