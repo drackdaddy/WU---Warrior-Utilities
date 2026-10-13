@@ -1,36 +1,36 @@
 local addonName, ns = ...
-local db, GOLD, Button = ns.db, ns.GOLD, ns.Button
+local db = ns.db
+local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
 -- General tab (how to use the addon, slash commands and the Discord link) and
--- CDM tab, shown in Esc > Options >
--- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page as
--- a canvas layout category: it parents, sizes, shows and hides the frame, and
--- Escape closes the panel. Every control writes its setting and applies it at
--- once; Sync() reloads all controls from the settings when the page is shown.
--- All rage bar settings are in Edit Mode (see RageBar.lua).
+-- CDM tab (one section per WU Cooldown Manager layout, plus Restore Backup),
+-- shown in Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's
+-- Settings panel hosts the page as a canvas layout category: it parents,
+-- sizes, shows and hides the frame, and Escape closes the panel. All rage bar
+-- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: cdmBackup (shown, not edited)
 --------------------------------------------------------------------------------
-local opt, category
+local category
 
 -- Opens the Settings panel on this addon's page (only built on warriors).
 local function Open()
   if category then Settings.OpenToCategory(category:GetID()) end
 end
 
-local function Sync()
-  if opt then opt.Sync() end
+-- Standard panel button; the caller anchors it.
+local function Button(parent, text, width, onClick)
+  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+  b:SetSize(width, 24)
+  b:SetText(text)
+  b:SetScript("OnClick", onClick)
+  return b
 end
 
 function ns.BuildOptions()
-  opt = CreateFrame("Frame")
-
-  -- Every control registers a sync function; opt.Sync() runs all of them.
-  local syncs = {}
-  function opt.Sync() for _, f in ipairs(syncs) do f() end end
-  opt:SetScript("OnShow", opt.Sync)
+  local opt = CreateFrame("Frame")
 
   -- Header
   local title = opt:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -46,25 +46,6 @@ function ns.BuildOptions()
   line:SetHeight(1)
   line:SetPoint("TOPLEFT", 16, -48)
   line:SetPoint("TOPRIGHT", -16, -48)
-
-  ------------------------------------------------------------------------------
-  -- Control builders
-  ------------------------------------------------------------------------------
-  local function Label(parent, text, x, y)
-    local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    fs:SetPoint("TOPLEFT", x, y)
-    fs:SetText(text)
-    fs:SetTextColor(0.86, 0.84, 0.78)
-    return fs
-  end
-
-  local function Hint(parent, text, x, y)
-    local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    fs:SetPoint("TOPLEFT", x, y)
-    fs:SetJustifyH("LEFT")
-    fs:SetText(text)
-    return fs
-  end
 
   ------------------------------------------------------------------------------
   -- Tabs
@@ -99,25 +80,24 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- General tab: how to use the addon, laid out like a short readme. Each
-  -- section is a gold heading with a rule under it, then bullets or a command
-  -- list. Everything stacks top to bottom, each piece anchored under the last.
-  -- The Discord link is a read-only edit box because addons can't open URLs or
-  -- write to the clipboard; clicking it selects the text for Ctrl+C.
+  -- Page builders
+  -- Both tabs are laid out like a short readme: gold headings with a rule
+  -- under them, then bullets, columns or buttons. Begin(page) starts a page;
+  -- each piece is then anchored under the last one placed.
   ------------------------------------------------------------------------------
-  local general = pages.general
-  local DISCORD = "https://discord.gg/Xja4mR87Bk"
-  local prev -- last region placed; the next one goes under it
+  local page, prev
 
-  -- Anchors region under the previous one (gap pixels down, x pixels in) and
-  -- stretches it to the page's right edge so text wraps to the page width.
-  local function Place(region, gap, x)
+  local function Begin(p) page, prev = p, nil end
+
+  -- Anchors region under the previous one (gap pixels down, x pixels in). A
+  -- stretched region also reaches the page's right edge, so text wraps there.
+  local function Place(region, gap, x, stretch)
     if prev then
       region:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", x or 0, -gap)
     else
       region:SetPoint("TOPLEFT", 4, -4)
     end
-    region:SetPoint("RIGHT", general, "RIGHT", -4, 0)
+    if stretch then region:SetPoint("RIGHT", page, "RIGHT", -4, 0) end
     prev = region
   end
 
@@ -125,24 +105,26 @@ function ns.BuildOptions()
   local function Key(text) return "|cffffffff" .. text .. "|r" end
 
   local function Heading(text)
-    local fs = general:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local fs = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     fs:SetJustifyH("LEFT")
     fs:SetTextColor(unpack(GOLD))
     fs:SetText(text)
-    Place(fs, 18)
-    local rule = general:CreateTexture(nil, "ARTWORK")
+    Place(fs, 18, 0, true)
+    local rule = page:CreateTexture(nil, "ARTWORK")
     rule:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.35)
     rule:SetHeight(1)
-    Place(rule, 4)
+    Place(rule, 4, 0, true)
   end
 
+  -- Body text wrapped to the page width; returns the font string.
   local function Text(text, gap, x)
-    local fs = general:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local fs = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     fs:SetJustifyH("LEFT")
     fs:SetSpacing(4)
     fs:SetTextColor(0.90, 0.88, 0.82)
     fs:SetText(text)
-    Place(fs, gap or 8, x)
+    Place(fs, gap or 8, x, true)
+    return fs
   end
 
   -- One text block with a gold bullet before each line.
@@ -151,21 +133,41 @@ function ns.BuildOptions()
     Text(bullet .. table.concat(lines, "\n" .. bullet))
   end
 
-  -- A gold command in a fixed-width column with its description beside it.
-  local function Command(cmd, desc)
-    local c = general:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    c:SetWidth(100)
-    c:SetJustifyH("LEFT")
-    c:SetTextColor(unpack(GOLD))
-    c:SetText(cmd)
-    c:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -6)
-    local d = general:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    d:SetJustifyH("LEFT")
-    d:SetTextColor(0.90, 0.88, 0.82)
-    d:SetText(desc)
-    d:SetPoint("LEFT", c, "RIGHT", 8, 0)
-    prev = c
+  -- One row of columns, widths[i] pixels wide with 8 between them. The first
+  -- gold cells are gold, the rest body text. The row is as tall as its
+  -- tallest cell, so a cell that wraps never overlaps the next row.
+  local function Row(widths, gold, ...)
+    local cells, height = {}, 0
+    for i, w in ipairs(widths) do
+      local fs = page:CreateFontString(nil, "OVERLAY", i <= gold and "GameFontNormal" or "GameFontHighlight")
+      fs:SetWidth(w)
+      fs:SetJustifyH("LEFT")
+      fs:SetJustifyV("TOP")
+      fs:SetSpacing(4)
+      if i <= gold then fs:SetTextColor(unpack(GOLD)) else fs:SetTextColor(0.90, 0.88, 0.82) end
+      fs:SetText((select(i, ...)))
+      if i > 1 then fs:SetPoint("TOPLEFT", cells[i - 1], "TOPRIGHT", 8, 0) end
+      height = math.max(height, fs:GetStringHeight())
+      cells[i] = fs
+    end
+    cells[1]:SetHeight(height)
+    Place(cells[1], 6)
   end
+
+  -- A UIPanelButtonTemplate button under the previous piece; returns it.
+  local function PlaceButton(text, width, onClick)
+    local b = Button(page, text, width, onClick)
+    Place(b, 10)
+    return b
+  end
+
+  ------------------------------------------------------------------------------
+  -- General tab: how to use the addon, the slash commands and the Discord
+  -- link. The link is a read-only edit box because addons can't open URLs or
+  -- write to the clipboard; clicking it selects the text for Ctrl+C.
+  ------------------------------------------------------------------------------
+  local DISCORD = "https://discord.gg/Xja4mR87Bk"
+  Begin(pages.general)
 
   Heading("Rage bar setup")
   Bullets({
@@ -185,21 +187,21 @@ function ns.BuildOptions()
   })
 
   Heading("Slash commands")
-  Command("/wu", "Open this page")
-  Command("/wu 30 60", "Set Mark I and Mark II (1 to 99)")
-  Command("/wu reset", "Reset all settings (keeps your CDM backup)")
-  Command("/wuutil", "Same as /wu")
+  local COMMAND_WIDTHS = { 100, 340 }
+  Row(COMMAND_WIDTHS, 1, "/wu", "Open this page")
+  Row(COMMAND_WIDTHS, 1, "/wu 30 60", "Set Mark I and Mark II (1 to 99)")
+  Row(COMMAND_WIDTHS, 1, "/wu reset", "Reset all settings (keeps your CDM backup)")
+  Row(COMMAND_WIDTHS, 1, "/wuutil", "Same as /wu")
 
   Heading("Bugs, features and questions")
   Text("Join the WU Discord:")
   -- InputBoxTemplate draws its border outside the box, hence the 6px inset.
-  local link = CreateFrame("EditBox", nil, general, "InputBoxTemplate")
+  local link = CreateFrame("EditBox", nil, page, "InputBoxTemplate")
   link:SetSize(240, 20)
   link:SetAutoFocus(false)
   link:SetText(DISCORD)
   link:SetCursorPosition(0)
-  link:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 6, -6)
-  prev = link
+  Place(link, 6, 6)
   local function SelectAll(self) self:HighlightText() end
   link:SetScript("OnEditFocusGained", SelectAll)
   link:SetScript("OnMouseUp", SelectAll)
@@ -213,36 +215,59 @@ function ns.BuildOptions()
   Text("Click the link, then press Ctrl+C to copy.", 6, -6)
 
   ------------------------------------------------------------------------------
-  -- CDM tab: create or restore the WU Cooldown Manager layout (see CDM.lua).
-  -- Both buttons reload the UI after a successful write so the Cooldown
-  -- Manager loads the new data; on failure the reason is shown instead.
+  -- CDM tab: one section per Cooldown Manager layout in ns.CDM_LAYOUTS (see
+  -- CDM.lua) listing where each buff goes and its alerts, with a Create
+  -- button, then how Create works and Restore Backup. Both buttons reload the
+  -- UI after a successful write so the Cooldown Manager loads the new data;
+  -- on failure the reason is shown instead.
   ------------------------------------------------------------------------------
-  local cdm = pages.cdm
-  Label(cdm, "COOLDOWN MANAGER", 4, -8)
-  Hint(cdm, "Adds a layout named WU with Battle Shout, Demoralizing Shout\n"
-    .. "and Sunder Armor first in Tracked Buffs, copied from your active\n"
-    .. "layout. Sunder Armor gets a text-to-speech alert when it falls off.\n"
-    .. "WU becomes active; running it again rebuilds WU.\n"
-    .. "Out of combat only. The UI reloads afterwards.", 4, -32)
-  local status = Hint(cdm, "", 4, -176)
-  status:SetWidth(380)
-  status:SetTextColor(1, 0.35, 0.25)
-  local function Run(fn)
-    local ok, reason = fn()
+  Begin(pages.cdm)
+  local status
+  local function Run(fn, ...)
+    local ok, reason = fn(...)
     if ok then ReloadUI() else status:SetText(reason) end
   end
-  Button(cdm, "Create WU Layout", 160, function() Run(ns.CreateCDMLayout) end):SetPoint("TOPLEFT", 4, -110)
-  local restore = Button(cdm, "Restore Backup", 140, function() Run(ns.RestoreCDMLayout) end)
-  restore:SetPoint("TOPLEFT", 172, -110)
-  Hint(cdm, "Restore Backup puts back your layouts from before the first\n"
-    .. "Create. Cooldown Manager changes made since then are lost.", 4, -144)
-  syncs[#syncs + 1] = function()
-    restore:SetEnabled(db.cdmBackup ~= false)
-    status:SetText("")
+
+  local LAYOUT_WIDTHS = { 50, 95, 130, 170 }
+  local NONE = "|cff9a9381None|r"
+  for _, def in ipairs(ns.CDM_LAYOUTS) do
+    Heading(def.name .. " layout")
+    Row(LAYOUT_WIDTHS, #LAYOUT_WIDTHS, "Tab", "Section", "Buff", "Alerts")
+    for _, buff in ipairs(def.buffs) do
+      local place = ns.CDM_PLACES[buff.category]
+      local alerts = {}
+      for j, a in ipairs(buff.alerts) do alerts[j] = j .. ". " .. a.text end
+      Row(LAYOUT_WIDTHS, 0, place[1], place[2], C_Spell.GetSpellName(buff.spells.id) or "",
+        #alerts > 0 and table.concat(alerts, "\n") or NONE)
+    end
+    PlaceButton("Create " .. def.name, 160, function() Run(ns.CreateCDMLayout, def) end)
   end
 
+  Heading("How it works")
+  Bullets({
+    "Saves a backup, then creates a new layout with only these buffs.",
+    "The new layout becomes active. Creating it again rebuilds it.",
+    "A layout named " .. Key("WU") .. " from older versions is renamed.",
+    "Alerts are played by the Cooldown Manager, so they work in combat.",
+    "Out of combat only. The UI reloads afterwards.",
+  })
+
+  Heading("Backup")
+  Bullets({
+    "The first Create saves your previous layouts.",
+    Key("Restore Backup") .. " puts them back. Changes made since are lost.",
+  })
+  local restore = PlaceButton("Restore Backup", 140, function() Run(ns.RestoreCDMLayout) end)
+  status = Text("", 8)
+  status:SetTextColor(1, 0.35, 0.25)
+  -- Each time the page opens: Restore Backup only works with a backup, and
+  -- an old error line is cleared.
+  opt:SetScript("OnShow", function()
+    restore:SetEnabled(db.cdmBackup ~= false)
+    status:SetText("")
+  end)
+
   ShowTab("general")
-  opt.Sync()
 
   category = Settings.RegisterCanvasLayoutCategory(opt, "WU - Warrior Utilities")
   Settings.RegisterAddOnCategory(category)
@@ -267,16 +292,10 @@ SlashCmdList.WU = function(msg)
     local keep = { cdmBackup = db.cdmBackup }
     wipe(db)
     ns.LoadDB(keep)
-    ns.ApplyPosition()
-    ns.BuildCurves()
-    ns.ApplySize()
-    ns.Update()
-    Sync()
+    ns.RefreshBar()
     print("WU - Warrior Utilities reset")
   elseif a then
     ns.SetMarks(a, b)
-    ns.Update()
-    Sync()
     print(string.format("WU - Warrior Utilities marks set to %d / %d", db.mark1, db.mark2))
   else
     print("WU - Warrior Utilities: /wu, /wu 30 60, /wu reset")

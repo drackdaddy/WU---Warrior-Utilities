@@ -1,29 +1,19 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with two marks, and a button that adds a WU layout to Blizzard's
-  Cooldown Manager (Battle Shout, Demoralizing Shout and Sunder Armor in
-  Tracked Buffs). Loads only on warriors.
+  Rage bar with two marks, and buttons that add WU layouts (such as WU-Fury)
+  to Blizzard's Cooldown Manager. Loads only on warriors.
 
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
-  through curves; the Cooldown Manager layout is only written out of combat.
+  through curves; Cooldown Manager layouts are only written out of combat.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, CDM, Options.
-  Code and state shared between files live on the addon namespace (ns).
+  Code and state shared between files live on the addon namespace (ns); code
+  used by one file stays local to it.
 ]]
 local addonName, ns = ...
-
---------------------------------------------------------------------------------
--- Shared constants
---------------------------------------------------------------------------------
-ns.ROOT = "Interface\\AddOns\\" .. addonName .. "\\"
-ns.FONT = "Fonts\\FRIZQT__.TTF"
-ns.WHITE = "Interface\\Buttons\\WHITE8X8"
-ns.BASE_W, ns.BASE_H = 268, 38
-ns.GOLD = { 0.90, 0.80, 0.50 }
-ns.BORDER = { 0.32, 0.28, 0.22, 1 }
 
 --------------------------------------------------------------------------------
 -- Saved settings
@@ -75,50 +65,17 @@ function ns.LoadDB(saved)
 end
 
 --------------------------------------------------------------------------------
--- Helpers
---------------------------------------------------------------------------------
--- Nearest whole number to n (number or text), limited to lo..hi.
-function ns.Clamp(n, lo, hi)
-  return math.min(hi, math.max(lo, math.floor((tonumber(n) or lo) + 0.5)))
-end
-
-function ns.InCombat()
-  return UnitAffectingCombat("player")
-end
-
--- Flat dark panel with a 1px border.
-function ns.Paint(frame, alpha)
-  frame:SetBackdrop({
-    bgFile = ns.WHITE, edgeFile = ns.WHITE, tile = true, tileSize = 8, edgeSize = 1,
-    insets = { left = 1, right = 1, top = 1, bottom = 1 },
-  })
-  frame:SetBackdropColor(0.07, 0.07, 0.08, alpha)
-  frame:SetBackdropBorderColor(0.28, 0.26, 0.22, 1)
-end
-
--- Standard panel button; the caller anchors it.
-function ns.Button(parent, text, width, onClick)
-  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-  b:SetSize(width, 24)
-  b:SetText(text)
-  b:SetScript("OnClick", onClick)
-  return b
-end
-
---------------------------------------------------------------------------------
 -- Event dispatch
 -- One event frame for the addon. Each feature file adds its handlers with
 -- ns.On when it loads; they are registered on PLAYER_LOGIN, for warriors only.
+-- UNIT_ events are registered for the player only.
 -- Events: ADDON_LOADED (settings), PLAYER_LOGIN (build frames, register events)
 --------------------------------------------------------------------------------
-local handlers, unitFilters = {}, {}
+local handlers = {}
 
--- Adds fn as a handler for event. For UNIT_ events, the optional units limit
--- it to those units (default "player"); all handlers of one event share them.
-function ns.On(event, fn, ...)
+function ns.On(event, fn)
   handlers[event] = handlers[event] or {}
   table.insert(handlers[event], fn)
-  if ... then unitFilters[event] = { ... } end
 end
 
 local ev = CreateFrame("Frame")
@@ -136,12 +93,12 @@ ev:SetScript("OnEvent", function(self, event, ...)
     ns.BuildOptions()
     for name in pairs(handlers) do
       if name:find("^UNIT_") then
-        self:RegisterUnitEvent(name, unpack(unitFilters[name] or { "player" }))
+        self:RegisterUnitEvent(name, "player")
       else
         self:RegisterEvent(name)
       end
     end
-    ns.built = true -- PLAYER_ENTERING_WORLD follows and does the first refresh
+    ns.built = true
   else
     for _, fn in ipairs(handlers[event]) do fn(...) end
   end
