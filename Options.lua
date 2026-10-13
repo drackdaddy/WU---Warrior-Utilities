@@ -1,36 +1,36 @@
 local addonName, ns = ...
-local db, GOLD, Button = ns.db, ns.GOLD, ns.Button
+local db = ns.db
+local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
 -- General tab (how to use the addon, slash commands and the Discord link) and
 -- CDM tab (one section per WU Cooldown Manager layout, plus Restore Backup),
--- shown in Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page as
--- a canvas layout category: it parents, sizes, shows and hides the frame, and
--- Escape closes the panel. Every control writes its setting and applies it at
--- once; Sync() reloads all controls from the settings when the page is shown.
--- All rage bar settings are in Edit Mode (see RageBar.lua).
+-- shown in Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's
+-- Settings panel hosts the page as a canvas layout category: it parents,
+-- sizes, shows and hides the frame, and Escape closes the panel. All rage bar
+-- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: cdmBackup (shown, not edited)
 --------------------------------------------------------------------------------
-local opt, category
+local category
 
 -- Opens the Settings panel on this addon's page (only built on warriors).
 local function Open()
   if category then Settings.OpenToCategory(category:GetID()) end
 end
 
-local function Sync()
-  if opt then opt.Sync() end
+-- Standard panel button; the caller anchors it.
+local function Button(parent, text, width, onClick)
+  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+  b:SetSize(width, 24)
+  b:SetText(text)
+  b:SetScript("OnClick", onClick)
+  return b
 end
 
 function ns.BuildOptions()
-  opt = CreateFrame("Frame")
-
-  -- Every control registers a sync function; opt.Sync() runs all of them.
-  local syncs = {}
-  function opt.Sync() for _, f in ipairs(syncs) do f() end end
-  opt:SetScript("OnShow", opt.Sync)
+  local opt = CreateFrame("Frame")
 
   -- Header
   local title = opt:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -260,13 +260,14 @@ function ns.BuildOptions()
   local restore = PlaceButton("Restore Backup", 140, function() Run(ns.RestoreCDMLayout) end)
   status = Text("", 8)
   status:SetTextColor(1, 0.35, 0.25)
-  syncs[#syncs + 1] = function()
+  -- Each time the page opens: Restore Backup only works with a backup, and
+  -- an old error line is cleared.
+  opt:SetScript("OnShow", function()
     restore:SetEnabled(db.cdmBackup ~= false)
     status:SetText("")
-  end
+  end)
 
   ShowTab("general")
-  opt.Sync()
 
   category = Settings.RegisterCanvasLayoutCategory(opt, "WU - Warrior Utilities")
   Settings.RegisterAddOnCategory(category)
@@ -291,16 +292,10 @@ SlashCmdList.WU = function(msg)
     local keep = { cdmBackup = db.cdmBackup }
     wipe(db)
     ns.LoadDB(keep)
-    ns.ApplyPosition()
-    ns.BuildCurves()
-    ns.ApplySize()
-    ns.Update()
-    Sync()
+    ns.RefreshBar()
     print("WU - Warrior Utilities reset")
   elseif a then
     ns.SetMarks(a, b)
-    ns.Update()
-    Sync()
     print(string.format("WU - Warrior Utilities marks set to %d / %d", db.mark1, db.mark2))
   else
     print("WU - Warrior Utilities: /wu, /wu 30 60, /wu reset")

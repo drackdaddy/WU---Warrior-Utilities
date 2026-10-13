@@ -81,7 +81,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | File | Contents |
 | --- | --- |
 | `Libs\LibEditMode` | LibEditMode by p3lim (Edit Mode support), embedded unmodified; see its `LICENSE.txt` |
-| `Core.lua` | Settings, shared helpers, event dispatch |
+| `Core.lua` | Settings and event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
 | `CDM.lua` | WU Cooldown Manager layouts (create, restore) |
 | `Options.lua` | Options page in Esc > Options > AddOns, slash commands |

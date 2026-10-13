@@ -1,5 +1,5 @@
-local _, ns = ...
-local db, WHITE, BORDER, LEM = ns.db, ns.WHITE, ns.BORDER, ns.LibEditMode
+local addonName, ns = ...
+local db, LEM = ns.db, ns.LibEditMode
 
 --------------------------------------------------------------------------------
 -- Rage bar
@@ -9,13 +9,19 @@ local db, WHITE, BORDER, LEM = ns.db, ns.WHITE, ns.BORDER, ns.LibEditMode
 -- and set up in Blizzard's Edit Mode (see Edit Mode below).
 -- Marks are a percent of max rage (100 for warriors). The glow alpha comes
 -- from UnitPowerPercent curves, so it works even when rage is secret.
+-- Rage changes only redraw the fill, number and glow; showing or hiding the
+-- bar is checked on combat, Edit Mode and setting changes.
 -- Events: UNIT_POWER_UPDATE, UNIT_MAXPOWER (player), PLAYER_ENTERING_WORLD,
 --   PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED
 -- SavedVariables: barOff, marksOff, mark1, mark2, hideTicks, layouts,
 --   combatOnly, scale, style, color, border
 --------------------------------------------------------------------------------
 local RAGE = Enum.PowerType.Rage
-local ASSET = ns.ROOT .. "Assets\\"
+local ASSET = "Interface\\AddOns\\" .. addonName .. "\\Assets\\"
+local FONT = "Fonts\\FRIZQT__.TTF"
+local WHITE = "Interface\\Buttons\\WHITE8X8"
+local BASE_W, BASE_H = 268, 38 -- bar size at 100%
+local BORDER = { 0.32, 0.28, 0.22, 1 } -- Modern panel edge
 local holder, bar, label, glow, glow2, plate, trough
 local ticks = {}
 local loCurve, hiCurve
@@ -38,7 +44,6 @@ local function BuildCurves()
   loCurve = GateCurve(math.min(db.mark1, db.mark2) / 100)
   hiCurve = GateCurve(math.max(db.mark1, db.mark2) / 100)
 end
-ns.BuildCurves = BuildCurves
 
 -- Places the two marks and shows or hides them, their values and the glow
 -- ("Disable Marks" turns off both the marks and the glow).
@@ -57,34 +62,49 @@ local function ApplyMarks()
   glow2:SetShown(not db.marksOff)
 end
 
-function ns.SetMarks(a, b)
-  db.mark1, db.mark2 = ns.Clamp(a, 1, 99), ns.Clamp(b, 1, 99)
-  BuildCurves()
-  ApplyMarks()
-end
-
--- Shows or hides the bar and draws the current rage. The bar always shows in
--- Edit Mode so it can be selected even when "only show in combat" or
--- "Disable Rage Bar" would hide it; a disabled bar is shown faded there.
-local function Update()
-  local show = LEM:IsInEditMode() or not db.barOff and (not db.combatOnly or ns.InCombat())
-  holder:SetShown(show)
-  if not show then return end
-  holder:SetAlpha(db.barOff and 0.4 or 1)
+-- Draws the current rage: fill, number and glow. UnitPower may be secret in
+-- combat; it is only displayed, and the glow comes from curves.
+local function UpdateRage()
   local rage = UnitPower("player", RAGE)
-  bar:SetMinMaxValues(0, UnitPowerMax("player", RAGE))
   bar:SetValue(rage)
   label:SetText(rage)
   glow:SetAlpha(UnitPowerPercent("player", RAGE, false, loCurve))
   glow2:SetAlpha(UnitPowerPercent("player", RAGE, false, hiCurve))
 end
-ns.Update = Update
 
-ns.On("UNIT_POWER_UPDATE", Update)
-ns.On("UNIT_MAXPOWER", Update)
-ns.On("PLAYER_ENTERING_WORLD", Update)
-ns.On("PLAYER_REGEN_DISABLED", Update)
-ns.On("PLAYER_REGEN_ENABLED", Update)
+local function UpdateMax()
+  bar:SetMinMaxValues(0, UnitPowerMax("player", RAGE))
+  UpdateRage()
+end
+
+-- Shows or hides the bar, and redraws it when shown. The bar always shows in
+-- Edit Mode so it can be selected even when "only show in combat" or
+-- "Disable Rage Bar" would hide it; a disabled bar is shown faded there.
+local function UpdateShown()
+  local show = LEM:IsInEditMode() or not db.barOff and (not db.combatOnly or UnitAffectingCombat("player"))
+  holder:SetShown(show)
+  holder:SetAlpha(db.barOff and 0.4 or 1)
+  if show then UpdateMax() end
+end
+
+ns.On("UNIT_POWER_UPDATE", function() if holder:IsShown() then UpdateRage() end end)
+ns.On("UNIT_MAXPOWER", function() if holder:IsShown() then UpdateMax() end end)
+ns.On("PLAYER_ENTERING_WORLD", UpdateShown)
+ns.On("PLAYER_REGEN_DISABLED", UpdateShown)
+ns.On("PLAYER_REGEN_ENABLED", UpdateShown)
+
+-- Nearest whole number to n (number or text), limited to 1..99.
+local function MarkValue(n)
+  return math.min(99, math.max(1, math.floor((tonumber(n) or 1) + 0.5)))
+end
+
+-- Sets both marks from numbers or text and redraws the bar.
+function ns.SetMarks(a, b)
+  db.mark1, db.mark2 = MarkValue(a), MarkValue(b)
+  BuildCurves()
+  ApplyMarks()
+  UpdateShown()
+end
 
 --------------------------------------------------------------------------------
 -- Styles and colors
@@ -174,7 +194,7 @@ local function ApplyStyle()
   label:SetPoint(s.label[1], holder, s.label[1], s.label[2], 0)
   label:SetWidth(s.label[3])
   label:SetJustifyH(s.label[1])
-  label:SetFont(ns.FONT, math.max(10, math.floor(12 * db.scale / 100)) + s.font, s.outline)
+  label:SetFont(FONT, math.max(10, math.floor(12 * db.scale / 100)) + s.font, s.outline)
   label:SetTextColor(unpack(s.text))
 
   for _, tick in ipairs(ticks) do
@@ -184,11 +204,10 @@ local function ApplyStyle()
   end
   ApplyMarks()
 end
-ns.ApplyStyle = ApplyStyle
 
-function ns.ApplySize()
+local function ApplySize()
   local p = db.scale / 100
-  holder:SetSize(ns.BASE_W * p, ns.BASE_H * p)
+  holder:SetSize(BASE_W * p, BASE_H * p)
   ApplyStyle()
 end
 
@@ -207,7 +226,7 @@ end
 local DEFAULT_POS = { point = "CENTER", x = 0, y = -170 }
 local layoutName -- active Edit Mode layout; nil until the game reports it
 
-function ns.ApplyPosition()
+local function ApplyPosition()
   local p = layoutName and db.layouts[layoutName] or DEFAULT_POS
   holder:ClearAllPoints()
   holder:SetPoint(p.point, UIParent, p.point, p.x, p.y)
@@ -247,7 +266,6 @@ local function MarksOff() return db.barOff or db.marksOff end
 
 local function ApplyMarkValues()
   ns.SetMarks(db.mark1, db.mark2)
-  Update()
 end
 
 local function RegisterEditMode()
@@ -257,9 +275,9 @@ local function RegisterEditMode()
   borders.hidden = NotRage -- the Style dropdown refreshes the panel, so this follows it
   LEM:AddFrame(holder, OnMoved, DEFAULT_POS, "WU Rage Bar")
   LEM:AddFrameSettings(holder, {
-    Option(T.Checkbox, "Disable Rage Bar", "barOff", Update),
-    Option(T.Checkbox, "Only Show in Combat", "combatOnly", Update, BarOff),
-    Option(T.Slider, "Bar Size (%)", "scale", ns.ApplySize, BarOff, { minValue = 50, maxValue = 200, valueStep = 5 }),
+    Option(T.Checkbox, "Disable Rage Bar", "barOff", UpdateShown),
+    Option(T.Checkbox, "Only Show in Combat", "combatOnly", UpdateShown, BarOff),
+    Option(T.Slider, "Bar Size (%)", "scale", ApplySize, BarOff, { minValue = 50, maxValue = 200, valueStep = 5 }),
     Option(T.Dropdown, "Style", "style", ApplyStyle, BarOff, Choices("style")),
     Option(T.Dropdown, "Border", "border", ApplyStyle, BarOff, borders),
     Option(T.Dropdown, "Color", "color", ApplyStyle, BarOff, Choices("color")),
@@ -270,7 +288,7 @@ local function RegisterEditMode()
   })
   LEM:RegisterCallback("layout", function(name)
     layoutName = name
-    ns.ApplyPosition()
+    ApplyPosition()
   end)
   LEM:RegisterCallback("create", function(name, _, source)
     if source and db.layouts[source] then db.layouts[name] = CopyTable(db.layouts[source]) end
@@ -279,8 +297,8 @@ local function RegisterEditMode()
     db.layouts[new], db.layouts[old] = db.layouts[old], nil
   end)
   LEM:RegisterCallback("delete", function(name) db.layouts[name] = nil end)
-  LEM:RegisterCallback("enter", Update)
-  LEM:RegisterCallback("exit", Update)
+  LEM:RegisterCallback("enter", UpdateShown)
+  LEM:RegisterCallback("exit", UpdateShown)
 end
 
 --------------------------------------------------------------------------------
@@ -294,7 +312,7 @@ local function Layer(level)
   return f
 end
 
--- Glow layer over the fill. Update gates its alpha by rage; the pulse
+-- Glow layer over the fill. UpdateRage gates its alpha by rage; the pulse
 -- (from -> to alpha over dur seconds) loops forever.
 local function FlashLayer(from, to, dur)
   local gate = CreateFrame("Frame", nil, bar)
@@ -326,10 +344,23 @@ local function MakeTick()
   return f
 end
 
+-- Applies every bar setting: marks, position, size, style and visibility.
+-- Used when the bar is built and after /wu reset.
+function ns.RefreshBar()
+  BuildCurves()
+  ApplyPosition()
+  ApplySize()
+  UpdateShown()
+end
+
 function ns.BuildBar()
+  -- Flat panel with a 1px edge; ApplyStyle sets its colors per style.
   holder = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
   holder:SetClampedToScreen(true)
-  ns.Paint(holder, 0.82)
+  holder:SetBackdrop({
+    bgFile = WHITE, edgeFile = WHITE, tile = true, tileSize = 8, edgeSize = 1,
+    insets = { left = 1, right = 1, top = 1, bottom = 1 },
+  })
 
   trough = holder:CreateTexture(nil, "BACKGROUND")
   trough:SetAllPoints()
@@ -345,8 +376,6 @@ function ns.BuildBar()
   label = Layer(14):CreateFontString(nil, "OVERLAY")
   ticks[1], ticks[2] = MakeTick(), MakeTick()
 
-  BuildCurves()
-  ns.ApplyPosition()
-  ns.ApplySize()
+  ns.RefreshBar()
   RegisterEditMode()
 end
