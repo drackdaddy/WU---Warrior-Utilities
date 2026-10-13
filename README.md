@@ -42,16 +42,24 @@ Plus **Reset To Default** and **Reset To Default Position**.
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
 
-- **General** — how to use the addon
-- **CDM** — Create WU Layout, Restore Backup
+- **General** — how to use the addon, the slash commands and a Discord link to copy
+- **CDM** — one section per WU layout (where each buff goes and its alerts) with a Create button, and Restore Backup
 
 ## CDM (Blizzard's Cooldown Manager)
 
-**Create WU Layout** adds a Cooldown Manager layout named `WU` with Battle Shout, Demoralizing Shout and Sunder Armor first in Tracked Buffs. It starts as a copy of your active layout (or empty when you have no layouts), becomes the active layout, and the UI reloads.
+**Create WU-Fury** adds a Cooldown Manager layout named `WU-Fury`. It starts as a copy of your active layout (or empty when you have no layouts), becomes the active layout, and the UI reloads.
 
-- Sunder Armor gets one alert: Sound, On Aura Removed, Text to Speech. The Cooldown Manager plays it itself, so it works in combat.
+| Tab | Section | Buff | Alerts |
+| --- | --- | --- | --- |
+| Auras | Tracked Buffs | Battle Shout | None |
+| Auras | Tracked Buffs | Demoralizing Shout | None |
+| Auras | Tracked Buffs | Sunder Armor | On Aura Removed: Text to Speech |
+
+- The buffs go first in their section, in this order. A buff can have up to 3 alerts.
+- The Cooldown Manager plays the alerts itself, so they work in combat.
 - The Cooldown Manager has no "seconds remaining" alert, so there is no warning before Sunder falls off.
-- Pressing Create again rebuilds the WU layout instead of adding another one.
+- Pressing Create again rebuilds the WU-Fury layout instead of adding another one.
+- A layout named `WU` made by an older version is renamed to `WU-Fury` the first time you press Create.
 - Out of combat only.
 
 The first Create saves your previous layouts. **Restore Backup** puts them back (Cooldown Manager changes made since then are lost) and reloads the UI. If you had no layouts, there is nothing to back up and no backup is saved.
@@ -75,7 +83,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | `Libs\LibEditMode` | LibEditMode by p3lim (Edit Mode support), embedded unmodified; see its `LICENSE.txt` |
 | `Core.lua` | Settings, shared helpers, event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
-| `CDM.lua` | WU Cooldown Manager layout (create, restore) |
+| `CDM.lua` | WU Cooldown Manager layouts (create, restore) |
 | `Options.lua` | Options page in Esc > Options > AddOns, slash commands |
 
 ## Glow

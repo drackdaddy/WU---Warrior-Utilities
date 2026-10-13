@@ -2,14 +2,13 @@ local _, ns = ...
 local db = ns.db
 
 --------------------------------------------------------------------------------
--- Cooldown Manager layout
--- Adds a layout named "WU" to Blizzard's Cooldown Manager with Battle Shout,
--- Demoralizing Shout and Sunder Armor first in Tracked Buffs, gives Sunder
--- Armor a text-to-speech alert when it falls off, and makes it the active
--- layout. The Cooldown Manager plays that alert itself, so it works in combat
--- without the addon reading hidden aura data. Runs only from the CDM tab
--- buttons, out of combat; the tab reloads the UI afterwards so the Cooldown
--- Manager loads the new data.
+-- Cooldown Manager layouts
+-- Adds a WU layout (see LAYOUTS) to Blizzard's Cooldown Manager with its
+-- buffs first in their sections, gives them the listed alerts, and makes it
+-- the active layout. The Cooldown Manager plays the alerts itself, so they
+-- work in combat without the addon reading hidden aura data. Runs only from
+-- the CDM tab buttons, out of combat; the tab reloads the UI afterwards so the
+-- Cooldown Manager loads the new data.
 --
 -- The layout data is one undocumented string holding all of the character's
 -- layouts: "<version>|" + base64 of compressed CBOR. Decoded, it is
@@ -28,25 +27,53 @@ local db = ns.db
 -- SavedVariables: cdmBackup (layout data from before the first Create, or false)
 --------------------------------------------------------------------------------
 local V, E = C_CooldownViewer, C_EncodingUtil
-local FORMAT, NAME = 5, "WU"
+local FORMAT = 5
 local TRACKED = Enum.CooldownViewerCategory.TrackedBuff
--- Sunder Armor alert as the Cooldown Manager saves it when set by hand:
--- Sound (1), On Aura Removed (6), Text to Speech (0).
-local SUNDER_ALERT = { 1, 6, 0 }
 
--- Spells to track, in Tracked Buffs order. Each set holds every rank's spell
--- ID; the name from the first ID (in the client's language) also matches a
--- rank missing from the list.
+-- Where each category is found in the Cooldown Manager settings, for the CDM
+-- tab: { tab, section }.
+ns.CDM_PLACES = {
+  [TRACKED] = { "Auras", "Tracked Buffs" },
+}
+
+-- Spells to track. Each set holds every rank's spell ID; the name from the
+-- first ID (in the client's language) also matches a rank missing from the
+-- list.
 local function SpellSet(...)
   local set = { id = (...) }
   for i = 1, select("#", ...) do set[select(i, ...)] = true end
   return set
 end
 
-local SPELLS = {
-  SpellSet(6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578), -- Battle Shout
-  SpellSet(1160, 6190, 11554, 11555, 11556), -- Demoralizing Shout
-  SpellSet(7386, 7405, 8380, 11596, 11597), -- Sunder Armor
+-- Layouts the CDM tab offers, each with a Create button. name is the layout
+-- name; replaces is an older name for the same layout, renamed on Create.
+-- buffs go first in their category in this order. Each alert is
+-- { type, event, sound, text } as the Cooldown Manager saves it when set by
+-- hand (up to 3 per buff); text is only shown on the CDM tab. A buff's alerts
+-- replace the ones it had; a buff with none keeps its own.
+ns.CDM_LAYOUTS = {
+  {
+    name = "WU-Fury",
+    replaces = "WU",
+    buffs = {
+      { -- Battle Shout
+        spells = SpellSet(6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578),
+        category = TRACKED,
+        alerts = {},
+      },
+      { -- Demoralizing Shout
+        spells = SpellSet(1160, 6190, 11554, 11555, 11556),
+        category = TRACKED,
+        alerts = {},
+      },
+      { -- Sunder Armor
+        spells = SpellSet(7386, 7405, 8380, 11596, 11597),
+        category = TRACKED,
+        -- Sound (1), On Aura Removed (6), Text to Speech (0).
+        alerts = { { 1, 6, 0, text = "On Aura Removed: Text to Speech" } },
+      },
+    },
+  },
 }
 
 -- True when spell ID id belongs to set.
@@ -71,30 +98,30 @@ local function Encode(prefix, t)
   return prefix .. E.EncodeBase64(E.CompressString(E.SerializeCBOR(t)))
 end
 
--- Cooldown IDs of SPELLS in Tracked Buffs, in SPELLS order, or nil when any is
--- missing. Matched by spell so a renumbered cooldown ID still works.
-local function TrackedIDs()
+-- Cooldown IDs of buffs (each found in its own category), in buffs order, or
+-- nil when any is missing. Matched by spell so a renumbered cooldown ID still
+-- works.
+local function BuffIDs(buffs)
   local ids = {}
-  for _, id in ipairs(V.GetCooldownViewerCategorySet(TRACKED, true) or {}) do
-    local info = V.GetCooldownViewerCooldownInfo(id)
-    for i, set in ipairs(SPELLS) do
-      if info and IsSpell(info.spellID, set) then ids[i] = id end
+  for i, buff in ipairs(buffs) do
+    for _, id in ipairs(V.GetCooldownViewerCategorySet(buff.category, true) or {}) do
+      local info = V.GetCooldownViewerCooldownInfo(id)
+      if info and IsSpell(info.spellID, buff.spells) then ids[i] = id end
     end
-  end
-  for i in ipairs(SPELLS) do
     if not ids[i] then return end
   end
   return ids
 end
 
--- Writes the WU layout (replacing an earlier WU layout) and makes it active.
--- Returns true, or false and a reason; nothing is written on false.
-function ns.CreateCDMLayout()
+-- Writes layout def (one of CDM_LAYOUTS), replacing an earlier copy of it,
+-- and makes it active. Returns true, or false and a reason; nothing is
+-- written on false.
+function ns.CreateCDMLayout(def)
   if InCombatLockdown() then return false, "Leave combat first." end
   local data = V.GetLayoutData()
   local prefix, t = Decode(data)
   if not prefix then return false, "Unknown Cooldown Manager data format. Nothing was changed." end
-  local ids = TrackedIDs()
+  local ids = BuffIDs(def.buffs)
   if not ids then return false, "A spell is missing from the Cooldown Manager. Nothing was changed." end
 
   -- Layouts are filed under the current class-and-spec tag. Missing lists
@@ -104,8 +131,8 @@ function ns.CreateCDMLayout()
   t[2], t[3], t[4] = t[2] or {}, t[3] or {}, t[4] or {}
   t[3][key] = t[3][key] or {}
 
-  -- Reuse the WU layout's id if it exists, else the next id not used by any
-  -- layout or name.
+  -- Reuse the id of the layout with this name, else of one with its old name,
+  -- else the next id not used by any layout or name.
   local layouts, names, id, maxID = t[3][key], t[4], nil, 0
   for _, byID in ipairs({ layouts, names }) do
     for lid in pairs(byID) do
@@ -113,16 +140,21 @@ function ns.CreateCDMLayout()
     end
   end
   for lid in pairs(layouts) do
-    if names[lid] == NAME then id = lid end
+    if names[lid] == def.name then
+      id = lid
+    elseif names[lid] == def.replaces then
+      id = id or lid
+    end
   end
   id = id or maxID + 1
 
-  -- Copy of the active layout, with the three spells moved to the front of
-  -- Tracked Buffs (out of every other category, including "not displayed")
-  -- and Sunder Armor's alerts replaced by SUNDER_ALERT. With no active layout
-  -- the copy starts empty and lists only the three spells.
+  -- Copy of the active layout, with the buffs moved to the front of their
+  -- category (out of every other category, including "not displayed") and
+  -- their alerts set. With no active layout the copy starts empty and lists
+  -- only the buffs.
   local layout = CopyTable(layouts[t[2][key]] or {})
   layout[2] = layout[2] or {}
+  layout[3] = layout[3] or {}
   local want = {}
   for _, cid in ipairs(ids) do want[cid] = true end
   for _, list in pairs(layout[2]) do
@@ -130,13 +162,21 @@ function ns.CreateCDMLayout()
       if want[list[i]] then table.remove(list, i) end
     end
   end
-  local list = layout[2][TRACKED] or {}
-  for i, cid in ipairs(ids) do table.insert(list, i, cid) end
-  layout[2][TRACKED] = list
-  layout[3] = layout[3] or {}
-  layout[3][ids[3]] = { CopyTable(SUNDER_ALERT) }
+  local placed = {} -- buffs already placed per category, so order is kept
+  for i, buff in ipairs(def.buffs) do
+    local cat = buff.category
+    placed[cat] = (placed[cat] or 0) + 1
+    layout[2][cat] = layout[2][cat] or {}
+    table.insert(layout[2][cat], placed[cat], ids[i])
+    if #buff.alerts > 0 then
+      -- Only the three saved fields; text is for the CDM tab.
+      local alerts = {}
+      for j, a in ipairs(buff.alerts) do alerts[j] = { a[1], a[2], a[3] } end
+      layout[3][ids[i]] = alerts
+    end
+  end
   layouts[id] = layout
-  names[id] = NAME
+  names[id] = def.name
   t[2][key] = id
 
   -- Only write data that reads back cleanly.
