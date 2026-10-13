@@ -3,9 +3,9 @@ local db = ns.db
 
 --------------------------------------------------------------------------------
 -- Cooldown Manager layouts
--- Adds a WU layout (see LAYOUTS) to Blizzard's Cooldown Manager with its
--- buffs first in their sections, gives them the listed alerts, and makes it
--- the active layout. The Cooldown Manager plays the alerts itself, so they
+-- Adds a WU layout (see CDM_LAYOUTS) to Blizzard's Cooldown Manager holding
+-- only its buffs, in their sections with the listed alerts, and makes it the
+-- active layout. Other layouts are left as they are. The Cooldown Manager plays the alerts itself, so they
 -- work in combat without the addon reading hidden aura data. Runs only from
 -- the CDM tab buttons, out of combat; the tab reloads the UI afterwards so the
 -- Cooldown Manager loads the new data.
@@ -18,11 +18,10 @@ local db = ns.db
 -- layout is [2] { [category] = { cooldown IDs } },
 -- [3] { [cooldown ID] = { { type, event, sound } } } (alerts).
 -- With no layouts saved yet, [3] and [4] are missing. Other layout fields are
--- Blizzard's (field 4 is read as spell IDs), so this never adds fields to a
--- layout. Because the format is undocumented, this only writes when the
--- version is the one it was built against, copies the active layout (if any)
--- so nothing else in it changes, and saves the original string for Restore
--- when there were layouts to restore.
+-- Blizzard's (field 4 is read as spell IDs), so a new layout only gets [2]
+-- and [3]. Because the format is undocumented, this only writes when the
+-- version is the one it was built against, and the first Create saves the
+-- original string for Restore when there were layouts to restore.
 -- Events: none
 -- SavedVariables: cdmBackup (layout data from before the first Create, or false)
 --------------------------------------------------------------------------------
@@ -47,10 +46,10 @@ end
 
 -- Layouts the CDM tab offers, each with a Create button. name is the layout
 -- name; replaces is an older name for the same layout, renamed on Create.
--- buffs go first in their category in this order. Each alert is
--- { type, event, sound, text } as the Cooldown Manager saves it when set by
--- hand (up to 3 per buff); text is only shown on the CDM tab. A buff's alerts
--- replace the ones it had; a buff with none keeps its own.
+-- buffs are the only entries in the layout, listed in their category in this
+-- order. Each alert is { type, event, sound, text } as the Cooldown Manager
+-- saves it when set by hand (up to 3 per buff); text is only shown on the CDM
+-- tab.
 ns.CDM_LAYOUTS = {
   {
     name = "WU-Fury",
@@ -113,8 +112,8 @@ local function BuffIDs(buffs)
   return ids
 end
 
--- Writes layout def (one of CDM_LAYOUTS), replacing an earlier copy of it,
--- and makes it active. Returns true, or false and a reason; nothing is
+-- Writes layout def (one of CDM_LAYOUTS) as a new layout with only its buffs,
+-- replacing an earlier copy of it, and makes it active. Returns true, or false and a reason; nothing is
 -- written on false.
 function ns.CreateCDMLayout(def)
   if InCombatLockdown() then return false, "Leave combat first." end
@@ -148,26 +147,12 @@ function ns.CreateCDMLayout(def)
   end
   id = id or maxID + 1
 
-  -- Copy of the active layout, with the buffs moved to the front of their
-  -- category (out of every other category, including "not displayed") and
-  -- their alerts set. With no active layout the copy starts empty and lists
-  -- only the buffs.
-  local layout = CopyTable(layouts[t[2][key]] or {})
-  layout[2] = layout[2] or {}
-  layout[3] = layout[3] or {}
-  local want = {}
-  for _, cid in ipairs(ids) do want[cid] = true end
-  for _, list in pairs(layout[2]) do
-    for i = #list, 1, -1 do
-      if want[list[i]] then table.remove(list, i) end
-    end
-  end
-  local placed = {} -- buffs already placed per category, so order is kept
+  -- A blank layout listing only the buffs, each in its category in def
+  -- order, with their alerts.
+  local layout = { [2] = {}, [3] = {} }
   for i, buff in ipairs(def.buffs) do
-    local cat = buff.category
-    placed[cat] = (placed[cat] or 0) + 1
-    layout[2][cat] = layout[2][cat] or {}
-    table.insert(layout[2][cat], placed[cat], ids[i])
+    layout[2][buff.category] = layout[2][buff.category] or {}
+    table.insert(layout[2][buff.category], ids[i])
     if #buff.alerts > 0 then
       -- Only the three saved fields; text is for the CDM tab.
       local alerts = {}

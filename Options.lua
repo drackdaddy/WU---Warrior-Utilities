@@ -245,7 +245,7 @@ function ns.BuildOptions()
 
   Heading("How it works")
   Bullets({
-    "Copies your active layout and puts these buffs first.",
+    "Saves a backup, then creates a new layout with only these buffs.",
     "The new layout becomes active. Creating it again rebuilds it.",
     "A layout named " .. Key("WU") .. " from older versions is renamed.",
     "Alerts are played by the Cooldown Manager, so they work in combat.",

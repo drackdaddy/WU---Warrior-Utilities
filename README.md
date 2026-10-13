@@ -47,7 +47,7 @@ Plus **Reset To Default** and **Reset To Default Position**.
 
 ## CDM (Blizzard's Cooldown Manager)
 
-**Create WU-Fury** adds a Cooldown Manager layout named `WU-Fury`. It starts as a copy of your active layout (or empty when you have no layouts), becomes the active layout, and the UI reloads.
+**Create WU-Fury** adds a new Cooldown Manager layout named `WU-Fury` that holds only the buffs below. Your other layouts aren't changed. WU-Fury becomes the active layout, and the UI reloads.
 
 | Tab | Section | Buff | Alerts |
 | --- | --- | --- | --- |
@@ -55,7 +55,7 @@ Plus **Reset To Default** and **Reset To Default Position**.
 | Buffs | Tracked Buffs | Demoralizing Shout | None |
 | Buffs | Tracked Buffs | Sunder Armor | On Aura Removed: Text to Speech |
 
-- The buffs go first in their section, in this order. A buff can have up to 3 alerts.
+- The buffs are listed in their section in this order. A buff can have up to 3 alerts.
 - The Cooldown Manager plays the alerts itself, so they work in combat.
 - The Cooldown Manager has no "seconds remaining" alert, so there is no warning before Sunder falls off.
 - Pressing Create again rebuilds the WU-Fury layout instead of adding another one.
