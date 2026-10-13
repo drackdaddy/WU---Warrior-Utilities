@@ -3,7 +3,8 @@ local db, GOLD, Button = ns.db, ns.GOLD, ns.Button
 
 --------------------------------------------------------------------------------
 -- Options page
--- General tab (how to use the addon) and CDM tab, shown in Esc > Options >
+-- General tab (how to use the addon, slash commands and the Discord link) and
+-- CDM tab, shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page as
 -- a canvas layout category: it parents, sizes, shows and hides the frame, and
 -- Escape closes the panel. Every control writes its setting and applies it at
@@ -98,28 +99,118 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- General tab: how to use the addon, one instruction per paragraph in a
-  -- larger font, each wrapped to the page width with a gap below it.
+  -- General tab: how to use the addon, laid out like a short readme. Each
+  -- section is a gold heading with a rule under it, then bullets or a command
+  -- list. Everything stacks top to bottom, each piece anchored under the last.
+  -- The Discord link is a read-only edit box because addons can't open URLs or
+  -- write to the clipboard; clicking it selects the text for Ctrl+C.
   ------------------------------------------------------------------------------
-  local INSTRUCTIONS = {
-    "Open Edit Mode (Esc > Edit Mode) and click the rage bar to change its size, "
-      .. "style, color and marks, show it only in combat, or turn it off.",
-    "Drag the rage bar to move it, or click it and use the arrow keys "
-      .. "(hold Shift to move 10).",
-    "Each Edit Mode layout keeps its own rage bar position.",
-    "Open this page from Esc > Options > AddOns, or by typing /wu.",
-    "Type /wu 30 60 to set the marks.",
-  }
-  local prev
-  for _, text in ipairs(INSTRUCTIONS) do
-    local fs = pages.general:CreateFontString(nil, "OVERLAY", "GameFontHighlightMedium")
-    fs:SetWidth(396)
+  local general = pages.general
+  local DISCORD = "https://discord.gg/Xja4mR87Bk"
+  local prev -- last region placed; the next one goes under it
+
+  -- Anchors region under the previous one (gap pixels down, x pixels in) and
+  -- stretches it to the page's right edge so text wraps to the page width.
+  local function Place(region, gap, x)
+    if prev then
+      region:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", x or 0, -gap)
+    else
+      region:SetPoint("TOPLEFT", 4, -4)
+    end
+    region:SetPoint("RIGHT", general, "RIGHT", -4, 0)
+    prev = region
+  end
+
+  -- White text for names the player looks for on screen (keys, settings).
+  local function Key(text) return "|cffffffff" .. text .. "|r" end
+
+  local function Heading(text)
+    local fs = general:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     fs:SetJustifyH("LEFT")
+    fs:SetTextColor(unpack(GOLD))
+    fs:SetText(text)
+    Place(fs, 18)
+    local rule = general:CreateTexture(nil, "ARTWORK")
+    rule:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.35)
+    rule:SetHeight(1)
+    Place(rule, 4)
+  end
+
+  local function Text(text, gap, x)
+    local fs = general:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    fs:SetJustifyH("LEFT")
+    fs:SetSpacing(4)
     fs:SetTextColor(0.90, 0.88, 0.82)
     fs:SetText(text)
-    if prev then fs:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -14) else fs:SetPoint("TOPLEFT", 4, -8) end
-    prev = fs
+    Place(fs, gap or 8, x)
   end
+
+  -- One text block with a gold bullet before each line.
+  local function Bullets(lines)
+    local bullet = "|cffe6cc80\226\128\162|r  "
+    Text(bullet .. table.concat(lines, "\n" .. bullet))
+  end
+
+  -- A gold command in a fixed-width column with its description beside it.
+  local function Command(cmd, desc)
+    local c = general:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    c:SetWidth(100)
+    c:SetJustifyH("LEFT")
+    c:SetTextColor(unpack(GOLD))
+    c:SetText(cmd)
+    c:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -6)
+    local d = general:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    d:SetJustifyH("LEFT")
+    d:SetTextColor(0.90, 0.88, 0.82)
+    d:SetText(desc)
+    d:SetPoint("LEFT", c, "RIGHT", 8, 0)
+    prev = c
+  end
+
+  Heading("Rage bar setup")
+  Bullets({
+    "Press " .. Key("Esc") .. " and choose " .. Key("Edit Mode") .. ".",
+    "Click the " .. Key("WU Rage Bar") .. " to open its settings.",
+    Key("Style") .. ", " .. Key("Border") .. ", " .. Key("Color") .. " and "
+      .. Key("Bar Size") .. " change the look.",
+    Key("Mark I") .. " and " .. Key("Mark II") .. " set the glow points.",
+    Key("Only Show in Combat") .. " or " .. Key("Disable Rage Bar") .. " hide it.",
+  })
+
+  Heading("Moving the bar")
+  Bullets({
+    "Drag it, or click it and use the " .. Key("arrow keys") .. ".",
+    "Hold " .. Key("Shift") .. " to move 10 pixels at a time.",
+    "Each Edit Mode layout keeps its own position.",
+  })
+
+  Heading("Slash commands")
+  Command("/wu", "Open this page")
+  Command("/wu 30 60", "Set Mark I and Mark II (1 to 99)")
+  Command("/wu reset", "Reset all settings (keeps your CDM backup)")
+  Command("/wuutil", "Same as /wu")
+
+  Heading("Bugs, features and questions")
+  Text("Join the WU Discord:")
+  -- InputBoxTemplate draws its border outside the box, hence the 6px inset.
+  local link = CreateFrame("EditBox", nil, general, "InputBoxTemplate")
+  link:SetSize(240, 20)
+  link:SetAutoFocus(false)
+  link:SetText(DISCORD)
+  link:SetCursorPosition(0)
+  link:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 6, -6)
+  prev = link
+  local function SelectAll(self) self:HighlightText() end
+  link:SetScript("OnEditFocusGained", SelectAll)
+  link:SetScript("OnMouseUp", SelectAll)
+  -- Typing or pasting puts the link back, so it can't be changed.
+  link:SetScript("OnTextChanged", function(self, userInput)
+    if userInput then
+      self:SetText(DISCORD)
+      self:HighlightText()
+    end
+  end)
+  Text("Click the link, then press Ctrl+C to copy.", 6, -6)
 
   ------------------------------------------------------------------------------
   -- CDM tab: create or restore the WU Cooldown Manager layout (see CDM.lua).
@@ -188,6 +279,6 @@ SlashCmdList.WU = function(msg)
     Sync()
     print(string.format("WU - Warrior Utilities marks set to %d / %d", db.mark1, db.mark2))
   else
-    print("WU - Warrior Utilities: /wu  |  /wu 30 60  |  reset")
+    print("WU - Warrior Utilities: /wu, /wu 30 60, /wu reset")
   end
 end
