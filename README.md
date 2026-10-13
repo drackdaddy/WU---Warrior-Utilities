@@ -51,9 +51,9 @@ Plus **Reset To Default** and **Reset To Default Position**.
 
 | Tab | Section | Buff | Alerts |
 | --- | --- | --- | --- |
-| Auras | Tracked Buffs | Battle Shout | None |
-| Auras | Tracked Buffs | Demoralizing Shout | None |
-| Auras | Tracked Buffs | Sunder Armor | On Aura Removed: Text to Speech |
+| Buffs | Tracked Buffs | Battle Shout | None |
+| Buffs | Tracked Buffs | Demoralizing Shout | None |
+| Buffs | Tracked Buffs | Sunder Armor | On Aura Removed: Text to Speech |
 
 - The buffs go first in their section, in this order. A buff can have up to 3 alerts.
 - The Cooldown Manager plays the alerts itself, so they work in combat.

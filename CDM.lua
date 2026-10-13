@@ -33,7 +33,7 @@ local TRACKED = Enum.CooldownViewerCategory.TrackedBuff
 -- Where each category is found in the Cooldown Manager settings, for the CDM
 -- tab: { tab, section }.
 ns.CDM_PLACES = {
-  [TRACKED] = { "Auras", "Tracked Buffs" },
+  [TRACKED] = { "Buffs", "Tracked Buffs" },
 }
 
 -- Spells to track. Each set holds every rank's spell ID; the name from the
