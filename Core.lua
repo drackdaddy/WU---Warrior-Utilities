@@ -1,7 +1,8 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
   Rage bar with two marks, and buttons that add WU layouts (such as WU-Fury)
-  to Blizzard's Cooldown Manager. Loads only on warriors.
+  to Blizzard's Cooldown Manager. Loads on warriors and druids; druids get the
+  rage bar only (shown while in a form that uses rage), not the CDM layouts.
 
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
@@ -67,7 +68,8 @@ end
 --------------------------------------------------------------------------------
 -- Event dispatch
 -- One event frame for the addon. Each feature file adds its handlers with
--- ns.On when it loads; they are registered on PLAYER_LOGIN, for warriors only.
+-- ns.On when it loads; they are registered on PLAYER_LOGIN, for warriors and
+-- druids only. ns.isWarrior tells the other files which class loaded.
 -- UNIT_ events are registered for the player only.
 -- Events: ADDON_LOADED (settings), PLAYER_LOGIN (build frames, register events)
 --------------------------------------------------------------------------------
@@ -88,7 +90,9 @@ ev:SetScript("OnEvent", function(self, event, ...)
     ns.LoadDB(WUDB)
   elseif event == "PLAYER_LOGIN" then
     self:UnregisterEvent(event)
-    if select(2, UnitClass("player")) ~= "WARRIOR" then return end
+    local class = select(2, UnitClass("player"))
+    if class ~= "WARRIOR" and class ~= "DRUID" then return end
+    ns.isWarrior = class == "WARRIOR"
     ns.BuildBar()
     ns.BuildOptions()
     for name in pairs(handlers) do
