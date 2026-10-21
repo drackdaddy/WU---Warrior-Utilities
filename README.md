@@ -2,7 +2,9 @@
 
 A lightweight rage bar and Cooldown Manager setup (Optional) for warriors on **World of Warcraft: Forever**.
 
-WU keeps your rage on screen with marks at the amounts you care about. Sets up Blizzard's Cooldown Manager (Optional) so Battle Shout, Demoralizing Shout and Sunder Armor are tracked right where you need them. The addon only loads on warriors, and settings are saved per character.
+WU keeps your rage on screen with marks at the amounts you care about. Sets up Blizzard's Cooldown Manager (Optional) so Battle Shout, Demoralizing Shout and Sunder Armor are tracked right where you need them. The addon loads on warriors and druids, and settings are saved per character.
+
+On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The CDM tab is warriors only.
 
 ## Install
 
@@ -11,7 +13,7 @@ WU keeps your rage on screen with marks at the amounts you care about. Sets up B
 3. Copy the `WU - Warrior Utilities` folder into
    `World of Warcraft\_classic_beta_\Interface\AddOns`.
 4. Restart WoW or `/reload`.
-5. Log in on a warrior (the addon stays off on other classes).
+5. Log in on a warrior or druid (the addon stays off on other classes).
 
 Settings are saved per character.
 
@@ -43,7 +45,7 @@ Plus **Reset To Default** and **Reset To Default Position**.
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
 
 - **General** — how to use the addon, the slash commands and a Discord link to copy
-- **CDM** — one section per WU layout (where each buff goes and its alerts) with a Create button, and Restore Backup
+- **CDM** (warriors only) — one section per WU layout (where each buff goes and its alerts) with a Create button, and Restore Backup
 
 ## CDM (Blizzard's Cooldown Manager)
 

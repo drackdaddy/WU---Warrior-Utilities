@@ -4,9 +4,10 @@ local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
--- General tab (how to use the addon, slash commands and the Discord link) and
--- CDM tab (one section per WU Cooldown Manager layout, plus Restore Backup),
--- shown in Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's
+-- General tab (how to use the addon, slash commands and the Discord link) and,
+-- on warriors only, CDM tab (one section per WU Cooldown Manager layout, plus
+-- Restore Backup), shown in Esc > Options > AddOns > WU - Warrior Utilities.
+-- The CDM layouts hold warrior spells, so druids don't get that tab. Blizzard's
 -- Settings panel hosts the page as a canvas layout category: it parents,
 -- sizes, shows and hides the frame, and Escape closes the panel. All rage bar
 -- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
@@ -15,7 +16,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --------------------------------------------------------------------------------
 local category
 
--- Opens the Settings panel on this addon's page (only built on warriors).
+-- Opens the Settings panel on this addon's page (only built on warriors and
+-- druids).
 local function Open()
   if category then Settings.OpenToCategory(category:GetID()) end
 end
@@ -58,7 +60,8 @@ function ns.BuildOptions()
       tabBtns[k].bar:SetShown(k == name)
     end
   end
-  local TABS = { { "general", "General" }, { "cdm", "CDM" } }
+  local TABS = { { "general", "General" } }
+  if ns.isWarrior then TABS[2] = { "cdm", "CDM" } end
   for i, info in ipairs(TABS) do
     local b = CreateFrame("Button", nil, opt)
     b:SetSize(120, 28)
@@ -177,6 +180,7 @@ function ns.BuildOptions()
       .. Key("Bar Size") .. " change the look.",
     Key("Mark I") .. " and " .. Key("Mark II") .. " set the glow points.",
     Key("Only Show in Combat") .. " or " .. Key("Disable Rage Bar") .. " hide it.",
+    "On druids the bar only shows in " .. Key("Bear Form") .. " and " .. Key("Dire Bear Form") .. ".",
   })
 
   Heading("Moving the bar")
@@ -219,53 +223,55 @@ function ns.BuildOptions()
   -- CDM.lua) listing where each buff goes and its alerts, with a Create
   -- button, then how Create works and Restore Backup. Both buttons reload the
   -- UI after a successful write so the Cooldown Manager loads the new data;
-  -- on failure the reason is shown instead.
+  -- on failure the reason is shown instead. Warriors only (see Tabs).
   ------------------------------------------------------------------------------
-  Begin(pages.cdm)
-  local status
-  local function Run(fn, ...)
-    local ok, reason = fn(...)
-    if ok then ReloadUI() else status:SetText(reason) end
-  end
-
-  local LAYOUT_WIDTHS = { 50, 95, 130, 170 }
-  local NONE = "|cff9a9381None|r"
-  for _, def in ipairs(ns.CDM_LAYOUTS) do
-    Heading(def.name .. " layout")
-    Row(LAYOUT_WIDTHS, #LAYOUT_WIDTHS, "Tab", "Section", "Buff", "Alerts")
-    for _, buff in ipairs(def.buffs) do
-      local place = ns.CDM_PLACES[buff.category]
-      local alerts = {}
-      for j, a in ipairs(buff.alerts) do alerts[j] = j .. ". " .. a.text end
-      Row(LAYOUT_WIDTHS, 0, place[1], place[2], C_Spell.GetSpellName(buff.spells.id) or "",
-        #alerts > 0 and table.concat(alerts, "\n") or NONE)
+  if pages.cdm then
+    Begin(pages.cdm)
+    local status
+    local function Run(fn, ...)
+      local ok, reason = fn(...)
+      if ok then ReloadUI() else status:SetText(reason) end
     end
-    PlaceButton("Create " .. def.name, 160, function() Run(ns.CreateCDMLayout, def) end)
+
+    local LAYOUT_WIDTHS = { 50, 95, 130, 170 }
+    local NONE = "|cff9a9381None|r"
+    for _, def in ipairs(ns.CDM_LAYOUTS) do
+      Heading(def.name .. " layout")
+      Row(LAYOUT_WIDTHS, #LAYOUT_WIDTHS, "Tab", "Section", "Buff", "Alerts")
+      for _, buff in ipairs(def.buffs) do
+        local place = ns.CDM_PLACES[buff.category]
+        local alerts = {}
+        for j, a in ipairs(buff.alerts) do alerts[j] = j .. ". " .. a.text end
+        Row(LAYOUT_WIDTHS, 0, place[1], place[2], C_Spell.GetSpellName(buff.spells.id) or "",
+          #alerts > 0 and table.concat(alerts, "\n") or NONE)
+      end
+      PlaceButton("Create " .. def.name, 160, function() Run(ns.CreateCDMLayout, def) end)
+    end
+
+    Heading("How it works")
+    Bullets({
+      "Saves a backup, then creates a new layout with only these buffs.",
+      "The new layout becomes active. Creating it again rebuilds it.",
+      "A layout named " .. Key("WU") .. " from older versions is renamed.",
+      "Alerts are played by the Cooldown Manager, so they work in combat.",
+      "Out of combat only. The UI reloads afterwards.",
+    })
+
+    Heading("Backup")
+    Bullets({
+      "The first Create saves your previous layouts.",
+      Key("Restore Backup") .. " puts them back. Changes made since are lost.",
+    })
+    local restore = PlaceButton("Restore Backup", 140, function() Run(ns.RestoreCDMLayout) end)
+    status = Text("", 8)
+    status:SetTextColor(1, 0.35, 0.25)
+    -- Each time the page opens: Restore Backup only works with a backup, and
+    -- an old error line is cleared.
+    opt:SetScript("OnShow", function()
+      restore:SetEnabled(db.cdmBackup ~= false)
+      status:SetText("")
+    end)
   end
-
-  Heading("How it works")
-  Bullets({
-    "Saves a backup, then creates a new layout with only these buffs.",
-    "The new layout becomes active. Creating it again rebuilds it.",
-    "A layout named " .. Key("WU") .. " from older versions is renamed.",
-    "Alerts are played by the Cooldown Manager, so they work in combat.",
-    "Out of combat only. The UI reloads afterwards.",
-  })
-
-  Heading("Backup")
-  Bullets({
-    "The first Create saves your previous layouts.",
-    Key("Restore Backup") .. " puts them back. Changes made since are lost.",
-  })
-  local restore = PlaceButton("Restore Backup", 140, function() Run(ns.RestoreCDMLayout) end)
-  status = Text("", 8)
-  status:SetTextColor(1, 0.35, 0.25)
-  -- Each time the page opens: Restore Backup only works with a backup, and
-  -- an old error line is cleared.
-  opt:SetScript("OnShow", function()
-    restore:SetEnabled(db.cdmBackup ~= false)
-    status:SetText("")
-  end)
 
   ShowTab("general")
 
@@ -283,7 +289,7 @@ end
 --------------------------------------------------------------------------------
 SLASH_WU1, SLASH_WU2 = "/wu", "/wuutil"
 SlashCmdList.WU = function(msg)
-  if not ns.built then return end -- not a warrior
+  if not ns.built then return end -- not a warrior or druid
   msg = strtrim(msg:lower())
   local a, b = msg:match("^(%d+)%s+(%d+)$")
   if msg == "" then

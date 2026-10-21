@@ -10,9 +10,11 @@ local db, LEM = ns.db, ns.LibEditMode
 -- Marks are a percent of max rage (100 for warriors). The glow alpha comes
 -- from UnitPowerPercent curves, so it works even when rage is secret.
 -- Rage changes only redraw the fill, number and glow; showing or hiding the
--- bar is checked on combat, Edit Mode and setting changes.
--- Events: UNIT_POWER_UPDATE, UNIT_MAXPOWER (player), PLAYER_ENTERING_WORLD,
---   PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED
+-- bar is checked on combat, form, Edit Mode and setting changes.
+-- On druids the bar only shows while the player's power type is rage (Bear
+-- and Dire Bear Form); UNIT_DISPLAYPOWER fires when a form change swaps it.
+-- Events: UNIT_POWER_UPDATE, UNIT_MAXPOWER, UNIT_DISPLAYPOWER (player),
+--   PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED
 -- SavedVariables: barOff, marksOff, mark1, mark2, hideTicks, layouts,
 --   combatOnly, scale, style, color, border
 --------------------------------------------------------------------------------
@@ -78,10 +80,14 @@ local function UpdateMax()
 end
 
 -- Shows or hides the bar, and redraws it when shown. The bar always shows in
--- Edit Mode so it can be selected even when "only show in combat" or
--- "Disable Rage Bar" would hide it; a disabled bar is shown faded there.
+-- Edit Mode so it can be selected even when "only show in combat",
+-- "Disable Rage Bar" or a druid's non-rage form would hide it; a disabled bar
+-- is shown faded there. Warriors always use rage, so only druids are asked
+-- for their power type.
 local function UpdateShown()
-  local show = LEM:IsInEditMode() or not db.barOff and (not db.combatOnly or UnitAffectingCombat("player"))
+  local hasRage = ns.isWarrior or UnitPowerType("player") == RAGE
+  local show = LEM:IsInEditMode()
+    or not db.barOff and hasRage and (not db.combatOnly or UnitAffectingCombat("player"))
   holder:SetShown(show)
   holder:SetAlpha(db.barOff and 0.4 or 1)
   if show then UpdateMax() end
@@ -89,6 +95,7 @@ end
 
 ns.On("UNIT_POWER_UPDATE", function() if holder:IsShown() then UpdateRage() end end)
 ns.On("UNIT_MAXPOWER", function() if holder:IsShown() then UpdateMax() end end)
+ns.On("UNIT_DISPLAYPOWER", UpdateShown)
 ns.On("PLAYER_ENTERING_WORLD", UpdateShown)
 ns.On("PLAYER_REGEN_DISABLED", UpdateShown)
 ns.On("PLAYER_REGEN_ENABLED", UpdateShown)
