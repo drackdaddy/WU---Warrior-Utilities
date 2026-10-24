@@ -190,6 +190,15 @@ function ns.BuildOptions()
     "Each Edit Mode layout keeps its own position.",
   })
 
+  if ns.isWarrior then
+    Heading("Out of range warning")
+    Bullets({
+      "Flashes " .. Key("OUT OF RANGE") .. " when your target is out of melee range.",
+      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Range Warning") .. " to move it.",
+      "Its panel sets the font, size and flash, or turns it off.",
+    })
+  end
+
   Heading("Slash commands")
   local COMMAND_WIDTHS = { 100, 340 }
   Row(COMMAND_WIDTHS, 1, "/wu", "Open this page")
@@ -299,6 +308,7 @@ SlashCmdList.WU = function(msg)
     wipe(db)
     ns.LoadDB(keep)
     ns.RefreshBar()
+    if ns.isWarrior then ns.RefreshRange() end
     print("WU - Warrior Utilities reset")
   elseif a then
     ns.SetMarks(a, b)
