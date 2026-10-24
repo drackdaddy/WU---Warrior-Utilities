@@ -40,6 +40,20 @@ Plus **Reset To Default** and **Reset To Default Position**.
 - Outside Edit Mode the bar can't be moved and clicks pass through it.
 - The bar does not snap to the Edit Mode grid or to other frames.
 
+## Out of range warning (warriors only)
+
+Flashes **OUT OF RANGE** while you have a living enemy targeted that is out of melee range (Heroic Strike range). In Edit Mode, click **WU Range Warning** to move it and open its panel:
+
+| Setting | Notes |
+| --- | --- |
+| Disable Range Warning | Turns the warning off (it shows faded in Edit Mode so you can turn it back on) |
+| Font | Friz Quadrata, Arial Narrow, Morpheus, Skurri (default Friz Quadrata) |
+| Font Size | 16 to 64 (default 32) |
+| Flash | Pulse, Blink, Steady (no flash) (default Pulse) |
+| Flash Speed | Slow, Normal, Fast (default Normal) |
+
+Its position is per Edit Mode layout, like the rage bar's.
+
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
@@ -74,7 +88,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60` | Set marks |
-| `/wu reset` | Reset all settings and bar positions in every layout to default (keeps the Cooldown Manager backup) |
+| `/wu reset` | Reset all settings and bar and range warning positions in every layout to default (keeps the Cooldown Manager backup) |
 
 `/wuutil` is an alias.
 
@@ -83,8 +97,9 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | File | Contents |
 | --- | --- |
 | `Libs\LibEditMode` | LibEditMode by p3lim (Edit Mode support), embedded unmodified; see its `LICENSE.txt` |
-| `Core.lua` | Settings and event dispatch |
+| `Core.lua` | Settings, shared Edit Mode helpers and event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
+| `RangeWarning.lua` | Out of range warning and its Edit Mode settings |
 | `CDM.lua` | WU Cooldown Manager layouts (create, restore) |
 | `Options.lua` | Options page in Esc > Options > AddOns, slash commands |
 

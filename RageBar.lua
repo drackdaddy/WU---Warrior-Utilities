@@ -220,52 +220,12 @@ end
 
 --------------------------------------------------------------------------------
 -- Edit Mode: position and settings
--- LibEditMode registers the bar with Blizzard's Edit Mode: it draws the
--- selection highlight, handles dragging, arrow-key nudges and "Reset To
--- Default Position", shows the settings panel when the bar is selected, and
--- reports the active Edit Mode layout. Positions are saved per layout name in
--- db.layouts, so each layout keeps its own spot; layouts created as copies,
--- renamed or deleted are kept in step. Panel settings are per character (the
--- same in every layout). Outside Edit Mode the bar takes no mouse input, so
--- clicks pass through to the world.
--- LibEditMode does not snap custom frames to the grid or to other frames.
+-- Registered through ns.AddEditModeFrame (see Core.lua); positions are kept
+-- per Edit Mode layout in db.layouts. Outside Edit Mode the bar takes no
+-- mouse input, so clicks pass through to the world.
 --------------------------------------------------------------------------------
 local DEFAULT_POS = { point = "CENTER", x = 0, y = -170 }
-local layoutName -- active Edit Mode layout; nil until the game reports it
-
-local function ApplyPosition()
-  local p = layoutName and db.layouts[layoutName] or DEFAULT_POS
-  holder:ClearAllPoints()
-  holder:SetPoint(p.point, UIParent, p.point, p.x, p.y)
-end
-
--- LibEditMode callback after the bar is dragged, nudged or reset in Edit Mode.
-local function OnMoved(_, layout, point, x, y)
-  db.layouts[layout] = { point = point, x = x, y = y }
-end
-
--- One panel setting bound to db[key]: apply runs after a change, disabled
--- greys it out, extra holds the kind's own fields. The layout name LibEditMode
--- passes is ignored because these settings are per character.
-local function Option(kind, name, key, apply, disabled, extra)
-  local s = {
-    kind = kind, name = name, default = ns.DEFAULTS[key], disabled = disabled,
-    get = function() return db[key] end,
-    set = function(_, value)
-      db[key] = value
-      apply()
-    end,
-  }
-  for k, v in pairs(extra or {}) do s[k] = v end
-  return s
-end
-
--- Dropdown entries for a ns.LISTS choice list.
-local function Choices(key)
-  local values = {}
-  for _, o in ipairs(ns.LISTS[key]) do values[#values + 1] = { text = o[2], value = o[1] } end
-  return { values = values }
-end
+local ApplyPosition -- set by RegisterEditMode
 
 local function BarOff() return db.barOff end
 local function NotRage() return db.style ~= "rage" end
@@ -276,12 +236,11 @@ local function ApplyMarkValues()
 end
 
 local function RegisterEditMode()
-  local T = LEM.SettingType
+  local T, Option, Choices = LEM.SettingType, ns.EditModeOption, ns.EditModeChoices
   local mark = { minValue = 1, maxValue = 99, valueStep = 1 }
   local borders = Choices("border")
   borders.hidden = NotRage -- the Style dropdown refreshes the panel, so this follows it
-  LEM:AddFrame(holder, OnMoved, DEFAULT_POS, "WU Rage Bar")
-  LEM:AddFrameSettings(holder, {
+  ApplyPosition = ns.AddEditModeFrame(holder, "layouts", DEFAULT_POS, "WU Rage Bar", {
     Option(T.Checkbox, "Disable Rage Bar", "barOff", UpdateShown),
     Option(T.Checkbox, "Only Show in Combat", "combatOnly", UpdateShown, BarOff),
     Option(T.Slider, "Bar Size (%)", "scale", ApplySize, BarOff, { minValue = 50, maxValue = 200, valueStep = 5 }),
@@ -292,20 +251,7 @@ local function RegisterEditMode()
     Option(T.Slider, "Mark I", "mark1", ApplyMarkValues, MarksOff, mark),
     Option(T.Slider, "Mark II", "mark2", ApplyMarkValues, MarksOff, mark),
     Option(T.Checkbox, "Hide Mark Values", "hideTicks", ApplyMarks, MarksOff),
-  })
-  LEM:RegisterCallback("layout", function(name)
-    layoutName = name
-    ApplyPosition()
-  end)
-  LEM:RegisterCallback("create", function(name, _, source)
-    if source and db.layouts[source] then db.layouts[name] = CopyTable(db.layouts[source]) end
-  end)
-  LEM:RegisterCallback("rename", function(old, new)
-    db.layouts[new], db.layouts[old] = db.layouts[old], nil
-  end)
-  LEM:RegisterCallback("delete", function(name) db.layouts[name] = nil end)
-  LEM:RegisterCallback("enter", UpdateShown)
-  LEM:RegisterCallback("exit", UpdateShown)
+  }, UpdateShown)
 end
 
 --------------------------------------------------------------------------------
@@ -383,6 +329,6 @@ function ns.BuildBar()
   label = Layer(14):CreateFontString(nil, "OVERLAY")
   ticks[1], ticks[2] = MakeTick(), MakeTick()
 
-  ns.RefreshBar()
   RegisterEditMode()
+  ns.RefreshBar()
 end
