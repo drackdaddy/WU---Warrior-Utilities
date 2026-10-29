@@ -64,7 +64,7 @@ Plus **Reset To Default** and **Reset To Default Position**.
 - A layout named `WU` made by an older version is renamed to `WU-Fury` the first time you press Create.
 - Out of combat only.
 
-The first Create saves your previous layouts. **Restore Backup** puts them back (Cooldown Manager changes made since then are lost) and reloads the UI. If you had no layouts, there is nothing to back up and no backup is saved.
+The first Create saves your previous layouts. **Restore Backup** puts them back (Cooldown Manager changes made since then are lost) and reloads the UI. If you had no layouts (only Blizzard's default), Create still works, but there is nothing to back up and no backup is saved.
 
 > The Cooldown Manager's saved data format is not documented by Blizzard. If a patch changes it, Create refuses and changes nothing.
 

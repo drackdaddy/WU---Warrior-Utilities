@@ -17,7 +17,9 @@ local db = ns.db
 -- where tag is Blizzard's class-and-spec tag (11 for Warrior), and each
 -- layout is [2] { [category] = { cooldown IDs } },
 -- [3] { [cooldown ID] = { { type, event, sound } } } (alerts).
--- With no layouts saved yet, [3] and [4] are missing. Other layout fields are
+-- With no layouts saved yet, [3] and [4] are missing, and a character that
+-- has only ever used Blizzard's default layout has no data string at all; it
+-- then starts from an empty set in format FORMAT. Other layout fields are
 -- Blizzard's (field 4 is read as spell IDs), so a new layout only gets [2]
 -- and [3]. Because the format is undocumented, this only writes when the
 -- version is the one it was built against, and the first Create saves the
@@ -118,8 +120,13 @@ end
 function ns.CreateCDMLayout(def)
   if InCombatLockdown() then return false, "Leave combat first." end
   local data = V.GetLayoutData()
-  local prefix, t = Decode(data)
-  if not prefix then return false, "Unknown Cooldown Manager data format. Nothing was changed." end
+  local prefix, t
+  if data == nil or data == "" then
+    prefix, t = FORMAT .. "|", { FORMAT }
+  else
+    prefix, t = Decode(data)
+    if not prefix then return false, "Unknown Cooldown Manager data format. Nothing was changed." end
+  end
   local ids = BuffIDs(def.buffs)
   if not ids then return false, "A spell is missing from the Cooldown Manager. Nothing was changed." end
 
