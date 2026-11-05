@@ -11,7 +11,7 @@ On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form an
 1. Unzip the addon zip.
 2. Delete any older `WU - Warrior Utilities` folder from `Interface\AddOns`.
 3. Copy the `WU - Warrior Utilities` folder into
-   `World of Warcraft\_classic_beta_\Interface\AddOns`.
+   `World of Warcraft\_forever_\Interface\AddOns`.
 4. Restart WoW or `/reload`.
 5. Log in on a warrior or druid (the addon stays off on other classes).
 
