@@ -76,12 +76,25 @@ function ns.BuildOptions()
   ------------------------------------------------------------------------------
   -- Page builders
   -- Each tab is laid out like a short readme: gold headings with a rule under
-  -- them, then bullets, columns or checkboxes. Begin(page) starts a page; each
+  -- them, then bullets, commands or checkboxes. Begin(page) starts a page or a
+  -- column; each
   -- piece is then anchored under the last one placed.
   ------------------------------------------------------------------------------
   local page, prev
 
   local function Begin(p) page, prev = p, nil end
+
+  -- Splits p into two side-by-side columns 16 px apart; returns left, right.
+  -- Pass each to Begin to fill it.
+  local function Columns(p)
+    local left = CreateFrame("Frame", nil, p)
+    left:SetPoint("TOPLEFT")
+    left:SetPoint("BOTTOMRIGHT", p, "BOTTOM", -8, 0)
+    local right = CreateFrame("Frame", nil, p)
+    right:SetPoint("TOPRIGHT")
+    right:SetPoint("BOTTOMLEFT", p, "BOTTOM", 8, 0)
+    return left, right
+  end
 
   -- Anchors region under the previous one (gap pixels down, x pixels in). A
   -- stretched region also reaches the page's right edge, so text wraps there.
@@ -127,25 +140,22 @@ function ns.BuildOptions()
     Text(bullet .. table.concat(lines, "\n" .. bullet))
   end
 
-  -- One row of columns, widths[i] pixels wide with 8 between them. The first
-  -- gold cells are gold, the rest body text. The row is as tall as its
-  -- tallest cell, so a cell that wraps never overlaps the next row.
-  local function Row(widths, gold, ...)
-    local cells, height = {}, 0
-    for i, w in ipairs(widths) do
-      local fs = page:CreateFontString(nil, "OVERLAY", i <= gold and "GameFontNormal" or "GameFontHighlight")
-      fs:SetWidth(w)
-      fs:SetJustifyH("LEFT")
-      fs:SetJustifyV("TOP")
-      fs:SetSpacing(4)
-      if i <= gold then fs:SetTextColor(unpack(GOLD)) else fs:SetTextColor(0.90, 0.88, 0.82) end
-      fs:SetText((select(i, ...)))
-      if i > 1 then fs:SetPoint("TOPLEFT", cells[i - 1], "TOPRIGHT", 8, 0) end
-      height = math.max(height, fs:GetStringHeight())
-      cells[i] = fs
-    end
-    cells[1]:SetHeight(height)
-    Place(cells[1], 6)
+  -- One slash command: the command in gold, then its description on one
+  -- line that ends at the page's right edge.
+  local function Command(cmd, desc)
+    local c = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    c:SetWidth(72)
+    c:SetJustifyH("LEFT")
+    c:SetTextColor(unpack(GOLD))
+    c:SetText(cmd)
+    local d = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    d:SetPoint("LEFT", c, "RIGHT", 8, 0)
+    d:SetPoint("RIGHT", page, "RIGHT", -4, 0)
+    d:SetJustifyH("LEFT")
+    d:SetWordWrap(false)
+    d:SetTextColor(0.90, 0.88, 0.82)
+    d:SetText(desc)
+    Place(c, 6)
   end
 
   -- Setting controls (checkboxes and color swatches). Each has a label and
@@ -236,59 +246,57 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- General tab: how to use the addon, the slash commands and the Discord
-  -- link. The link is a read-only edit box because addons can't open URLs or
-  -- write to the clipboard; clicking it selects the text for Ctrl+C.
+  -- General tab, in two columns so it fits the Settings panel: the rage bar on
+  -- the left; the range warning (warriors), slash commands and Discord link on
+  -- the right. The link is a read-only edit box because addons can't open URLs
+  -- or write to the clipboard; clicking it selects the text for Ctrl+C.
   ------------------------------------------------------------------------------
   local DISCORD = "https://discord.gg/Xja4mR87Bk"
-  Begin(pages.general)
+  local left, right = Columns(pages.general)
 
+  Begin(left)
   Heading("Rage bar setup")
   Bullets({
-    "Press " .. Key("Esc") .. " and choose " .. Key("Edit Mode") .. ".",
-    "Click the " .. Key("WU Rage Bar") .. " to open its settings.",
+    "Press " .. Key("Esc") .. ", choose " .. Key("Edit Mode") .. " and click the " .. Key("WU Rage Bar") .. ".",
     Key("Style") .. ", " .. Key("Border") .. ", " .. Key("Color") .. " and "
       .. Key("Bar Size") .. " change the look.",
     Key("Mark I") .. " and " .. Key("Mark II") .. " set the glow points.",
     Key("Only Show in Combat") .. " or " .. Key("Disable Rage Bar") .. " hide it.",
-    "On druids the bar only shows in " .. Key("Bear Form") .. " and " .. Key("Dire Bear Form") .. ".",
+    "Druids only see it in " .. Key("Bear Form") .. " and " .. Key("Dire Bear Form") .. ".",
   })
 
   Heading("Moving the bar")
   Bullets({
     "Drag it, or click it and use the " .. Key("arrow keys") .. ".",
-    "Hold " .. Key("Shift") .. " to move 10 pixels at a time.",
+    Key("Shift") .. " moves 10 pixels at a time.",
     "Each Edit Mode layout keeps its own position.",
   })
 
+  Begin(right)
   if ns.isWarrior then
     Heading("Out of range warning")
     Bullets({
       "Flashes " .. Key("OUT OF RANGE") .. " when your target is out of melee range.",
-      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Range Warning") .. " to move it.",
-      "Its panel sets the font, size and flash, or turns it off.",
+      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Range Warning") .. " to move it and set its font, size and flash.",
     })
-
-    Heading("Battle Shout timer")
-    Bullets({ "Set up on the " .. Key("Battle Shout") .. " tab." })
   end
 
   Heading("Slash commands")
-  local COMMAND_WIDTHS = { 100, 340 }
-  Row(COMMAND_WIDTHS, 1, "/wu", "Open this page")
-  Row(COMMAND_WIDTHS, 1, "/wu 30 60", "Set Mark I and Mark II (1 to 99)")
-  Row(COMMAND_WIDTHS, 1, "/wu reset", "Reset all settings")
-  Row(COMMAND_WIDTHS, 1, "/wuutil", "Same as /wu")
+  Command("/wu", "Open options")
+  Command("/wu 30 60", "Set the marks (1 to 99)")
+  Command("/wu reset", "Reset all settings")
+  Command("/wuutil", "Same as /wu")
 
   Heading("Bugs, features and questions")
   Text("Join the WU Discord:")
   -- InputBoxTemplate draws its border outside the box, hence the 6px inset.
   local link = CreateFrame("EditBox", nil, page, "InputBoxTemplate")
-  link:SetSize(240, 20)
+  link:SetHeight(20)
   link:SetAutoFocus(false)
   link:SetText(DISCORD)
   link:SetCursorPosition(0)
   Place(link, 6, 6)
+  link:SetPoint("RIGHT", page, "RIGHT", -6, 0)
   local function SelectAll(self) self:HighlightText() end
   link:SetScript("OnEditFocusGained", SelectAll)
   link:SetScript("OnMouseUp", SelectAll)
