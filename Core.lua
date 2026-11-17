@@ -36,6 +36,7 @@ local defaults = {
   rangeFlash = "pulse", rangeSpeed = "normal",
   rangeLayouts = {}, -- range warning position per Edit Mode layout name
   shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
+  shoutWarnSize = 14, -- "Battle Shout Missing" font size
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
 }
 

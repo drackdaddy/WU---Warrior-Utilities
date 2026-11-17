@@ -72,6 +72,7 @@ Set it up on the **Battle Shout** tab of the options page (`/wu`):
 | Show countdown | The time left next to your name (default on) |
 | Flash when missing in combat | (default on) |
 | Show "Battle Shout Missing" text | The warning above the player frame (default on) |
+| Text size | Size of that warning, 10 to 30 (default 14) |
 | Bar color | Opens the color picker, with opacity. **Default** puts back orange |
 
 ## Options

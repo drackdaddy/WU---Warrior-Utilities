@@ -12,7 +12,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
--- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff, shoutColor
+-- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
+--   shoutWarnSize, shoutColor
 --------------------------------------------------------------------------------
 local category
 
@@ -157,7 +158,7 @@ function ns.BuildOptions()
     Place(c, 6)
   end
 
-  -- Setting controls (checkboxes and color swatches). Each has a label and
+  -- Setting controls (checkboxes, steppers and color swatches). Each has a label and
   -- a Draw method that draws it from db. All are redrawn when their page
   -- shows (so /wu reset is reflected) and after any of them changes, so a
   -- control whose disabled() returns true is greyed out as soon as the
@@ -205,6 +206,39 @@ function ns.BuildOptions()
     -- The checkbox art has a few transparent pixels around the box, so -4
     -- lines the box up with the text above.
     AddControl(cb, label, -4, disabled)
+  end
+
+  -- Number setting db[key], from low to high in steps of step: the label, then
+  -- - and + buttons with the value between them. The control itself is an
+  -- empty box the size of a checkbox, so the label lines up with the others.
+  -- apply runs after every change.
+  local function Stepper(label, key, low, high, step, apply, disabled)
+    local st = CreateFrame("Frame", nil, page)
+    st:SetSize(26, 26)
+    local value = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    value:SetWidth(30)
+    local function StepButton(text, dir)
+      local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+      b:SetSize(24, 22)
+      b:SetText(text)
+      b:SetScript("OnClick", function()
+        db[key] = math.min(high, math.max(low, db[key] + dir * step))
+        apply()
+        RefreshControls()
+      end)
+      return b
+    end
+    local minus, plus = StepButton("-", -1), StepButton("+", 1)
+    function st:Draw() value:SetText(db[key]) end
+    function st:SetEnabled(on)
+      minus:SetEnabled(on)
+      plus:SetEnabled(on)
+      value:SetFontObject(on and "GameFontHighlight" or "GameFontDisable")
+    end
+    AddControl(st, label, -4, disabled)
+    minus:SetPoint("LEFT", st.label, "RIGHT", 10, 0)
+    value:SetPoint("LEFT", minus, "RIGHT", 2, 0)
+    plus:SetPoint("LEFT", value, "RIGHT", 2, 0)
   end
 
   -- Color swatch for db[key] ({ r, g, b, a }). Clicking it opens Blizzard's
@@ -339,6 +373,8 @@ function ns.BuildOptions()
     OnOff("Show countdown", "shoutTextOff", ns.RefreshShout, TimerOff)
     OnOff("Flash when missing in combat", "shoutFlashOff", ns.RefreshShout, TimerOff)
     OnOff("Show \"Battle Shout Missing\" text", "shoutWarnOff", ns.RefreshShout, TimerOff)
+    Stepper("Text size", "shoutWarnSize", 10, 30, 2, ns.RefreshShout,
+      function() return db.shoutOff or db.shoutWarnOff end)
     ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
   end
 

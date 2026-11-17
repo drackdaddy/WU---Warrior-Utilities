@@ -19,11 +19,13 @@ local db = ns.db
 -- changed. Set up on the Battle Shout tab of the options page.
 -- Events: UNIT_AURA (player), PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED,
 --   PLAYER_REGEN_ENABLED
--- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff, shoutColor
+-- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
+--   shoutWarnSize, shoutColor
 --------------------------------------------------------------------------------
 local RANKS = { 6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578 }
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local bar, clock, alarm, warn
+local FONT = "Fonts\\FRIZQT__.TTF"
+local bar, clock, alarm, warn, warnText
 local inCombat = false
 
 -- Returns the auraInstanceID of the player's Battle Shout (any rank), or nil.
@@ -66,11 +68,15 @@ ns.On("PLAYER_REGEN_ENABLED", function()
   if bar then Update() end
 end)
 
--- Applies the bar color, then redraws. Used when built, after a setting
--- changes on the options page and after /wu reset.
+-- Applies the bar color and warning size, then redraws. Used when built,
+-- after a setting changes on the options page and after /wu reset.
 function ns.RefreshShout()
   local c = db.shoutColor
   bar:SetStatusBarColor(c.r, c.g, c.b, c.a)
+  -- The warning's box is as tall as the text, so its bottom stays just above
+  -- the name bar at every size.
+  warnText:SetFont(FONT, db.shoutWarnSize, "OUTLINE")
+  warn:SetHeight(db.shoutWarnSize + 4)
   Update()
 end
 
@@ -111,16 +117,17 @@ function ns.BuildShoutTimer()
   fade:SetDuration(0.45)
   pulse:Play()
 
-  -- Warning text just above the top edge of the player frame, over the name.
+  -- Warning text just above the name bar at the top of the player frame;
+  -- RefreshShout sets its size. A font string needs a font before its text.
   warn = CreateFrame("Frame", nil, PlayerFrame)
   warn:SetFrameLevel(top)
-  warn:SetSize(200, 20)
-  warn:SetPoint("BOTTOM", bar, "TOP", 0, 34)
-  local text = warn:CreateFontString(nil, "OVERLAY")
-  text:SetAllPoints()
-  text:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
-  text:SetTextColor(1, 0.15, 0.1)
-  text:SetText("Battle Shout Missing")
+  warn:SetWidth(400)
+  warn:SetPoint("BOTTOM", bar, "TOP", 0, 6)
+  warnText = warn:CreateFontString(nil, "OVERLAY")
+  warnText:SetAllPoints()
+  warnText:SetFont(FONT, db.shoutWarnSize, "OUTLINE")
+  warnText:SetTextColor(1, 0.15, 0.1)
+  warnText:SetText("Battle Shout Missing")
 
   -- A Cooldown frame used only for its countdown numbers: no swipe, edge or
   -- finish flash.
@@ -132,7 +139,7 @@ function ns.BuildShoutTimer()
   clock:SetDrawEdge(false)
   clock:SetDrawBling(false)
   clock:SetHideCountdownNumbers(false)
-  clock:GetCountdownFontString():SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+  clock:GetCountdownFontString():SetFont(FONT, 11, "OUTLINE")
 
   ns.RefreshShout()
 end
