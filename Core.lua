@@ -1,19 +1,18 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with two marks, an "OUT OF RANGE" warning, a Battle Shout timer on
-  the player frame, and buttons that add WU layouts (such as WU-Fury) to
-  Blizzard's Cooldown Manager. Loads on warriors and druids; druids get the
-  rage bar only (shown while in a form that uses rage), not the range warning,
-  the Battle Shout timer or the CDM layouts.
+  Rage bar with two marks, an "OUT OF RANGE" warning and a Battle Shout timer
+  on the player frame. Loads on warriors and druids; druids get the rage bar
+  only (shown while in a form that uses rage), not the range warning or the
+  Battle Shout timer.
 
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
   through curves; the Battle Shout timer is drawn by the game from the aura's
-  duration object; Cooldown Manager layouts are only written out of combat.
+  duration object.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
-  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer, CDM,
+  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer,
   Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
@@ -37,7 +36,6 @@ local defaults = {
   rangeFlash = "pulse", rangeSpeed = "normal",
   rangeLayouts = {}, -- range warning position per Edit Mode layout name
   shoutOff = false,
-  cdmBackup = false, -- Cooldown Manager layout data from before the first Create
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -60,8 +58,8 @@ ns.LISTS = {
 local db = {}
 ns.db = db
 
--- Copies known keys from saved (the loaded WUDB, or the values /wu reset keeps)
--- into db, fills defaults, fixes invalid choices and makes WUDB point at db.
+-- Copies known keys from saved (the loaded WUDB, or nil after /wu reset) into
+-- db, fills defaults, fixes invalid choices and makes WUDB point at db.
 -- Table defaults are copied so a reset never hands out the defaults table.
 function ns.LoadDB(saved)
   for k, v in pairs(saved or {}) do

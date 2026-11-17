@@ -4,16 +4,14 @@ local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
--- General tab (how to use the addon, the Battle Shout timer switch on warriors,
--- slash commands and the Discord link) and, on warriors only, CDM tab (one
--- section per WU Cooldown Manager layout, plus Restore Backup), shown in
--- Esc > Options > AddOns > WU - Warrior Utilities.
--- The CDM layouts hold warrior spells, so druids don't get that tab. Blizzard's
--- Settings panel hosts the page as a canvas layout category: it parents,
--- sizes, shows and hides the frame, and Escape closes the panel. All rage bar
--- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
+-- One page (how to use the addon, the Battle Shout timer switch on warriors,
+-- slash commands and the Discord link), shown in
+-- Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's Settings panel
+-- hosts the page as a canvas layout category: it parents, sizes, shows and
+-- hides the frame, and Escape closes the panel. All rage bar settings are in
+-- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
--- SavedVariables: shoutOff (checkbox), cdmBackup (shown, not edited)
+-- SavedVariables: shoutOff (checkbox)
 --------------------------------------------------------------------------------
 local category
 
@@ -21,15 +19,6 @@ local category
 -- druids).
 local function Open()
   if category then Settings.OpenToCategory(category:GetID()) end
-end
-
--- Standard panel button; the caller anchors it.
-local function Button(parent, text, width, onClick)
-  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-  b:SetSize(width, 24)
-  b:SetText(text)
-  b:SetScript("OnClick", onClick)
-  return b
 end
 
 function ns.BuildOptions()
@@ -50,48 +39,17 @@ function ns.BuildOptions()
   line:SetPoint("TOPLEFT", 16, -48)
   line:SetPoint("TOPRIGHT", -16, -48)
 
-  ------------------------------------------------------------------------------
-  -- Tabs
-  ------------------------------------------------------------------------------
-  local pages, tabBtns = {}, {}
-  local function ShowTab(name)
-    for k, page in pairs(pages) do
-      page:SetShown(k == name)
-      tabBtns[k].label:SetTextColor(unpack(k == name and GOLD or { 0.72, 0.70, 0.64 }))
-      tabBtns[k].bar:SetShown(k == name)
-    end
-  end
-  local TABS = { { "general", "General" } }
-  if ns.isWarrior then TABS[2] = { "cdm", "CDM" } end
-  for i, info in ipairs(TABS) do
-    local b = CreateFrame("Button", nil, opt)
-    b:SetSize(120, 28)
-    b:SetPoint("TOPLEFT", 18 + (i - 1) * 128, -56)
-    b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    b.label:SetPoint("CENTER", 0, 2)
-    b.label:SetText(info[2])
-    b.bar = b:CreateTexture(nil, "ARTWORK")
-    b.bar:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.9)
-    b.bar:SetHeight(2)
-    b.bar:SetPoint("BOTTOMLEFT", 8, 2)
-    b.bar:SetPoint("BOTTOMRIGHT", -8, 2)
-    b:SetScript("OnClick", function() ShowTab(info[1]) end)
-    tabBtns[info[1]] = b
-    local page = CreateFrame("Frame", nil, opt)
-    page:SetPoint("TOPLEFT", 18, -96)
-    page:SetPoint("BOTTOMRIGHT", -18, 16)
-    pages[info[1]] = page
-  end
+  local page = CreateFrame("Frame", nil, opt)
+  page:SetPoint("TOPLEFT", 18, -56)
+  page:SetPoint("BOTTOMRIGHT", -18, 16)
 
   ------------------------------------------------------------------------------
   -- Page builders
-  -- Both tabs are laid out like a short readme: gold headings with a rule
-  -- under them, then bullets, columns or buttons. Begin(page) starts a page;
-  -- each piece is then anchored under the last one placed.
+  -- The page is laid out like a short readme: gold headings with a rule under
+  -- them, then bullets, columns or a checkbox. Each piece is anchored under the
+  -- last one placed.
   ------------------------------------------------------------------------------
-  local page, prev
-
-  local function Begin(p) page, prev = p, nil end
+  local prev
 
   -- Anchors region under the previous one (gap pixels down, x pixels in). A
   -- stretched region also reaches the page's right edge, so text wraps there.
@@ -158,13 +116,6 @@ function ns.BuildOptions()
     Place(cells[1], 6)
   end
 
-  -- A UIPanelButtonTemplate button under the previous piece; returns it.
-  local function PlaceButton(text, width, onClick)
-    local b = Button(page, text, width, onClick)
-    Place(b, 10)
-    return b
-  end
-
   -- Checkbox for an "off" setting: checked while db[key] is false. apply runs
   -- after a click. It re-reads db each time the page shows, so /wu reset is
   -- reflected.
@@ -183,12 +134,11 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- General tab: how to use the addon, the slash commands and the Discord
+  -- Page content: how to use the addon, the slash commands and the Discord
   -- link. The link is a read-only edit box because addons can't open URLs or
   -- write to the clipboard; clicking it selects the text for Ctrl+C.
   ------------------------------------------------------------------------------
   local DISCORD = "https://discord.gg/Xja4mR87Bk"
-  Begin(pages.general)
 
   Heading("Rage bar setup")
   Bullets({
@@ -228,7 +178,7 @@ function ns.BuildOptions()
   local COMMAND_WIDTHS = { 100, 340 }
   Row(COMMAND_WIDTHS, 1, "/wu", "Open this page")
   Row(COMMAND_WIDTHS, 1, "/wu 30 60", "Set Mark I and Mark II (1 to 99)")
-  Row(COMMAND_WIDTHS, 1, "/wu reset", "Reset all settings (keeps your CDM backup)")
+  Row(COMMAND_WIDTHS, 1, "/wu reset", "Reset all settings")
   Row(COMMAND_WIDTHS, 1, "/wuutil", "Same as /wu")
 
   Heading("Bugs, features and questions")
@@ -252,63 +202,6 @@ function ns.BuildOptions()
   end)
   Text("Click the link, then press Ctrl+C to copy.", 6, -6)
 
-  ------------------------------------------------------------------------------
-  -- CDM tab: one section per Cooldown Manager layout in ns.CDM_LAYOUTS (see
-  -- CDM.lua) listing where each buff goes and its alerts, with a Create
-  -- button, then how Create works and Restore Backup. Both buttons reload the
-  -- UI after a successful write so the Cooldown Manager loads the new data;
-  -- on failure the reason is shown instead. Warriors only (see Tabs).
-  ------------------------------------------------------------------------------
-  if pages.cdm then
-    Begin(pages.cdm)
-    local status
-    local function Run(fn, ...)
-      local ok, reason = fn(...)
-      if ok then ReloadUI() else status:SetText(reason) end
-    end
-
-    local LAYOUT_WIDTHS = { 50, 95, 130, 170 }
-    local NONE = "|cff9a9381None|r"
-    for _, def in ipairs(ns.CDM_LAYOUTS) do
-      Heading(def.name .. " layout")
-      Row(LAYOUT_WIDTHS, #LAYOUT_WIDTHS, "Tab", "Section", "Buff", "Alerts")
-      for _, buff in ipairs(def.buffs) do
-        local place = ns.CDM_PLACES[buff.category]
-        local alerts = {}
-        for j, a in ipairs(buff.alerts) do alerts[j] = j .. ". " .. a.text end
-        Row(LAYOUT_WIDTHS, 0, place[1], place[2], C_Spell.GetSpellName(buff.spells.id) or "",
-          #alerts > 0 and table.concat(alerts, "\n") or NONE)
-      end
-      PlaceButton("Create " .. def.name, 160, function() Run(ns.CreateCDMLayout, def) end)
-    end
-
-    Heading("How it works")
-    Bullets({
-      "Saves a backup, then creates a new layout with only these buffs.",
-      "The new layout becomes active. Creating it again rebuilds it.",
-      "A layout named " .. Key("WU") .. " from older versions is renamed.",
-      "Alerts are played by the Cooldown Manager, so they work in combat.",
-      "Out of combat only. The UI reloads afterwards.",
-    })
-
-    Heading("Backup")
-    Bullets({
-      "The first Create saves your previous layouts.",
-      Key("Restore Backup") .. " puts them back. Changes made since are lost.",
-    })
-    local restore = PlaceButton("Restore Backup", 140, function() Run(ns.RestoreCDMLayout) end)
-    status = Text("", 8)
-    status:SetTextColor(1, 0.35, 0.25)
-    -- Each time the page opens: Restore Backup only works with a backup, and
-    -- an old error line is cleared.
-    opt:SetScript("OnShow", function()
-      restore:SetEnabled(db.cdmBackup ~= false)
-      status:SetText("")
-    end)
-  end
-
-  ShowTab("general")
-
   category = Settings.RegisterCanvasLayoutCategory(opt, "WU - Warrior Utilities")
   Settings.RegisterAddOnCategory(category)
 end
@@ -318,7 +211,6 @@ end
 --   /wu            open options
 --   /wu 30 60      set marks
 --   /wu reset
--- reset keeps the Cooldown Manager backup so Restore Backup still works.
 -- SLASH_WU1, SLASH_WU2 and SlashCmdList.WU are globals the game requires.
 --------------------------------------------------------------------------------
 SLASH_WU1, SLASH_WU2 = "/wu", "/wuutil"
@@ -329,9 +221,8 @@ SlashCmdList.WU = function(msg)
   if msg == "" then
     Open()
   elseif msg == "reset" then
-    local keep = { cdmBackup = db.cdmBackup }
     wipe(db)
-    ns.LoadDB(keep)
+    ns.LoadDB()
     ns.RefreshBar()
     if ns.isWarrior then
       ns.RefreshRange()
