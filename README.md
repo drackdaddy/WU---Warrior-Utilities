@@ -2,9 +2,9 @@
 
 A lightweight rage bar and Cooldown Manager setup (Optional) for warriors on **World of Warcraft: Forever**.
 
-WU keeps your rage on screen with marks at the amounts you care about. Sets up Blizzard's Cooldown Manager (Optional) so Battle Shout, Demoralizing Shout and Sunder Armor are tracked right where you need them. The addon loads on warriors and druids, and settings are saved per character.
+WU keeps your rage on screen with marks at the amounts you care about, and shows how long your Battle Shout has left on the player frame. Sets up Blizzard's Cooldown Manager (Optional) so Battle Shout, Demoralizing Shout and Sunder Armor are tracked right where you need them. The addon loads on warriors and druids, and settings are saved per character.
 
-On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The CDM tab is warriors only.
+On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range warning, Battle Shout timer and CDM tab are warriors only.
 
 ## Install
 
@@ -54,11 +54,19 @@ Flashes **OUT OF RANGE** while you have a living enemy targeted that is out of m
 
 Its position is per Edit Mode layout, like the rage bar's.
 
+## Battle Shout timer (warriors only)
+
+A thin orange bar behind your name on Blizzard's player frame empties as your Battle Shout runs down, and is hidden while you don't have it. It hides and scales with the player frame.
+
+- Turn it on or off with **Show Battle Shout timer** on the options page (General tab). It is on by default.
+- The game draws the timer from the buff itself, so it keeps working in combat.
+- It only attaches to Blizzard's player frame.
+
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
 
-- **General** — how to use the addon, the slash commands and a Discord link to copy
+- **General** — how to use the addon, the Battle Shout timer switch (warriors only), the slash commands and a Discord link to copy
 - **CDM** (warriors only) — one section per WU layout (where each buff goes and its alerts) with a Create button, and Restore Backup
 
 ## CDM (Blizzard's Cooldown Manager)
@@ -88,7 +96,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60` | Set marks |
-| `/wu reset` | Reset all settings and bar and range warning positions in every layout to default (keeps the Cooldown Manager backup) |
+| `/wu reset` | Reset all settings (including the Battle Shout timer switch) and bar and range warning positions in every layout to default (keeps the Cooldown Manager backup) |
 
 `/wuutil` is an alias.
 
@@ -100,6 +108,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | `Core.lua` | Settings, shared Edit Mode helpers and event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
 | `RangeWarning.lua` | Out of range warning and its Edit Mode settings |
+| `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `CDM.lua` | WU Cooldown Manager layouts (create, restore) |
 | `Options.lua` | Options page in Esc > Options > AddOns, slash commands |
 

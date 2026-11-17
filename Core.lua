@@ -1,17 +1,20 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with two marks, an "OUT OF RANGE" warning, and buttons that add WU
-  layouts (such as WU-Fury) to Blizzard's Cooldown Manager. Loads on warriors
-  and druids; druids get the rage bar only (shown while in a form that uses
-  rage), not the range warning or the CDM layouts.
+  Rage bar with two marks, an "OUT OF RANGE" warning, a Battle Shout timer on
+  the player frame, and buttons that add WU layouts (such as WU-Fury) to
+  Blizzard's Cooldown Manager. Loads on warriors and druids; druids get the
+  rage bar only (shown while in a form that uses rage), not the range warning,
+  the Battle Shout timer or the CDM layouts.
 
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
-  through curves; Cooldown Manager layouts are only written out of combat.
+  through curves; the Battle Shout timer is drawn by the game from the aura's
+  duration object; Cooldown Manager layouts are only written out of combat.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
-  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, CDM, Options.
+  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer, CDM,
+  Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -33,6 +36,7 @@ local defaults = {
   rangeOff = false, rangeFont = "friz", rangeSize = 32,
   rangeFlash = "pulse", rangeSpeed = "normal",
   rangeLayouts = {}, -- range warning position per Edit Mode layout name
+  shoutOff = false,
   cdmBackup = false, -- Cooldown Manager layout data from before the first Create
 }
 
@@ -169,7 +173,10 @@ ev:SetScript("OnEvent", function(self, event, ...)
     if class ~= "WARRIOR" and class ~= "DRUID" then return end
     ns.isWarrior = class == "WARRIOR"
     ns.BuildBar()
-    if ns.isWarrior then ns.BuildRangeWarning() end
+    if ns.isWarrior then
+      ns.BuildRangeWarning()
+      ns.BuildShoutTimer()
+    end
     ns.BuildOptions()
     for name in pairs(handlers) do
       if name:find("^UNIT_") then

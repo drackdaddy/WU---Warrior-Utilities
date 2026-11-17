@@ -4,15 +4,16 @@ local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
--- General tab (how to use the addon, slash commands and the Discord link) and,
--- on warriors only, CDM tab (one section per WU Cooldown Manager layout, plus
--- Restore Backup), shown in Esc > Options > AddOns > WU - Warrior Utilities.
+-- General tab (how to use the addon, the Battle Shout timer switch on warriors,
+-- slash commands and the Discord link) and, on warriors only, CDM tab (one
+-- section per WU Cooldown Manager layout, plus Restore Backup), shown in
+-- Esc > Options > AddOns > WU - Warrior Utilities.
 -- The CDM layouts hold warrior spells, so druids don't get that tab. Blizzard's
 -- Settings panel hosts the page as a canvas layout category: it parents,
 -- sizes, shows and hides the frame, and Escape closes the panel. All rage bar
 -- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
--- SavedVariables: cdmBackup (shown, not edited)
+-- SavedVariables: shoutOff (checkbox), cdmBackup (shown, not edited)
 --------------------------------------------------------------------------------
 local category
 
@@ -164,6 +165,23 @@ function ns.BuildOptions()
     return b
   end
 
+  -- Checkbox for an "off" setting: checked while db[key] is false. apply runs
+  -- after a click. It re-reads db each time the page shows, so /wu reset is
+  -- reflected.
+  local function OnOff(label, key, apply)
+    local cb = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
+    cb:SetSize(26, 26)
+    local fs = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    fs:SetPoint("LEFT", cb, "RIGHT", 4, 0)
+    fs:SetText(label)
+    cb:SetScript("OnShow", function(self) self:SetChecked(not db[key]) end)
+    cb:SetScript("OnClick", function(self)
+      db[key] = not self:GetChecked()
+      apply()
+    end)
+    Place(cb, 6, -4)
+  end
+
   ------------------------------------------------------------------------------
   -- General tab: how to use the addon, the slash commands and the Discord
   -- link. The link is a read-only edit box because addons can't open URLs or
@@ -197,6 +215,13 @@ function ns.BuildOptions()
       "In " .. Key("Edit Mode") .. ", click " .. Key("WU Range Warning") .. " to move it.",
       "Its panel sets the font, size and flash, or turns it off.",
     })
+
+    Heading("Battle Shout timer")
+    Bullets({
+      "A bar behind your name on the " .. Key("player frame") .. " empties as Battle Shout runs out.",
+      "It is hidden while Battle Shout is missing.",
+    })
+    OnOff("Show Battle Shout timer", "shoutOff", ns.RefreshShout)
   end
 
   Heading("Slash commands")
@@ -308,7 +333,10 @@ SlashCmdList.WU = function(msg)
     wipe(db)
     ns.LoadDB(keep)
     ns.RefreshBar()
-    if ns.isWarrior then ns.RefreshRange() end
+    if ns.isWarrior then
+      ns.RefreshRange()
+      ns.RefreshShout()
+    end
     print("WU - Warrior Utilities reset")
   elseif a then
     ns.SetMarks(a, b)
