@@ -83,10 +83,12 @@ local function OverName(kind, name)
 end
 
 -- Builds the bar and flash one level under the player frame's own art, so the
--- name stays on top, and the countdown above it so the numbers can be read.
+-- name stays on top, and the warning and countdown above the art so they can
+-- be read.
 function ns.BuildShoutTimer()
   local name = PlayerFrame.name
   local level = PlayerFrame:GetFrameLevel()
+  local top = name:GetParent():GetFrameLevel() + 5 -- above the name and frame art
 
   bar = OverName("StatusBar", name)
   bar:SetFrameLevel(level)
@@ -109,21 +111,9 @@ function ns.BuildShoutTimer()
   fade:SetDuration(0.45)
   pulse:Play()
 
-  -- A Cooldown frame used only for its countdown numbers: no swipe, edge or
-  -- finish flash.
-  clock = CreateFrame("Cooldown", nil, PlayerFrame, "CooldownFrameTemplate")
-  clock:SetFrameLevel(name:GetParent():GetFrameLevel() + 5)
-  clock:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -1, 0)
-  clock:SetPoint("BOTTOMLEFT", bar, "BOTTOMRIGHT", -30, 0)
-  clock:SetDrawSwipe(false)
-  clock:SetDrawEdge(false)
-  clock:SetDrawBling(false)
-  clock:SetHideCountdownNumbers(false)
-  clock:GetCountdownFontString():SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-
   -- Warning text just above the top edge of the player frame, over the name.
   warn = CreateFrame("Frame", nil, PlayerFrame)
-  warn:SetFrameLevel(clock:GetFrameLevel())
+  warn:SetFrameLevel(top)
   warn:SetSize(200, 20)
   warn:SetPoint("BOTTOM", bar, "TOP", 0, 14)
   local text = warn:CreateFontString(nil, "OVERLAY")
@@ -131,6 +121,18 @@ function ns.BuildShoutTimer()
   text:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
   text:SetTextColor(1, 0.15, 0.1)
   text:SetText("Battle Shout Missing")
+
+  -- A Cooldown frame used only for its countdown numbers: no swipe, edge or
+  -- finish flash.
+  clock = CreateFrame("Cooldown", nil, PlayerFrame, "CooldownFrameTemplate")
+  clock:SetFrameLevel(top)
+  clock:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -1, 0)
+  clock:SetPoint("BOTTOMLEFT", bar, "BOTTOMRIGHT", -30, 0)
+  clock:SetDrawSwipe(false)
+  clock:SetDrawEdge(false)
+  clock:SetDrawBling(false)
+  clock:SetHideCountdownNumbers(false)
+  clock:GetCountdownFontString():SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
 
   ns.RefreshShout()
 end
