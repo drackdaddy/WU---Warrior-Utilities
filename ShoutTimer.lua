@@ -3,21 +3,26 @@ local db = ns.db
 
 --------------------------------------------------------------------------------
 -- Battle Shout timer on the player frame (warriors only)
--- A thin bar behind the player's name on Blizzard's player frame that empties
--- as the player's Battle Shout runs down, and is hidden while the buff is
--- missing. The buff is found by each rank's spell ID, so no aura names are
--- compared. The bar runs from the aura's duration object
--- (StatusBar:SetTimerDuration): the game animates it, and no time left is
--- worked out in Lua, so it keeps working when aura timings are secret in
--- combat. The bar is parented to the player frame so it hides and scales with
--- it; it is the addon's own frame, and the player frame itself is never
--- changed. Turned on and off on the options page (General tab).
--- Events: UNIT_AURA (player), PLAYER_ENTERING_WORLD
--- SavedVariables: shoutOff
+-- Behind the player's name on Blizzard's player frame:
+--   bar    empties as the player's Battle Shout runs down
+--   clock  countdown numbers at the right end of the name
+--   alarm  red flash while Battle Shout is missing in combat
+-- The buff is found by each rank's spell ID, so no aura names are compared.
+-- The bar and countdown run from the aura's duration object
+-- (StatusBar:SetTimerDuration, Cooldown:SetCooldownFromDurationObject): the
+-- game animates the bar and formats the numbers, and no time left is worked
+-- out in Lua, so they keep working when aura timings are secret in combat.
+-- All three are parented to the player frame so they hide and scale with it;
+-- they are the addon's own frames, and the player frame itself is never
+-- changed. Set up on the Battle Shout tab of the options page.
+-- Events: UNIT_AURA (player), PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED,
+--   PLAYER_REGEN_ENABLED
+-- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutColor
 --------------------------------------------------------------------------------
 local RANKS = { 6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578 }
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local bar
+local bar, clock, alarm
+local inCombat = false
 
 -- Returns the auraInstanceID of the player's Battle Shout (any rank), or nil.
 local function FindShout()
@@ -27,34 +32,90 @@ local function FindShout()
   end
 end
 
--- Shows the bar with the buff's current timer, or hides it when the buff is
--- missing or the timer is turned off.
+-- Shows the bar and countdown with the buff's current timer while it is up,
+-- or the flash while it is missing in combat. Everything hides when the
+-- timer is turned off.
 local function Update()
   local instance = not db.shoutOff and FindShout()
   if instance then
-    bar:SetTimerDuration(C_UnitAuras.GetAuraDuration("player", instance),
-      Enum.StatusBarInterpolation.Immediate, Enum.StatusBarTimerDirection.RemainingTime)
+    local duration = C_UnitAuras.GetAuraDuration("player", instance)
+    bar:SetTimerDuration(duration, Enum.StatusBarInterpolation.Immediate,
+      Enum.StatusBarTimerDirection.RemainingTime)
+    clock:SetCooldownFromDurationObject(duration)
   end
   bar:SetShown(instance and true or false)
+  clock:SetShown(instance and not db.shoutTextOff or false)
+  alarm:SetShown(not db.shoutOff and not db.shoutFlashOff and not instance and inCombat)
 end
 
 ns.On("UNIT_AURA", function() if bar then Update() end end)
-ns.On("PLAYER_ENTERING_WORLD", function() if bar then Update() end end)
+ns.On("PLAYER_ENTERING_WORLD", function()
+  inCombat = UnitAffectingCombat("player")
+  if bar then Update() end
+end)
+ns.On("PLAYER_REGEN_DISABLED", function()
+  inCombat = true
+  if bar then Update() end
+end)
+ns.On("PLAYER_REGEN_ENABLED", function()
+  inCombat = false
+  if bar then Update() end
+end)
 
-ns.RefreshShout = Update
+-- Applies the bar color, then redraws. Used when built, after a setting
+-- changes on the options page and after /wu reset.
+function ns.RefreshShout()
+  local c = db.shoutColor
+  bar:SetStatusBarColor(c.r, c.g, c.b, c.a)
+  Update()
+end
 
--- Builds the bar over the player name's box, one level under the player
--- frame's own art so the name stays on top.
+-- Frame over the player name's box, a little wider and taller than it.
+local function OverName(kind, name)
+  local f = CreateFrame(kind, nil, PlayerFrame)
+  f:SetPoint("TOPLEFT", name, "TOPLEFT", -3, 2)
+  f:SetPoint("BOTTOMRIGHT", name, "BOTTOMRIGHT", 3, -2)
+  return f
+end
+
+-- Builds the bar and flash one level under the player frame's own art, so the
+-- name stays on top, and the countdown above it so the numbers can be read.
 function ns.BuildShoutTimer()
   local name = PlayerFrame.name
-  bar = CreateFrame("StatusBar", nil, PlayerFrame)
-  bar:SetFrameLevel(PlayerFrame:GetFrameLevel())
-  bar:SetPoint("TOPLEFT", name, "TOPLEFT", -3, 2)
-  bar:SetPoint("BOTTOMRIGHT", name, "BOTTOMRIGHT", 3, -2)
+  local level = PlayerFrame:GetFrameLevel()
+
+  bar = OverName("StatusBar", name)
+  bar:SetFrameLevel(level)
   bar:SetStatusBarTexture(WHITE)
-  bar:SetStatusBarColor(0.85, 0.32, 0.08, 0.75)
   local bg = bar:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints()
   bg:SetColorTexture(0, 0, 0, 0.45)
-  Update()
+
+  -- Red fill that pulses while shown.
+  alarm = OverName("Frame", name)
+  alarm:SetFrameLevel(level)
+  local red = alarm:CreateTexture(nil, "ARTWORK")
+  red:SetAllPoints()
+  red:SetColorTexture(0.9, 0.08, 0.05, 0.85)
+  local pulse = alarm:CreateAnimationGroup()
+  pulse:SetLooping("BOUNCE")
+  local fade = pulse:CreateAnimation("Alpha")
+  fade:SetFromAlpha(1)
+  fade:SetToAlpha(0.1)
+  fade:SetDuration(0.45)
+  pulse:Play()
+
+  -- A Cooldown frame used only for its countdown numbers: no swipe, edge or
+  -- finish flash.
+  clock = CreateFrame("Cooldown", nil, PlayerFrame, "CooldownFrameTemplate")
+  clock:SetFrameLevel(name:GetParent():GetFrameLevel() + 5)
+  clock:SetPoint("TOPRIGHT", bar, "TOPRIGHT", -1, 0)
+  clock:SetPoint("BOTTOMLEFT", bar, "BOTTOMRIGHT", -30, 0)
+  clock:SetDrawSwipe(false)
+  clock:SetDrawEdge(false)
+  clock:SetDrawBling(false)
+  clock:SetHideCountdownNumbers(false)
+  clock:GetCountdownFontString():SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+
+  ns.RefreshShout()
 end

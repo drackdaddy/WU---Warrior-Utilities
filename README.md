@@ -56,17 +56,29 @@ Its position is per Edit Mode layout, like the rage bar's.
 
 ## Battle Shout timer (warriors only)
 
-A thin orange bar behind your name on Blizzard's player frame empties as your Battle Shout runs down, and is hidden while you don't have it. It hides and scales with the player frame.
+Shown on Blizzard's player frame, behind your name. It hides and scales with the player frame.
 
-- Turn it on or off with **Show Battle Shout timer** on the options page (General tab). It is on by default.
-- The game draws the timer from the buff itself, so it keeps working in combat.
+- A bar empties as your Battle Shout runs down. It is hidden while you don't have the buff.
+- A countdown at the right end of your name shows the time left.
+- Your name flashes red while Battle Shout is missing in combat.
+- The game draws the bar and countdown from the buff itself, so they keep working in combat.
 - It only attaches to Blizzard's player frame.
+
+Set it up on the **Battle Shout** tab of the options page (`/wu`):
+
+| Setting | Notes |
+| --- | --- |
+| Show Battle Shout timer | Turns the whole timer on or off (default on) |
+| Show countdown | The time left next to your name (default on) |
+| Flash when missing in combat | (default on) |
+| Bar color | Opens the color picker, with opacity. **Default** puts back orange |
 
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
 
-One page: how to use the addon, the Battle Shout timer switch (warriors only), the slash commands and a Discord link to copy.
+- **General** — how to use the addon, the slash commands and a Discord link to copy
+- **Battle Shout** (warriors only) — the Battle Shout timer settings
 
 ## Slash commands
 
@@ -74,7 +86,7 @@ One page: how to use the addon, the Battle Shout timer switch (warriors only), t
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60` | Set marks |
-| `/wu reset` | Reset all settings (including the Battle Shout timer switch) and bar and range warning positions in every layout to default |
+| `/wu reset` | Reset all settings (including the Battle Shout timer settings) and bar and range warning positions in every layout to default |
 
 `/wuutil` is an alias.
 

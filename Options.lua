@@ -4,14 +4,15 @@ local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
--- One page (how to use the addon, the Battle Shout timer switch on warriors,
--- slash commands and the Discord link), shown in
--- Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's Settings panel
+-- General tab (how to use the addon, slash commands and the Discord link) and,
+-- on warriors only, Battle Shout tab (the player frame timer's switches),
+-- shown in Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's Settings
+-- panel
 -- hosts the page as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
--- SavedVariables: shoutOff (checkbox)
+-- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutColor
 --------------------------------------------------------------------------------
 local category
 
@@ -39,17 +40,48 @@ function ns.BuildOptions()
   line:SetPoint("TOPLEFT", 16, -48)
   line:SetPoint("TOPRIGHT", -16, -48)
 
-  local page = CreateFrame("Frame", nil, opt)
-  page:SetPoint("TOPLEFT", 18, -56)
-  page:SetPoint("BOTTOMRIGHT", -18, 16)
+  ------------------------------------------------------------------------------
+  -- Tabs
+  ------------------------------------------------------------------------------
+  local pages, tabBtns = {}, {}
+  local function ShowTab(name)
+    for k, page in pairs(pages) do
+      page:SetShown(k == name)
+      tabBtns[k].label:SetTextColor(unpack(k == name and GOLD or { 0.72, 0.70, 0.64 }))
+      tabBtns[k].bar:SetShown(k == name)
+    end
+  end
+  local TABS = { { "general", "General" } }
+  if ns.isWarrior then TABS[2] = { "shout", "Battle Shout" } end
+  for i, info in ipairs(TABS) do
+    local b = CreateFrame("Button", nil, opt)
+    b:SetSize(120, 28)
+    b:SetPoint("TOPLEFT", 18 + (i - 1) * 128, -56)
+    b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    b.label:SetPoint("CENTER", 0, 2)
+    b.label:SetText(info[2])
+    b.bar = b:CreateTexture(nil, "ARTWORK")
+    b.bar:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.9)
+    b.bar:SetHeight(2)
+    b.bar:SetPoint("BOTTOMLEFT", 8, 2)
+    b.bar:SetPoint("BOTTOMRIGHT", -8, 2)
+    b:SetScript("OnClick", function() ShowTab(info[1]) end)
+    tabBtns[info[1]] = b
+    local page = CreateFrame("Frame", nil, opt)
+    page:SetPoint("TOPLEFT", 18, -96)
+    page:SetPoint("BOTTOMRIGHT", -18, 16)
+    pages[info[1]] = page
+  end
 
   ------------------------------------------------------------------------------
   -- Page builders
-  -- The page is laid out like a short readme: gold headings with a rule under
-  -- them, then bullets, columns or a checkbox. Each piece is anchored under the
-  -- last one placed.
+  -- Each tab is laid out like a short readme: gold headings with a rule under
+  -- them, then bullets, columns or checkboxes. Begin(page) starts a page; each
+  -- piece is then anchored under the last one placed.
   ------------------------------------------------------------------------------
-  local prev
+  local page, prev
+
+  local function Begin(p) page, prev = p, nil end
 
   -- Anchors region under the previous one (gap pixels down, x pixels in). A
   -- stretched region also reaches the page's right edge, so text wraps there.
@@ -116,29 +148,100 @@ function ns.BuildOptions()
     Place(cells[1], 6)
   end
 
+  -- Setting controls (checkboxes and color swatches). Each has a label and
+  -- a Draw method that draws it from db. All are redrawn when their page
+  -- shows (so /wu reset is reflected) and after any of them changes, so a
+  -- control whose disabled() returns true is greyed out as soon as the
+  -- setting it depends on changes.
+  local controls = {}
+  local function RefreshControls()
+    for _, c in ipairs(controls) do
+      local off = c.disabled and c.disabled()
+      c:SetEnabled(not off)
+      if c.reset then c.reset:SetEnabled(not off) end
+      c.label:SetFontObject(off and "GameFontDisable" or "GameFontHighlight")
+      c:Draw()
+    end
+  end
+
+  -- Gives control a label to its right (x pixels away), places it under the
+  -- previous piece and adds it to controls.
+  local function AddControl(control, label, x, disabled)
+    control.disabled = disabled
+    control.label = control:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    control.label:SetPoint("LEFT", control, "RIGHT", x, 0)
+    control.label:SetText(label)
+    control:SetScript("OnShow", RefreshControls)
+    Place(control, 6, -4)
+    controls[#controls + 1] = control
+  end
+
   -- Checkbox for an "off" setting: checked while db[key] is false. apply runs
-  -- after a click. It re-reads db each time the page shows, so /wu reset is
-  -- reflected.
-  local function OnOff(label, key, apply)
+  -- after a click.
+  local function OnOff(label, key, apply, disabled)
     local cb = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
     cb:SetSize(26, 26)
-    local fs = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    fs:SetPoint("LEFT", cb, "RIGHT", 4, 0)
-    fs:SetText(label)
-    cb:SetScript("OnShow", function(self) self:SetChecked(not db[key]) end)
+    function cb:Draw() self:SetChecked(not db[key]) end
     cb:SetScript("OnClick", function(self)
       db[key] = not self:GetChecked()
       apply()
+      RefreshControls()
     end)
-    Place(cb, 6, -4)
+    AddControl(cb, label, 4, disabled)
+  end
+
+  -- Color swatch for db[key] ({ r, g, b, a }). Clicking it opens Blizzard's
+  -- color picker with opacity; changes apply as the color is picked, and
+  -- Cancel puts back the color from before it opened. The Default button next
+  -- to it restores the default color. apply runs after every change.
+  local function ColorSwatch(label, key, apply, disabled)
+    local sw = CreateFrame("Button", nil, page)
+    sw:SetSize(22, 22)
+    local edge = sw:CreateTexture(nil, "BACKGROUND")
+    edge:SetAllPoints()
+    edge:SetColorTexture(0.6, 0.58, 0.52, 1)
+    local fill = sw:CreateTexture(nil, "ARTWORK")
+    fill:SetPoint("TOPLEFT", 2, -2)
+    fill:SetPoint("BOTTOMRIGHT", -2, 2)
+    function sw:Draw()
+      local c = db[key]
+      fill:SetColorTexture(c.r, c.g, c.b, c.a)
+    end
+    local function Set(r, g, b, a)
+      db[key] = { r = r, g = g, b = b, a = a }
+      apply()
+      RefreshControls()
+    end
+    local function FromPicker()
+      local r, g, b = ColorPickerFrame:GetColorRGB()
+      Set(r, g, b, ColorPickerFrame:GetColorAlpha())
+    end
+    sw:SetScript("OnClick", function()
+      local old = db[key]
+      ColorPickerFrame:SetupColorPickerAndShow({
+        r = old.r, g = old.g, b = old.b, opacity = old.a, hasOpacity = true,
+        swatchFunc = FromPicker, opacityFunc = FromPicker,
+        cancelFunc = function() Set(old.r, old.g, old.b, old.a) end,
+      })
+    end)
+    AddControl(sw, label, 8, disabled)
+    sw.reset = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+    sw.reset:SetSize(80, 22)
+    sw.reset:SetText("Default")
+    sw.reset:SetPoint("LEFT", sw.label, "RIGHT", 12, 0)
+    sw.reset:SetScript("OnClick", function()
+      local c = ns.Default(key)
+      Set(c.r, c.g, c.b, c.a)
+    end)
   end
 
   ------------------------------------------------------------------------------
-  -- Page content: how to use the addon, the slash commands and the Discord
+  -- General tab: how to use the addon, the slash commands and the Discord
   -- link. The link is a read-only edit box because addons can't open URLs or
   -- write to the clipboard; clicking it selects the text for Ctrl+C.
   ------------------------------------------------------------------------------
   local DISCORD = "https://discord.gg/Xja4mR87Bk"
+  Begin(pages.general)
 
   Heading("Rage bar setup")
   Bullets({
@@ -167,11 +270,7 @@ function ns.BuildOptions()
     })
 
     Heading("Battle Shout timer")
-    Bullets({
-      "A bar behind your name on the " .. Key("player frame") .. " empties as Battle Shout runs out.",
-      "It is hidden while Battle Shout is missing.",
-    })
-    OnOff("Show Battle Shout timer", "shoutOff", ns.RefreshShout)
+    Bullets({ "Set up on the " .. Key("Battle Shout") .. " tab." })
   end
 
   Heading("Slash commands")
@@ -201,6 +300,32 @@ function ns.BuildOptions()
     end
   end)
   Text("Click the link, then press Ctrl+C to copy.", 6, -6)
+
+  ------------------------------------------------------------------------------
+  -- Battle Shout tab: what the player frame timer shows and its switches (see
+  -- ShoutTimer.lua). The countdown and flash are greyed out while the whole
+  -- timer is off. Warriors only (see Tabs).
+  ------------------------------------------------------------------------------
+  if pages.shout then
+    Begin(pages.shout)
+    local function TimerOff() return db.shoutOff end
+
+    Heading("On the player frame")
+    Bullets({
+      "A bar behind your name empties as " .. Key("Battle Shout") .. " runs out.",
+      "A countdown at the end of your name shows the time left.",
+      "Your name flashes " .. Key("red") .. " while Battle Shout is missing in combat.",
+      "Out of combat, nothing shows while Battle Shout is missing.",
+    })
+
+    Heading("Settings")
+    OnOff("Show Battle Shout timer", "shoutOff", ns.RefreshShout)
+    OnOff("Show countdown", "shoutTextOff", ns.RefreshShout, TimerOff)
+    OnOff("Flash when missing in combat", "shoutFlashOff", ns.RefreshShout, TimerOff)
+    ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
+  end
+
+  ShowTab("general")
 
   category = Settings.RegisterCanvasLayoutCategory(opt, "WU - Warrior Utilities")
   Settings.RegisterAddOnCategory(category)

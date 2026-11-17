@@ -35,7 +35,8 @@ local defaults = {
   rangeOff = false, rangeFont = "friz", rangeSize = 32,
   rangeFlash = "pulse", rangeSpeed = "normal",
   rangeLayouts = {}, -- range warning position per Edit Mode layout name
-  shoutOff = false,
+  shoutOff = false, shoutTextOff = false, shoutFlashOff = false,
+  shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -74,6 +75,12 @@ function ns.LoadDB(saved)
     if not valid then db[key] = defaults[key] end
   end
   WUDB = db
+end
+
+-- Returns the default value for key (a copy for tables).
+function ns.Default(key)
+  local v = defaults[key]
+  return type(v) == "table" and CopyTable(v) or v
 end
 
 --------------------------------------------------------------------------------
