@@ -28,11 +28,13 @@ local FONT = "Fonts\\FRIZQT__.TTF"
 local bar, clock, alarm, warn, warnText
 local inCombat = false
 
--- Returns the auraInstanceID of the player's Battle Shout (any rank), or nil.
+-- Returns the player's Battle Shout aura (any rank), or nil. Only the
+-- returned table is ever tested: in combat its fields can be secret, so they
+-- are only handed to the game, never compared or tested.
 local function FindShout()
   for _, id in ipairs(RANKS) do
     local aura = C_UnitAuras.GetPlayerAuraBySpellID(id)
-    if aura then return aura.auraInstanceID end
+    if aura then return aura end
   end
 end
 
@@ -40,16 +42,17 @@ end
 -- or the flash and warning while it is missing in combat. Everything hides
 -- when the timer is turned off.
 local function Update()
-  local instance = not db.shoutOff and FindShout()
-  if instance then
-    local duration = C_UnitAuras.GetAuraDuration("player", instance)
+  local aura = not db.shoutOff and FindShout() or nil
+  if aura then
+    local duration = C_UnitAuras.GetAuraDuration("player", aura.auraInstanceID)
     bar:SetTimerDuration(duration, Enum.StatusBarInterpolation.Immediate,
       Enum.StatusBarTimerDirection.RemainingTime)
     clock:SetCooldownFromDurationObject(duration)
   end
-  bar:SetShown(instance and true or false)
-  clock:SetShown(instance and not db.shoutTextOff or false)
-  local missing = not db.shoutOff and not instance and inCombat
+  local up = aura ~= nil
+  bar:SetShown(up)
+  clock:SetShown(up and not db.shoutTextOff)
+  local missing = not db.shoutOff and not up and inCombat
   alarm:SetShown(missing and not db.shoutFlashOff)
   warn:SetShown(missing and not db.shoutWarnOff)
 end
