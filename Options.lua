@@ -12,7 +12,7 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
--- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutColor
+-- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff, shoutColor
 --------------------------------------------------------------------------------
 local category
 
@@ -330,6 +330,7 @@ function ns.BuildOptions()
       "A bar behind your name empties as " .. Key("Battle Shout") .. " runs out.",
       "A countdown at the end of your name shows the time left.",
       "Your name flashes " .. Key("red") .. " while Battle Shout is missing in combat.",
+      Key("Battle Shout Missing") .. " also shows above the player frame then.",
       "Out of combat, nothing shows while Battle Shout is missing.",
     })
 
@@ -337,6 +338,7 @@ function ns.BuildOptions()
     OnOff("Show Battle Shout timer", "shoutOff", ns.RefreshShout)
     OnOff("Show countdown", "shoutTextOff", ns.RefreshShout, TimerOff)
     OnOff("Flash when missing in combat", "shoutFlashOff", ns.RefreshShout, TimerOff)
+    OnOff("Show \"Battle Shout Missing\" text", "shoutWarnOff", ns.RefreshShout, TimerOff)
     ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
   end
 

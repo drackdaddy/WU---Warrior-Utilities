@@ -35,7 +35,7 @@ local defaults = {
   rangeOff = false, rangeFont = "friz", rangeSize = 32,
   rangeFlash = "pulse", rangeSpeed = "normal",
   rangeLayouts = {}, -- range warning position per Edit Mode layout name
-  shoutOff = false, shoutTextOff = false, shoutFlashOff = false,
+  shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
 }
 

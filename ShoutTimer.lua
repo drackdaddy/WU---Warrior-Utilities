@@ -7,21 +7,23 @@ local db = ns.db
 --   bar    empties as the player's Battle Shout runs down
 --   clock  countdown numbers at the right end of the name
 --   alarm  red flash while Battle Shout is missing in combat
+-- and, above the player frame, "Battle Shout Missing" (warn), also while
+-- Battle Shout is missing in combat. The flash and warning turn off separately.
 -- The buff is found by each rank's spell ID, so no aura names are compared.
 -- The bar and countdown run from the aura's duration object
 -- (StatusBar:SetTimerDuration, Cooldown:SetCooldownFromDurationObject): the
 -- game animates the bar and formats the numbers, and no time left is worked
 -- out in Lua, so they keep working when aura timings are secret in combat.
--- All three are parented to the player frame so they hide and scale with it;
+-- All of them are parented to the player frame so they hide and scale with it;
 -- they are the addon's own frames, and the player frame itself is never
 -- changed. Set up on the Battle Shout tab of the options page.
 -- Events: UNIT_AURA (player), PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED,
 --   PLAYER_REGEN_ENABLED
--- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutColor
+-- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff, shoutColor
 --------------------------------------------------------------------------------
 local RANKS = { 6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578 }
 local WHITE = "Interface\\Buttons\\WHITE8X8"
-local bar, clock, alarm
+local bar, clock, alarm, warn
 local inCombat = false
 
 -- Returns the auraInstanceID of the player's Battle Shout (any rank), or nil.
@@ -33,8 +35,8 @@ local function FindShout()
 end
 
 -- Shows the bar and countdown with the buff's current timer while it is up,
--- or the flash while it is missing in combat. Everything hides when the
--- timer is turned off.
+-- or the flash and warning while it is missing in combat. Everything hides
+-- when the timer is turned off.
 local function Update()
   local instance = not db.shoutOff and FindShout()
   if instance then
@@ -45,7 +47,9 @@ local function Update()
   end
   bar:SetShown(instance and true or false)
   clock:SetShown(instance and not db.shoutTextOff or false)
-  alarm:SetShown(not db.shoutOff and not db.shoutFlashOff and not instance and inCombat)
+  local missing = not db.shoutOff and not instance and inCombat
+  alarm:SetShown(missing and not db.shoutFlashOff)
+  warn:SetShown(missing and not db.shoutWarnOff)
 end
 
 ns.On("UNIT_AURA", function() if bar then Update() end end)
@@ -116,6 +120,17 @@ function ns.BuildShoutTimer()
   clock:SetDrawBling(false)
   clock:SetHideCountdownNumbers(false)
   clock:GetCountdownFontString():SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+
+  -- Warning text just above the top edge of the player frame, over the name.
+  warn = CreateFrame("Frame", nil, PlayerFrame)
+  warn:SetFrameLevel(clock:GetFrameLevel())
+  warn:SetSize(200, 20)
+  warn:SetPoint("BOTTOM", bar, "TOP", 0, 14)
+  local text = warn:CreateFontString(nil, "OVERLAY")
+  text:SetAllPoints()
+  text:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+  text:SetTextColor(1, 0.15, 0.1)
+  text:SetText("Battle Shout Missing")
 
   ns.RefreshShout()
 end

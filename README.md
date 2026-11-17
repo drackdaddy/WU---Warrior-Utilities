@@ -60,7 +60,7 @@ Shown on Blizzard's player frame, behind your name. It hides and scales with the
 
 - A bar empties as your Battle Shout runs down. It is hidden while you don't have the buff.
 - A countdown at the right end of your name shows the time left.
-- Your name flashes red while Battle Shout is missing in combat.
+- Your name flashes red while Battle Shout is missing in combat, and **Battle Shout Missing** shows above the player frame.
 - The game draws the bar and countdown from the buff itself, so they keep working in combat.
 - It only attaches to Blizzard's player frame.
 
@@ -71,6 +71,7 @@ Set it up on the **Battle Shout** tab of the options page (`/wu`):
 | Show Battle Shout timer | Turns the whole timer on or off (default on) |
 | Show countdown | The time left next to your name (default on) |
 | Flash when missing in combat | (default on) |
+| Show "Battle Shout Missing" text | The warning above the player frame (default on) |
 | Bar color | Opens the color picker, with opacity. **Default** puts back orange |
 
 ## Options
