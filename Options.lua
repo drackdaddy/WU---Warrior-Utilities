@@ -173,15 +173,21 @@ function ns.BuildOptions()
     end
   end
 
-  -- Gives control a label to its right (x pixels away), places it under the
-  -- previous piece and adds it to controls.
-  local function AddControl(control, label, x, disabled)
-    control.disabled = disabled
+  -- Every control's label starts this far right of the page's left edge, so
+  -- labels line up whatever the control's size.
+  local LABEL_X = 26
+
+  -- Places control under the previous piece with its left edge indent pixels
+  -- from the page's left edge, gives it a label at LABEL_X and adds it to
+  -- controls. Place offsets from the previous piece, so the previous
+  -- control's indent is taken off.
+  local function AddControl(control, label, indent, disabled)
+    control.disabled, control.indent = disabled, indent
     control.label = control:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    control.label:SetPoint("LEFT", control, "RIGHT", x, 0)
+    control.label:SetPoint("LEFT", control, "LEFT", LABEL_X - indent, 0)
     control.label:SetText(label)
     control:SetScript("OnShow", RefreshControls)
-    Place(control, 6, -4)
+    Place(control, 6, indent - (prev and prev.indent or 0))
     controls[#controls + 1] = control
   end
 
@@ -196,7 +202,9 @@ function ns.BuildOptions()
       apply()
       RefreshControls()
     end)
-    AddControl(cb, label, 4, disabled)
+    -- The checkbox art has a few transparent pixels around the box, so -4
+    -- lines the box up with the text above.
+    AddControl(cb, label, -4, disabled)
   end
 
   -- Color swatch for db[key] ({ r, g, b, a }). Clicking it opens Blizzard's
@@ -204,8 +212,8 @@ function ns.BuildOptions()
   -- Cancel puts back the color from before it opened. The Default button next
   -- to it restores the default color. apply runs after every change.
   local function ColorSwatch(label, key, apply, disabled)
-    local sw = CreateFrame("Button", nil, page)
-    sw:SetSize(22, 22)
+    local sw = CreateFrame("Button", nil, page) -- the size of the checkbox's box
+    sw:SetSize(20, 20)
     local edge = sw:CreateTexture(nil, "BACKGROUND")
     edge:SetAllPoints()
     edge:SetColorTexture(0.6, 0.58, 0.52, 1)
@@ -233,7 +241,7 @@ function ns.BuildOptions()
         cancelFunc = function() Set(old.r, old.g, old.b, old.a) end,
       })
     end)
-    AddControl(sw, label, 8, disabled)
+    AddControl(sw, label, 0, disabled)
     sw.reset = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
     sw.reset:SetSize(80, 22)
     sw.reset:SetText("Default")
