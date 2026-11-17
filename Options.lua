@@ -77,8 +77,7 @@ function ns.BuildOptions()
   -- Page builders
   -- Each tab is laid out like a short readme: gold headings with a rule under
   -- them, then bullets, commands or checkboxes. Begin(page) starts a page or a
-  -- column; each
-  -- piece is then anchored under the last one placed.
+  -- column; each piece is then anchored under the last one placed.
   ------------------------------------------------------------------------------
   local page, prev
 
