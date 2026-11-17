@@ -8,8 +8,8 @@
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
-  through curves; the Battle Shout timer is drawn by the game from the aura's
-  duration object.
+  through curves; the Battle Shout timer is drawn by Blizzard's aura containers,
+  so the addon never reads the buff.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer,

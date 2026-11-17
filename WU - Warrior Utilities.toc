@@ -5,6 +5,7 @@
 ## Version: 3.6.0
 ## IconTexture: Interface\AddOns\WU - Warrior Utilities\icon
 ## SavedVariablesPerCharacter: WUDB
+## Dependencies: Blizzard_AuraContainer
 
 Libs\LibEditMode\namespaced.lua
 Libs\LibEditMode\embed.xml

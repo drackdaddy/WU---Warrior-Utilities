@@ -61,8 +61,7 @@ Shown on Blizzard's player frame, behind your name. It hides and scales with the
 - A bar empties as your Battle Shout runs down. It is hidden while you don't have the buff.
 - A countdown at the right end of your name shows the time left.
 - Your name flashes red while Battle Shout is missing in combat, and **Battle Shout Missing** shows above the player frame.
-- In combat the game doesn't tell addons whether you have Battle Shout, so the timer follows your own casts instead. Casting Battle Shout in combat restarts the bar and countdown and clears the warning.
-- In combat it can't see another warrior's Battle Shout on you, or the buff being cancelled or removed early. Those show once combat ends.
+- The game tracks the buff itself through Blizzard's aura containers and draws the bar, countdown, flash and warning, so it all works in combat. It sees any Battle Shout on you, including another warrior's, and notices when it's cancelled or removed.
 - It only attaches to Blizzard's player frame.
 
 Set it up on the **Battle Shout** tab of the options page (`/wu`):
