@@ -1,17 +1,19 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with two marks, an "OUT OF RANGE" warning, and buttons that add WU
-  layouts (such as WU-Fury) to Blizzard's Cooldown Manager. Loads on warriors
-  and druids; druids get the rage bar only (shown while in a form that uses
-  rage), not the range warning or the CDM layouts.
+  Rage bar with two marks, an "OUT OF RANGE" warning and a Battle Shout timer
+  on the player frame. Loads on warriors and druids; druids get the rage bar
+  only (shown while in a form that uses rage), not the range warning or the
+  Battle Shout timer.
 
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
-  through curves; Cooldown Manager layouts are only written out of combat.
+  through curves; the Battle Shout timer is drawn by Blizzard's aura containers,
+  so the addon never reads the buff.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
-  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, CDM, Options.
+  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer,
+  Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -33,7 +35,9 @@ local defaults = {
   rangeOff = false, rangeFont = "friz", rangeSize = 32,
   rangeFlash = "pulse", rangeSpeed = "normal",
   rangeLayouts = {}, -- range warning position per Edit Mode layout name
-  cdmBackup = false, -- Cooldown Manager layout data from before the first Create
+  shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
+  shoutWarnSize = 14, -- "Battle Shout Missing" font size
+  shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -56,8 +60,8 @@ ns.LISTS = {
 local db = {}
 ns.db = db
 
--- Copies known keys from saved (the loaded WUDB, or the values /wu reset keeps)
--- into db, fills defaults, fixes invalid choices and makes WUDB point at db.
+-- Copies known keys from saved (the loaded WUDB, or nil after /wu reset) into
+-- db, fills defaults, fixes invalid choices and makes WUDB point at db.
 -- Table defaults are copied so a reset never hands out the defaults table.
 function ns.LoadDB(saved)
   for k, v in pairs(saved or {}) do
@@ -72,6 +76,12 @@ function ns.LoadDB(saved)
     if not valid then db[key] = defaults[key] end
   end
   WUDB = db
+end
+
+-- Returns the default value for key (a copy for tables).
+function ns.Default(key)
+  local v = defaults[key]
+  return type(v) == "table" and CopyTable(v) or v
 end
 
 --------------------------------------------------------------------------------
@@ -169,7 +179,10 @@ ev:SetScript("OnEvent", function(self, event, ...)
     if class ~= "WARRIOR" and class ~= "DRUID" then return end
     ns.isWarrior = class == "WARRIOR"
     ns.BuildBar()
-    if ns.isWarrior then ns.BuildRangeWarning() end
+    if ns.isWarrior then
+      ns.BuildRangeWarning()
+      ns.BuildShoutTimer()
+    end
     ns.BuildOptions()
     for name in pairs(handlers) do
       if name:find("^UNIT_") then

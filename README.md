@@ -1,10 +1,10 @@
 # WU - Warrior Utilities
 
-A lightweight rage bar and Cooldown Manager setup (Optional) for warriors on **World of Warcraft: Forever**.
+A lightweight rage bar, out of range warning and Battle Shout timer for warriors on **World of Warcraft: Forever**.
 
-WU keeps your rage on screen with marks at the amounts you care about. Sets up Blizzard's Cooldown Manager (Optional) so Battle Shout, Demoralizing Shout and Sunder Armor are tracked right where you need them. The addon loads on warriors and druids, and settings are saved per character.
+WU keeps your rage on screen with marks at the amounts you care about, warns you when your target is out of melee range, and shows how long your Battle Shout has left on the player frame. The addon loads on warriors and druids, and settings are saved per character.
 
-On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The CDM tab is warriors only.
+On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range warning and Battle Shout timer are warriors only.
 
 ## Install
 
@@ -54,33 +54,33 @@ Flashes **OUT OF RANGE** while you have a living enemy targeted that is out of m
 
 Its position is per Edit Mode layout, like the rage bar's.
 
+## Battle Shout timer (warriors only)
+
+Shown on Blizzard's player frame, behind your name. It hides and scales with the player frame.
+
+- A bar empties as your Battle Shout runs down. It is hidden while you don't have the buff.
+- A countdown at the right end of your name shows the time left.
+- Your name flashes red while Battle Shout is missing in combat, and **Battle Shout Missing** shows above the player frame.
+- The game tracks the buff itself through Blizzard's aura containers and draws the bar, countdown, flash and warning, so it all works in combat. It sees any Battle Shout on you, including another warrior's, and notices when it's cancelled or removed.
+- It only attaches to Blizzard's player frame.
+
+Set it up on the **Battle Shout** tab of the options page (`/wu`):
+
+| Setting | Notes |
+| --- | --- |
+| Show Battle Shout timer | Turns the whole timer on or off (default on) |
+| Show countdown | The time left next to your name (default on) |
+| Flash when missing in combat | (default on) |
+| Show "Battle Shout Missing" text | The warning above the player frame (default on) |
+| Text size | Size of that warning, 10 to 30 (default 14) |
+| Bar color | Opens the color picker, with opacity. **Default** puts back orange |
+
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
 
 - **General** — how to use the addon, the slash commands and a Discord link to copy
-- **CDM** (warriors only) — one section per WU layout (where each buff goes and its alerts) with a Create button, and Restore Backup
-
-## CDM (Blizzard's Cooldown Manager)
-
-**Create WU-Fury** adds a new Cooldown Manager layout named `WU-Fury` that holds only the buffs below. Your other layouts aren't changed. WU-Fury becomes the active layout, and the UI reloads.
-
-| Tab | Section | Buff | Alerts |
-| --- | --- | --- | --- |
-| Buffs | Tracked Buffs | Battle Shout | None |
-| Buffs | Tracked Buffs | Demoralizing Shout | None |
-| Buffs | Tracked Buffs | Sunder Armor | On Aura Removed: Text to Speech |
-
-- The buffs are listed in their section in this order. A buff can have up to 3 alerts.
-- The Cooldown Manager plays the alerts itself, so they work in combat.
-- The Cooldown Manager has no "seconds remaining" alert, so there is no warning before Sunder falls off.
-- Pressing Create again rebuilds the WU-Fury layout instead of adding another one.
-- A layout named `WU` made by an older version is renamed to `WU-Fury` the first time you press Create.
-- Out of combat only.
-
-The first Create saves your previous layouts. **Restore Backup** puts them back (Cooldown Manager changes made since then are lost) and reloads the UI. If you had no layouts (only Blizzard's default), Create still works, but there is nothing to back up and no backup is saved.
-
-> The Cooldown Manager's saved data format is not documented by Blizzard. If a patch changes it, Create refuses and changes nothing.
+- **Battle Shout** (warriors only) — the Battle Shout timer settings
 
 ## Slash commands
 
@@ -88,7 +88,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60` | Set marks |
-| `/wu reset` | Reset all settings and bar and range warning positions in every layout to default (keeps the Cooldown Manager backup) |
+| `/wu reset` | Reset all settings (including the Battle Shout timer settings) and bar and range warning positions in every layout to default |
 
 `/wuutil` is an alias.
 
@@ -100,7 +100,7 @@ The first Create saves your previous layouts. **Restore Backup** puts them back 
 | `Core.lua` | Settings, shared Edit Mode helpers and event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
 | `RangeWarning.lua` | Out of range warning and its Edit Mode settings |
-| `CDM.lua` | WU Cooldown Manager layouts (create, restore) |
+| `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `Options.lua` | Options page in Esc > Options > AddOns, slash commands |
 
 ## Glow
