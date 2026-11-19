@@ -36,6 +36,7 @@ ns.STANCES = {
     12294, -- Mortal Strike
     12292, -- Sweeping Strikes
     20230, -- Retaliation
+    402927, -- Victory Rush (Forever ability)
     2687, -- Bloodrage
   } },
   { key = "defensive", form = 71, name = "Defensive Stance", spells = {
@@ -47,6 +48,7 @@ ns.STANCES = {
     676, -- Disarm
     12975, -- Last Stand
     871, -- Shield Wall
+    402927, -- Victory Rush (Forever ability)
     2687, -- Bloodrage
   } },
   { key = "berserker", form = 2458, name = "Berserker Stance", spells = {
@@ -58,6 +60,7 @@ ns.STANCES = {
     18499, -- Berserker Rage
     12328, -- Death Wish
     1719, -- Recklessness
+    402927, -- Victory Rush (Forever ability)
     2687, -- Bloodrage
   } },
 }
