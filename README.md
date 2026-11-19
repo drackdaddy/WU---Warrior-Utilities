@@ -91,7 +91,7 @@ Each stance has its own tab on the options page (`/wu`):
 | --- | --- |
 | Show cooldown bar | Turns that stance's bar on or off (default on) |
 | Glow when ready | A pulsing gold border on each ability that is off cooldown (default on) |
-| Abilities | One checkbox per ability (all on by default) |
+| Abilities | One checkbox per ability (all on by default). **Up** and **Down** change where it sits on the bar (top of the list is leftmost) |
 
 - The glow also stays on during the global cooldown, so it doesn't blink after every ability. It shows cooldown only: Overpower and Revenge glow when off cooldown even if they can't be used yet.
 - The game draws the swipe and glow from the cooldown itself, so it works in combat without the addon reading cooldown times.

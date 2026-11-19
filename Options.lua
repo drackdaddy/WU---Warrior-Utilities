@@ -14,7 +14,7 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
 --   shoutWarnSize, shoutColor, battleCdOff, defensiveCdOff, berserkerCdOff,
---   battleAlertOff, defensiveAlertOff, berserkerAlertOff, cdHide
+--   battleAlertOff, defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder
 --------------------------------------------------------------------------------
 local category
 
@@ -198,16 +198,14 @@ function ns.BuildOptions()
     controls[#controls + 1] = control
   end
 
-  -- Checkbox for an "off" setting: checked while key is false in the table
-  -- store() returns (the saved settings when store is nil; a function so a
-  -- table replaced by /wu reset is picked up). apply runs after a click.
-  local function OnOff(label, key, apply, disabled, store)
-    store = store or function() return db end
+  -- Checkbox for an "off" setting: checked while db[key] is false. apply runs
+  -- after a click.
+  local function OnOff(label, key, apply, disabled)
     local cb = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
     cb:SetSize(26, 26)
-    function cb:Draw() self:SetChecked(not store()[key]) end
+    function cb:Draw() self:SetChecked(not db[key]) end
     cb:SetScript("OnClick", function(self)
-      store()[key] = not self:GetChecked()
+      db[key] = not self:GetChecked()
       apply()
       RefreshControls()
     end)
@@ -397,15 +395,16 @@ function ns.BuildOptions()
 
   ------------------------------------------------------------------------------
   -- Stance tabs: one per stance, for that stance's cooldown bar (see
-  -- CooldownBar.lua): the bar and its ready glow on the left, each ability on
-  -- the right. Everything but the bar switch is greyed out while the bar is
+  -- CooldownBar.lua): the bar and its ready glow on the left, the abilities on
+  -- the right in bar order. Each ability row is a slot: row i shows whichever
+  -- ability is i-th in the stance's order, so moving one up or down redraws
+  -- the rows. Everything but the bar switch is greyed out while the bar is
   -- off. Warriors only (see Tabs).
   ------------------------------------------------------------------------------
   for _, s in ipairs(ns.STANCES) do
     if pages[s.key] then
       local barKey = s.key .. "CdOff"
       local function BarOff() return db[barKey] end
-      local function Hidden() return db.cdHide[s.key] end
       local left, right = Columns(pages[s.key])
 
       Begin(left)
@@ -422,9 +421,45 @@ function ns.BuildOptions()
 
       Begin(right)
       Heading("Abilities")
-      for _, id in ipairs(s.spells) do
-        local label = "|T" .. C_Spell.GetSpellTexture(id) .. ":16|t  " .. C_Spell.GetSpellName(id)
-        OnOff(label, id, ns.RefreshCooldowns, BarOff, Hidden)
+      Text("Untick an ability to leave it off. " .. Key("Up") .. " and " .. Key("Down")
+        .. " move it along the bar (top is leftmost).")
+      local last = #s.spells
+
+      -- Button that swaps the ability in row i with the one in row i + dir
+      -- and saves the new order.
+      local function MoveButton(text, i, dir)
+        local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+        b:SetSize(44, 20)
+        b:SetText(text)
+        b:SetScript("OnClick", function()
+          local order = ns.CooldownOrder(s)
+          order[i], order[i + dir] = order[i + dir], order[i]
+          db.cdOrder[s.key] = order
+          ns.RefreshCooldowns()
+          RefreshControls()
+        end)
+        return b
+      end
+
+      for i = 1, last do
+        local cb = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
+        cb:SetSize(26, 26)
+        local up, down = MoveButton("Up", i, -1), MoveButton("Down", i, 1)
+        function cb:Draw()
+          local id = ns.CooldownOrder(s)[i]
+          self.label:SetText("|T" .. C_Spell.GetSpellTexture(id) .. ":16|t  " .. C_Spell.GetSpellName(id))
+          self:SetChecked(not db.cdHide[s.key][id])
+          up:SetEnabled(not BarOff() and i > 1)
+          down:SetEnabled(not BarOff() and i < last)
+        end
+        cb:SetScript("OnClick", function(self)
+          db.cdHide[s.key][ns.CooldownOrder(s)[i]] = not self:GetChecked()
+          ns.RefreshCooldowns()
+          RefreshControls()
+        end)
+        AddControl(cb, "", -4, BarOff)
+        up:SetPoint("LEFT", cb, "LEFT", 180, 0)
+        down:SetPoint("LEFT", up, "RIGHT", 2, 0)
       end
     end
   end

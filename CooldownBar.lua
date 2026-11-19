@@ -6,7 +6,7 @@ local db, LEM = ns.db, ns.LibEditMode
 -- A row of ability icons for the stance the player is in, each with
 -- Blizzard's cooldown swipe and countdown. Each stance has its own list, set
 -- up on its tab of the options page: the bar on or off, a "ready" glow on or
--- off, and each ability on or off. Abilities the player hasn't learned are
+-- off, each ability on or off, and the order they show in. Abilities the player hasn't learned are
 -- left out.
 -- In combat cooldown times can be secret, so Lua never reads them. The game
 -- hands back a duration object for each ability's cooldown: the Cooldown
@@ -22,11 +22,11 @@ local db, LEM = ns.db, ns.LibEditMode
 --   UPDATE_SHAPESHIFT_FORM, SPELLS_CHANGED, SPELL_UPDATE_COOLDOWN
 -- SavedVariables: cdLayouts, cdSize, cdCombatOnly, battleCdOff, defensiveCdOff,
 --   berserkerCdOff, battleAlertOff, defensiveAlertOff, berserkerAlertOff,
---   cdHide
+--   cdHide, cdOrder
 --------------------------------------------------------------------------------
 
 -- Each stance: saved-settings key, stance spell ID, name and its abilities
--- (rank 1 spell IDs; every rank shares one cooldown), in bar order.
+-- (rank 1 spell IDs; every rank shares one cooldown), in default bar order.
 ns.STANCES = {
   { key = "battle", form = 2457, name = "Battle Stance", spells = {
     100, -- Charge
@@ -74,6 +74,22 @@ local DEFAULT_POS = { point = "CENTER", x = 0, y = -215 }
 local holder, watcher, readyCurve, PlacePosition
 local icons, count = {}, 0 -- icon frames (reused) and how many are in use
 local alertOn -- the ready glow is on for the bar being shown
+
+-- Returns a new list of stance s's abilities in the player's order: the saved
+-- order (db.cdOrder), then any ability it doesn't list (such as one added in
+-- a later version) in default order. Used by the bar and the options page.
+function ns.CooldownOrder(s)
+  local order, seen = {}, {}
+  for _, id in ipairs(db.cdOrder[s.key]) do
+    if tContains(s.spells, id) and not seen[id] then
+      order[#order + 1], seen[id] = id, true
+    end
+  end
+  for _, id in ipairs(s.spells) do
+    if not seen[id] then order[#order + 1] = id end
+  end
+  return order
+end
 
 -- The stance the player is in, or nil when out of stance.
 local function CurrentStance()
@@ -160,7 +176,7 @@ local function Update()
   count = 0
   if s then
     local hide = db.cdHide[s.key]
-    for _, id in ipairs(s.spells) do
+    for _, id in ipairs(ns.CooldownOrder(s)) do
       if IsPlayerSpell(id) and not hide[id] then
         count = count + 1
         local f = Icon(count)
