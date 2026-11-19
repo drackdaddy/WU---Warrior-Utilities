@@ -53,6 +53,7 @@ ns.STANCES = {
     20252, -- Intercept
     23881, -- Bloodthirst
     1680, -- Whirlwind
+    1329555, -- Reckless Swings (Forever ability)
     6552, -- Pummel
     18499, -- Berserker Rage
     12328, -- Death Wish

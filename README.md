@@ -83,7 +83,7 @@ A row of icons for the stance you're in, each with the cooldown swipe and the ti
 | --- | --- |
 | Battle | Charge, Overpower, Thunder Clap, Mocking Blow, Mortal Strike, Sweeping Strikes, Retaliation, Bloodrage |
 | Defensive | Taunt, Shield Block, Revenge, Shield Slam, Shield Bash, Disarm, Last Stand, Shield Wall, Bloodrage |
-| Berserker | Intercept, Bloodthirst, Whirlwind, Pummel, Berserker Rage, Death Wish, Recklessness, Bloodrage |
+| Berserker | Intercept, Bloodthirst, Whirlwind, Reckless Swings, Pummel, Berserker Rage, Death Wish, Recklessness, Bloodrage |
 
 Each stance has its own tab on the options page (`/wu`):
 
