@@ -41,6 +41,7 @@ local defaults = {
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
   cdLayouts = {}, -- cooldown bar position per Edit Mode layout name
   cdSize = 36, -- cooldown icon size in pixels
+  cdCombatOnly = false,
   battleCdOff = false, defensiveCdOff = false, berserkerCdOff = false,
   battleAlertOff = false, defensiveAlertOff = false, berserkerAlertOff = false,
   cdHide = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: left off that stance's bar

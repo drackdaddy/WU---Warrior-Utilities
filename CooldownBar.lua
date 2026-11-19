@@ -15,12 +15,12 @@ local db, LEM = ns.db, ns.LibEditMode
 -- the same way the rage bar's glow works. GRACE covers the global cooldown so
 -- the glow doesn't blink off after every ability. The icons are plain frames
 -- with no mouse input: they only show cooldowns and never cast anything.
--- Moved and sized in Edit Mode as "WU Cooldown Bar" (see ns.AddEditModeFrame
--- in Core.lua). In Edit Mode it always shows (the current stance, or Battle
+-- Moved and set up in Edit Mode as "WU Cooldown Bar" (see ns.AddEditModeFrame
+-- in Core.lua): icon size and "only show in combat". In Edit Mode it always shows (the current stance, or Battle
 -- Stance when out of stance) so it can be placed, faded when that bar is off.
--- Events: PLAYER_ENTERING_WORLD, UPDATE_SHAPESHIFT_FORM, SPELLS_CHANGED,
---   SPELL_UPDATE_COOLDOWN
--- SavedVariables: cdLayouts, cdSize, battleCdOff, defensiveCdOff,
+-- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED,
+--   UPDATE_SHAPESHIFT_FORM, SPELLS_CHANGED, SPELL_UPDATE_COOLDOWN
+-- SavedVariables: cdLayouts, cdSize, cdCombatOnly, battleCdOff, defensiveCdOff,
 --   berserkerCdOff, battleAlertOff, defensiveAlertOff, berserkerAlertOff,
 --   cdHide
 --------------------------------------------------------------------------------
@@ -148,7 +148,8 @@ local function UpdateCooldowns()
 end
 
 -- Lays out the icons for the current stance (Battle Stance in Edit Mode when
--- out of stance), sizes the bar to fit them and shows or hides it.
+-- out of stance), sizes the bar to fit them and shows or hides it. The bar
+-- always shows in Edit Mode, even when "only show in combat" would hide it.
 local function Update()
   local edit = LEM:IsInEditMode()
   local s = CurrentStance() or edit and ns.STANCES[1]
@@ -173,7 +174,8 @@ local function Update()
   local off = not s or db[s.key .. "CdOff"]
   local n = math.max(count, 1) -- keeps one icon's room in Edit Mode
   holder:SetSize(n * db.cdSize + (n - 1) * GAP, db.cdSize)
-  holder:SetShown(edit or not off and count > 0)
+  holder:SetShown(edit or not off and count > 0
+    and (not db.cdCombatOnly or UnitAffectingCombat("player")))
   holder:SetAlpha(off and 0.4 or 1)
   alertOn = not off and not db[s.key .. "AlertOff"]
   watcher:SetShown(holder:IsShown() and alertOn)
@@ -181,6 +183,8 @@ local function Update()
 end
 
 ns.On("PLAYER_ENTERING_WORLD", Update)
+ns.On("PLAYER_REGEN_DISABLED", Update)
+ns.On("PLAYER_REGEN_ENABLED", Update)
 ns.On("UPDATE_SHAPESHIFT_FORM", Update)
 ns.On("SPELLS_CHANGED", Update)
 ns.On("SPELL_UPDATE_COOLDOWN", function() if holder:IsShown() then UpdateCooldowns() end end)
@@ -213,9 +217,10 @@ function ns.BuildCooldownBar()
     Glow()
   end)
 
+  local T, Option = LEM.SettingType, ns.EditModeOption
   PlacePosition = ns.AddEditModeFrame(holder, "cdLayouts", DEFAULT_POS, "WU Cooldown Bar", {
-    ns.EditModeOption(LEM.SettingType.Slider, "Icon Size", "cdSize", Update, nil,
-      { minValue = 24, maxValue = 64, valueStep = 2 }),
+    Option(T.Slider, "Icon Size", "cdSize", Update, nil, { minValue = 24, maxValue = 64, valueStep = 2 }),
+    Option(T.Checkbox, "Only Show in Combat", "cdCombatOnly", Update),
   }, Update)
   ns.RefreshCooldowns()
 end

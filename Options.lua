@@ -325,7 +325,8 @@ function ns.BuildOptions()
     Heading("Cooldown bar")
     Bullets({
       "Set up each stance's bar on its own tab above.",
-      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Cooldown Bar") .. " to move it and set its icon size.",
+      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Cooldown Bar") .. " to move it, set its icon size"
+        .. " or turn on " .. Key("Only Show in Combat") .. ".",
     })
   end
 

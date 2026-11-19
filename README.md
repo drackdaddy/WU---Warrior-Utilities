@@ -95,7 +95,7 @@ Each stance has its own tab on the options page (`/wu`):
 
 - The glow also stays on during the global cooldown, so it doesn't blink after every ability. It shows cooldown only: Overpower and Revenge glow when off cooldown even if they can't be used yet.
 - The game draws the swipe and glow from the cooldown itself, so it works in combat without the addon reading cooldown times.
-- In Edit Mode, click **WU Cooldown Bar** to move it and set **Icon Size** (24 to 64, default 36). Its position is per Edit Mode layout.
+- In Edit Mode, click **WU Cooldown Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
 - The icons only display cooldowns; clicking them does nothing.
 
 ## Options
