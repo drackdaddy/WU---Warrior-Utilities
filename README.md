@@ -1,10 +1,10 @@
 # WU - Warrior Utilities
 
-A lightweight rage bar, out of range warning and Battle Shout timer for warriors on **World of Warcraft: Forever**.
+A lightweight rage bar, out of range warning, Battle Shout timer and stance cooldown bar for warriors on **World of Warcraft: Forever**.
 
-WU keeps your rage on screen with marks at the amounts you care about, warns you when your target is out of melee range, and shows how long your Battle Shout has left on the player frame. The addon loads on warriors and druids, and settings are saved per character.
+WU keeps your rage on screen with marks at the amounts you care about, warns you when your target is out of melee range, shows how long your Battle Shout has left on the player frame, and tracks the key cooldowns for the stance you're in. The addon loads on warriors and druids, and settings are saved per character.
 
-On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range warning and Battle Shout timer are warriors only.
+On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range warning, Battle Shout timer and cooldown bar are warriors only.
 
 ## Install
 
@@ -75,12 +75,36 @@ Set it up on the **Battle Shout** tab of the options page (`/wu`):
 | Text size | Size of that warning, 10 to 30 (default 14) |
 | Bar color | Opens the color picker, with opacity. **Default** puts back orange |
 
+## Cooldown bar (warriors only)
+
+A row of icons for the stance you're in, each with the cooldown swipe and the time left. Switching stance swaps the bar. Abilities you haven't learned are left off.
+
+| Stance | Abilities |
+| --- | --- |
+| Battle | Charge, Overpower, Thunder Clap, Mocking Blow, Mortal Strike, Sweeping Strikes, Retaliation, Bloodrage |
+| Defensive | Taunt, Shield Block, Revenge, Shield Slam, Shield Bash, Disarm, Last Stand, Shield Wall, Bloodrage |
+| Berserker | Intercept, Bloodthirst, Whirlwind, Pummel, Berserker Rage, Death Wish, Recklessness, Bloodrage |
+
+Each stance has its own tab on the options page (`/wu`):
+
+| Setting | Notes |
+| --- | --- |
+| Show cooldown bar | Turns that stance's bar on or off (default on) |
+| Glow when ready | A pulsing gold border on each ability that is off cooldown (default on) |
+| Abilities | One checkbox per ability (all on by default) |
+
+- The glow also stays on during the global cooldown, so it doesn't blink after every ability. It shows cooldown only: Overpower and Revenge glow when off cooldown even if they can't be used yet.
+- The game draws the swipe and glow from the cooldown itself, so it works in combat without the addon reading cooldown times.
+- In Edit Mode, click **WU Cooldown Bar** to move it and set **Icon Size** (24 to 64, default 36). Its position is per Edit Mode layout.
+- The icons only display cooldowns; clicking them does nothing.
+
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
 
 - **General** — how to use the addon, the slash commands and a Discord link to copy
 - **Battle Shout** (warriors only) — the Battle Shout timer settings
+- **Battle**, **Defensive**, **Berserker** (warriors only) — each stance's cooldown bar
 
 ## Slash commands
 
@@ -88,7 +112,7 @@ Set it up on the **Battle Shout** tab of the options page (`/wu`):
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60` | Set marks |
-| `/wu reset` | Reset all settings (including the Battle Shout timer settings) and bar and range warning positions in every layout to default |
+| `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range warning and cooldown bar positions in every layout to default |
 
 `/wuutil` is an alias.
 
@@ -101,7 +125,8 @@ Set it up on the **Battle Shout** tab of the options page (`/wu`):
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
 | `RangeWarning.lua` | Out of range warning and its Edit Mode settings |
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
-| `Options.lua` | Options page in Esc > Options > AddOns, slash commands |
+| `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
+| `Options.lua` | Options page in Esc > Options > AddOns (including the stance tabs), slash commands |
 
 ## Glow
 
