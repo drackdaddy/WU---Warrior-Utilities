@@ -6,18 +6,23 @@ local db, LEM = ns.db, ns.LibEditMode
 -- A row of ability icons for the stance the player is in, each with
 -- Blizzard's cooldown swipe and countdown. Each stance has its own list, set
 -- up on its tab of the options page: the bar on or off, a "ready" glow on or
--- off, each ability on or off, and the order they show in. Abilities the player hasn't learned are
--- left out.
+-- off, each ability on or off, and the order they show in. Abilities the
+-- player hasn't learned are left out.
 -- In combat cooldown times can be secret, so Lua never reads them. The game
 -- hands back a duration object for each ability's cooldown: the Cooldown
 -- widget draws the swipe from it, and the ready glow's alpha is a curve the
 -- object evaluates (1 while the time left is at most GRACE seconds, else 0),
 -- the same way the rage bar's glow works. GRACE covers the global cooldown so
--- the glow doesn't blink off after every ability. The icons are plain frames
--- with no mouse input: they only show cooldowns and never cast anything.
+-- the glow doesn't blink off after every ability. The glow also needs the
+-- ability to be usable (C_Spell.IsSpellUsable): enough rage, and for
+-- abilities like Victory Rush, Overpower and Revenge, their trigger. That
+-- answer may be secret too, so it only goes to SetAlphaFromBoolean. The
+-- icons are plain frames with no mouse input: they only show cooldowns and
+-- never cast anything.
 -- Moved and set up in Edit Mode as "WU Cooldown Bar" (see ns.AddEditModeFrame
--- in Core.lua): icon size and "only show in combat". In Edit Mode it always shows (the current stance, or Battle
--- Stance when out of stance) so it can be placed, faded when that bar is off.
+-- in Core.lua): icon size and "only show in combat". In Edit Mode it always
+-- shows (the current stance, or Battle Stance when out of stance) so it can
+-- be placed, faded when that bar is off.
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED,
 --   UPDATE_SHAPESHIFT_FORM, SPELLS_CHANGED, SPELL_UPDATE_COOLDOWN
 -- SavedVariables: cdLayouts, cdSize, cdCombatOnly, battleCdOff, defensiveCdOff,
@@ -102,7 +107,8 @@ local function CurrentStance()
 end
 
 -- Returns icon frame i, creating it the first time: the ability's icon, its
--- cooldown swipe and a pulsing gold ready glow whose alpha Glow sets.
+-- cooldown swipe and a pulsing gold ready glow, shown through two layers
+-- whose alpha Glow sets: ready (off cooldown) and usable.
 local function Icon(i)
   if icons[i] then return icons[i] end
   local f = CreateFrame("Frame", nil, holder)
@@ -117,7 +123,9 @@ local function Icon(i)
   f.ready:SetAllPoints()
   f.ready:SetFrameLevel(f.cd:GetFrameLevel() + 2)
   f.ready:SetAlpha(0)
-  local pulse = CreateFrame("Frame", nil, f.ready, "BackdropTemplate")
+  f.usable = CreateFrame("Frame", nil, f.ready)
+  f.usable:SetAllPoints()
+  local pulse = CreateFrame("Frame", nil, f.usable, "BackdropTemplate")
   pulse:SetPoint("TOPLEFT", -2, 2)
   pulse:SetPoint("BOTTOMRIGHT", 2, -2)
   pulse:SetBackdrop({ edgeFile = WHITE, edgeSize = 2 })
@@ -139,11 +147,15 @@ local function Icon(i)
   return f
 end
 
--- Sets each icon's ready glow from its cooldown. The curve's result may be
--- secret, so it is only handed to SetAlpha, never tested.
+-- Sets each icon's ready glow from its cooldown and whether it can be used
+-- now. Both answers may be secret, so they are only handed to the alpha
+-- setters, never tested. Runs on every watcher tick, which also catches rage
+-- changes and Victory Rush's window opening and closing.
 local function Glow()
   for i = 1, count do
     local f = icons[i]
+    local usable = C_Spell.IsSpellUsable(f.spell) -- first return only
+    f.usable:SetAlphaFromBoolean(usable, 1, 0)
     if f.dur then
       f.ready:SetAlpha(f.dur:EvaluateRemainingDuration(readyCurve))
     else
