@@ -1,19 +1,20 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with two marks, an "OUT OF RANGE" warning and a Battle Shout timer
-  on the player frame. Loads on warriors and druids; druids get the rage bar
-  only (shown while in a form that uses rage), not the range warning or the
-  Battle Shout timer.
+  Rage bar with two marks, an "OUT OF RANGE" warning, a Battle Shout timer on
+  the player frame and a cooldown bar for each stance. Loads on warriors and
+  druids; druids get the rage bar only (shown while in a form that uses rage),
+  not the warrior features.
 
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
   through curves; the Battle Shout timer is drawn by Blizzard's aura containers,
-  so the addon never reads the buff.
+  so the addon never reads the buff; the cooldown bar hands cooldowns to
+  Blizzard's Cooldown widget and curves, so it never reads their times.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer,
-  Options.
+  CooldownBar, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -38,6 +39,13 @@ local defaults = {
   shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
   shoutWarnSize = 14, -- "Battle Shout Missing" font size
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
+  cdLayouts = {}, -- cooldown bar position per Edit Mode layout name
+  cdSize = 36, -- cooldown icon size in pixels
+  cdCombatOnly = false,
+  battleCdOff = false, defensiveCdOff = false, berserkerCdOff = false,
+  battleAlertOff = false, defensiveAlertOff = false, berserkerAlertOff = false,
+  cdHide = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: left off that stance's bar
+  cdOrder = { battle = {}, defensive = {}, berserker = {} }, -- spell IDs in bar order; empty = default order
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -86,7 +94,7 @@ end
 
 --------------------------------------------------------------------------------
 -- Edit Mode helpers
--- Shared by the rage bar and the range warning. LibEditMode registers a frame
+-- Shared by the rage bar, the range warning and the cooldown bar. LibEditMode registers a frame
 -- with Blizzard's Edit Mode: it draws the selection highlight, handles
 -- dragging, arrow-key nudges and "Reset To Default Position", shows the
 -- settings panel when the frame is selected, and reports the active Edit Mode
@@ -182,6 +190,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
     if ns.isWarrior then
       ns.BuildRangeWarning()
       ns.BuildShoutTimer()
+      ns.BuildCooldownBar()
     end
     ns.BuildOptions()
     for name in pairs(handlers) do

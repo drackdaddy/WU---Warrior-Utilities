@@ -5,15 +5,16 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --------------------------------------------------------------------------------
 -- Options page
 -- General tab (how to use the addon, slash commands and the Discord link) and,
--- on warriors only, Battle Shout tab (the player frame timer's switches),
--- shown in Esc > Options > AddOns > WU - Warrior Utilities. Blizzard's Settings
--- panel
--- hosts the page as a canvas layout category: it parents, sizes, shows and
+-- on warriors only, a Battle Shout tab (the player frame timer's switches) and
+-- one tab per stance (that stance's cooldown bar), shown in Esc > Options >
+-- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
+-- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
---   shoutWarnSize, shoutColor
+--   shoutWarnSize, shoutColor, battleCdOff, defensiveCdOff, berserkerCdOff,
+--   battleAlertOff, defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder
 --------------------------------------------------------------------------------
 local category
 
@@ -53,11 +54,16 @@ function ns.BuildOptions()
     end
   end
   local TABS = { { "general", "General" } }
-  if ns.isWarrior then TABS[2] = { "shout", "Battle Shout" } end
+  if ns.isWarrior then
+    TABS[2] = { "shout", "Battle Shout" }
+    for _, s in ipairs(ns.STANCES) do
+      TABS[#TABS + 1] = { s.key, (s.name:gsub(" Stance", "")) }
+    end
+  end
   for i, info in ipairs(TABS) do
     local b = CreateFrame("Button", nil, opt)
-    b:SetSize(120, 28)
-    b:SetPoint("TOPLEFT", 18 + (i - 1) * 128, -56)
+    b:SetSize(100, 28)
+    b:SetPoint("TOPLEFT", 18 + (i - 1) * 104, -56)
     b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     b.label:SetPoint("CENTER", 0, 2)
     b.label:SetText(info[2])
@@ -313,6 +319,15 @@ function ns.BuildOptions()
     "Each Edit Mode layout keeps its own position.",
   })
 
+  if ns.isWarrior then
+    Heading("Cooldown bar")
+    Bullets({
+      "Set up each stance's bar on its own tab above.",
+      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Cooldown Bar") .. " to move it, set its icon size"
+        .. " or turn on " .. Key("Only Show in Combat") .. ".",
+    })
+  end
+
   Begin(right)
   if ns.isWarrior then
     Heading("Out of range warning")
@@ -378,6 +393,77 @@ function ns.BuildOptions()
     ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
   end
 
+  ------------------------------------------------------------------------------
+  -- Stance tabs: one per stance, for that stance's cooldown bar (see
+  -- CooldownBar.lua): the bar and its ready glow on the left, the abilities on
+  -- the right in bar order. Each ability row is a slot: row i shows whichever
+  -- ability is i-th in the stance's order, so moving one up or down redraws
+  -- the rows. Everything but the bar switch is greyed out while the bar is
+  -- off. Warriors only (see Tabs).
+  ------------------------------------------------------------------------------
+  for _, s in ipairs(ns.STANCES) do
+    if pages[s.key] then
+      local barKey = s.key .. "CdOff"
+      local function BarOff() return db[barKey] end
+      local left, right = Columns(pages[s.key])
+
+      Begin(left)
+      Heading(s.name .. " cooldowns")
+      Bullets({
+        "Shows while you are in " .. Key(s.name) .. ".",
+        "Each icon shows its cooldown and the time left.",
+        "Abilities you haven't learned are left off.",
+        "Move it and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Cooldown Bar") .. ").",
+      })
+      Heading("Settings")
+      OnOff("Show cooldown bar", barKey, ns.RefreshCooldowns)
+      OnOff("Glow when ready", s.key .. "AlertOff", ns.RefreshCooldowns, BarOff)
+
+      Begin(right)
+      Heading("Abilities")
+      Text("Untick an ability to leave it off. " .. Key("Up") .. " and " .. Key("Down")
+        .. " move it along the bar (top is leftmost).")
+      local last = #s.spells
+
+      -- Button that swaps the ability in row i with the one in row i + dir
+      -- and saves the new order.
+      local function MoveButton(text, i, dir)
+        local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+        b:SetSize(44, 20)
+        b:SetText(text)
+        b:SetScript("OnClick", function()
+          local order = ns.CooldownOrder(s)
+          order[i], order[i + dir] = order[i + dir], order[i]
+          db.cdOrder[s.key] = order
+          ns.RefreshCooldowns()
+          RefreshControls()
+        end)
+        return b
+      end
+
+      for i = 1, last do
+        local cb = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
+        cb:SetSize(26, 26)
+        local up, down = MoveButton("Up", i, -1), MoveButton("Down", i, 1)
+        function cb:Draw()
+          local id = ns.CooldownOrder(s)[i]
+          self.label:SetText("|T" .. C_Spell.GetSpellTexture(id) .. ":16|t  " .. C_Spell.GetSpellName(id))
+          self:SetChecked(not db.cdHide[s.key][id])
+          up:SetEnabled(not BarOff() and i > 1)
+          down:SetEnabled(not BarOff() and i < last)
+        end
+        cb:SetScript("OnClick", function(self)
+          db.cdHide[s.key][ns.CooldownOrder(s)[i]] = not self:GetChecked()
+          ns.RefreshCooldowns()
+          RefreshControls()
+        end)
+        AddControl(cb, "", -4, BarOff)
+        up:SetPoint("LEFT", cb, "LEFT", 180, 0)
+        down:SetPoint("LEFT", up, "RIGHT", 2, 0)
+      end
+    end
+  end
+
   ShowTab("general")
 
   category = Settings.RegisterCanvasLayoutCategory(opt, "WU - Warrior Utilities")
@@ -405,6 +491,7 @@ SlashCmdList.WU = function(msg)
     if ns.isWarrior then
       ns.RefreshRange()
       ns.RefreshShout()
+      ns.RefreshCooldowns()
     end
     print("WU - Warrior Utilities reset")
   elseif a then
