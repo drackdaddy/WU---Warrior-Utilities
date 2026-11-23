@@ -37,8 +37,16 @@ local defaults = {
   rangeOff = false, rangeOocOff = false, -- range display on; shown out of combat
   rangeLook = "tape", rangeTextFont = "changa", rangeSize = 32, -- rangeSize: number font size
   rangeWidth = 130, rangeHeight = 31, rangeScale = 20, -- tape size; rangeScale: pixels per yard
-  rangeUnitOff = false, rangeOpacity = 100,
+  rangeUnitOff = false, rangeOpacity = 100, rangeFriendlyOff = true,
   rangeLayouts = {}, -- range display position per Edit Mode layout name
+  rangePlace = "screen", rangePlateY = 4, rangePlateScale = 100, -- nameplate display
+  rangeFocusOff = true, rangeMouseOff = true, rangeLabelScale = 100, -- focus and mouseover labels
+  rangeFocusLayouts = {}, -- focus label position per Edit Mode layout name
+  rangeAutoOff = false, rangeZone1 = 5, rangeZone2 = 8, rangeZone3 = 25, -- zones set by hand: where each ends
+  rangeColorPrimary = { r = 0.373, g = 0.878, b = 0.416, a = 1 },
+  rangeColorSecondary = { r = 0.302, g = 0.659, b = 1, a = 1 },
+  rangeColorDead = { r = 0.95, g = 0.33, b = 0.31, a = 1 },
+  rangeColorFar = { r = 0.545, g = 0.565, b = 0.6, a = 1 },
   shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
   shoutWarnSize = 14, -- "Battle Shout Missing" font size
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
@@ -63,6 +71,7 @@ ns.LISTS = {
   rangeLook = {
     { "tape", "Tape" }, { "label", "Label + Number" }, { "badge", "Label Only" }, { "number", "Number Only" },
   },
+  rangePlace = { { "screen", "Screen" }, { "plate", "Nameplate" }, { "both", "Screen and Nameplate" } },
   rangeTextFont = {
     { "changa", "Changa Bold" }, { "skurri", "Skurri" }, { "arial", "Arial Narrow" }, { "2002", "2002 Bold" },
     { "friz", "Friz Quadrata" }, { "nimrod", "Nimrod" }, { "morpheus", "Morpheus" },

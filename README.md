@@ -42,33 +42,55 @@ Plus **Reset To Default** and **Reset To Default Position**.
 
 ## Range display (warriors only)
 
-Shows how far your living enemy target is, in yards, colored by what you can do from there. Adapted from [Good Range](https://www.curseforge.com/wow/addons/good-range-target-distance-range-finder) by Andrii Zolotarenko (MIT).
+Shows how far your target is, in yards, colored by what you can do from there. Adapted from [Good Range](https://www.curseforge.com/wow/addons/good-range-target-distance-range-finder) by Andrii Zolotarenko (MIT).
 
 | Color | Meaning |
 | --- | --- |
 | Green | Melee range (0 to 5 yd) |
 | Blue | Charge, Intercept, Throw or Shoot range, while you can use it right now (enough rage, the right stance and weapon, off cooldown); the label names it |
 | Red | Dead zone: too close for those, too far for melee |
-| Grey | Out of range |
+| Grey | Out of range, or a friendly player (**FRIENDLY**: a warrior has no heals or buffs to reach them with) |
 
 - The game only answers "in range or not" at fixed ranges (range-check items, interact distances and your own spells). WU checks the ones around the last reading many times a second and estimates the distance smoothly between them from how fast you and the target move.
-- Answers the game hides in combat are skipped, never read. If none are left, the display turns grey and says **no data**.
+- Answers the game hides in combat are skipped, never read. If none are left, the display turns grey and says **no data**. On friendly players in combat the game allows no item or interact checks, so expect **no data** there.
 - It only reads range answers; it never casts or targets anything.
 
-Set it up on the **Range** tab of the options page (`/wu`):
+Set it up on the **Range** tab of the options page (`/wu`), which has three sub-tabs.
+
+**Display**
 
 | Setting | Notes |
 | --- | --- |
-| Show range display | Turns the display on or off (default on) |
+| Show range display | Turns the whole feature on or off (default on) |
 | Show out of combat | (default on) |
+| Show on friendly players | Friendly NPCs never show (default off) |
 | Show "yd" after the number | (default on) |
 | Look | Tape (a sliding ruler), Label + Number, Label Only, Number Only (default Tape) |
 | Font | Changa Bold, Skurri, Arial Narrow, 2002 Bold, Friz Quadrata, Nimrod, Morpheus (default Changa Bold) |
 | Font size | 12 to 64 (default 32) |
-| Opacity (%) | 10 to 100 (default 100) |
+| Opacity (%) | 10 to 100 (default 100); also used by the labels |
 | Width, Height, Pixels per yard | Tape look only (default 130, 31 and 20) |
 
-In Edit Mode, click **WU Range Display** to move it (its position is per Edit Mode layout, like the rage bar's) or to turn it off. In Edit Mode it shows a sample distance when you have no target.
+**Nameplate & Labels**
+
+| Setting | Notes |
+| --- | --- |
+| Show on | Screen, Nameplate, Screen and Nameplate (default Screen). Nameplate uses the screen spot while the target has no nameplate |
+| Height above nameplate | 0 to 60 (default 4) |
+| Nameplate size (%) | 50 to 150 (default 100) |
+| Focus label | A small label with the distance to your focus (default off). With nameplates on, it sits on the focus's nameplate |
+| Mouseover label | A small label beside the cursor with the distance to the unit under it, when that isn't your target (default off) |
+| Label size (%) | 50 to 200 (default 100) |
+
+**Zones**
+
+| Setting | Notes |
+| --- | --- |
+| Automatic zones | Zones follow what you can use right now (default on) |
+| Melee (green) to, Dead zone (red) to, Ranged (blue) to | With automatic zones off: the zones run in a row from 0 yd, each ending where you set it, 0 to 50 (default 5, 8, 25). Set one to the same as the zone before it to leave it out |
+| Colors | Melee, Ranged, Dead zone and Out of range colors. **Default** puts one back |
+
+In Edit Mode, click **WU Range Display** to move the screen display, or **WU Range Focus** to move the focus label (positions are per Edit Mode layout). Each can be turned off there too. In Edit Mode they show sample values when there's nothing to measure.
 
 ## Battle Shout timer (warriors only)
 
@@ -120,7 +142,7 @@ Each stance has its own tab on the options page (`/wu`):
 
 - **General** — how to use the addon, the slash commands and a Discord link to copy
 - **Battle Shout** (warriors only) — the Battle Shout timer settings
-- **Range** (warriors only) — the range display settings
+- **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
 - **Battle**, **Defensive**, **Berserker** (warriors only) — each stance's cooldown bar
 
 ## Slash commands
@@ -129,6 +151,9 @@ Each stance has its own tab on the options page (`/wu`):
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60 90` | Set marks (0 turns one off; with only two numbers Mark III is left as is) |
+| `/wu range list` | Warriors: prints the range steps, the target's last answer at each, hidden answers counted and the zones |
+| `/wu range stats` | Warriors: the estimate's measured error at each step crossing, against the middle of the step |
+| `/wu range clear` | Warriors: clears those stats |
 | `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range display and cooldown bar positions in every layout to default |
 
 `/wuutil` is an alias.
@@ -141,8 +166,8 @@ Each stance has its own tab on the options page (`/wu`):
 | `Core.lua` | Settings, shared Edit Mode helpers and event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
 | `RangeEstimator.lua` | Range display: turns range check answers into a smooth distance (from Good Range) |
-| `RangeTape.lua` | Range display: the tape, label and number looks (from Good Range) |
-| `Range.lua` | Range display: range checks, zones, showing and Edit Mode position |
+| `RangeTape.lua` | Range display: the tape's looks and the focus and mouseover label (from Good Range) |
+| `Range.lua` | Range display: range checks, zones, nameplate, focus and mouseover, Edit Mode positions and the `/wu range` commands |
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the stance tabs), slash commands |

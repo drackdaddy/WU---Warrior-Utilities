@@ -6,7 +6,7 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- Options page
 -- General tab (how to use the addon, slash commands and the Discord link) and,
 -- on warriors only, a Battle Shout tab (the player frame timer's switches), a
--- Range tab (the range display) and one tab per stance (that stance's cooldown
+-- Range tab (the range display, in three sub-tabs) and one tab per stance (that stance's cooldown
 -- bar), shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
@@ -14,8 +14,12 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
---   shoutWarnSize, shoutColor, rangeOff, rangeOocOff, rangeLook, rangeTextFont,
---   rangeSize, rangeWidth, rangeHeight, rangeScale, rangeUnitOff, rangeOpacity,
+--   shoutWarnSize, shoutColor, rangeOff, rangeOocOff, rangeFriendlyOff,
+--   rangeLook, rangeTextFont, rangeSize, rangeWidth, rangeHeight, rangeScale,
+--   rangeUnitOff, rangeOpacity, rangePlace, rangePlateY, rangePlateScale,
+--   rangeFocusOff, rangeMouseOff, rangeLabelScale, rangeAutoOff, rangeZone1,
+--   rangeZone2, rangeZone3, rangeColorPrimary, rangeColorSecondary,
+--   rangeColorDead, rangeColorFar,
 --   battleCdOff, defensiveCdOff, berserkerCdOff, battleAlertOff,
 --   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder
 --------------------------------------------------------------------------------
@@ -48,14 +52,41 @@ function ns.BuildOptions()
   ------------------------------------------------------------------------------
   -- Tabs
   ------------------------------------------------------------------------------
-  local pages, tabBtns = {}, {}
-  local function ShowTab(name)
-    for k, page in pairs(pages) do
-      page:SetShown(k == name)
-      tabBtns[k].label:SetTextColor(unpack(k == name and GOLD or { 0.72, 0.70, 0.64 }))
-      tabBtns[k].bar:SetShown(k == name)
+  -- Builds a row of tabs on parent from list ({ key, name } each): buttons w
+  -- px wide from (x, y), each with a page from (x, pageY) to (right, bottom)
+  -- off parent's bottom right. Returns the pages by key and a function that
+  -- shows one of them.
+  local function Tabs(parent, list, x, y, w, pageY, right, bottom)
+    local pages, btns = {}, {}
+    local function Show(name)
+      for k, page in pairs(pages) do
+        page:SetShown(k == name)
+        btns[k].label:SetTextColor(unpack(k == name and GOLD or { 0.72, 0.70, 0.64 }))
+        btns[k].bar:SetShown(k == name)
+      end
     end
+    for i, info in ipairs(list) do
+      local b = CreateFrame("Button", nil, parent)
+      b:SetSize(w, 28)
+      b:SetPoint("TOPLEFT", x + (i - 1) * (w + 4), y)
+      b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+      b.label:SetPoint("CENTER", 0, 2)
+      b.label:SetText(info[2])
+      b.bar = b:CreateTexture(nil, "ARTWORK")
+      b.bar:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.9)
+      b.bar:SetHeight(2)
+      b.bar:SetPoint("BOTTOMLEFT", 8, 2)
+      b.bar:SetPoint("BOTTOMRIGHT", -8, 2)
+      b:SetScript("OnClick", function() Show(info[1]) end)
+      btns[info[1]] = b
+      local page = CreateFrame("Frame", nil, parent)
+      page:SetPoint("TOPLEFT", x, pageY)
+      page:SetPoint("BOTTOMRIGHT", right, bottom)
+      pages[info[1]] = page
+    end
+    return pages, Show
   end
+
   local TABS = { { "general", "General" } }
   if ns.isWarrior then
     TABS[2] = { "shout", "Battle Shout" }
@@ -64,25 +95,7 @@ function ns.BuildOptions()
       TABS[#TABS + 1] = { s.key, (s.name:gsub(" Stance", "")) }
     end
   end
-  for i, info in ipairs(TABS) do
-    local b = CreateFrame("Button", nil, opt)
-    b:SetSize(96, 28)
-    b:SetPoint("TOPLEFT", 18 + (i - 1) * 100, -56)
-    b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    b.label:SetPoint("CENTER", 0, 2)
-    b.label:SetText(info[2])
-    b.bar = b:CreateTexture(nil, "ARTWORK")
-    b.bar:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.9)
-    b.bar:SetHeight(2)
-    b.bar:SetPoint("BOTTOMLEFT", 8, 2)
-    b.bar:SetPoint("BOTTOMRIGHT", -8, 2)
-    b:SetScript("OnClick", function() ShowTab(info[1]) end)
-    tabBtns[info[1]] = b
-    local page = CreateFrame("Frame", nil, opt)
-    page:SetPoint("TOPLEFT", 18, -96)
-    page:SetPoint("BOTTOMRIGHT", -18, 16)
-    pages[info[1]] = page
-  end
+  local pages, ShowTab = Tabs(opt, TABS, 18, -56, 96, -96, -18, 16)
 
   ------------------------------------------------------------------------------
   -- Page builders
@@ -150,11 +163,11 @@ function ns.BuildOptions()
     Text(bullet .. table.concat(lines, "\n" .. bullet))
   end
 
-  -- One slash command: the command in gold, then its description on one
-  -- line that ends at the page's right edge.
-  local function Command(cmd, desc)
+  -- One slash command: the command in gold (w px wide, 88 when nil), then its
+  -- description on one line that ends at the page's right edge.
+  local function Command(cmd, desc, w)
     local c = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    c:SetWidth(88)
+    c:SetWidth(w or 88)
     c:SetJustifyH("LEFT")
     c:SetTextColor(unpack(GOLD))
     c:SetText(cmd)
@@ -277,10 +290,11 @@ function ns.BuildOptions()
   end
 
   -- Color swatch for db[key] ({ r, g, b, a }). Clicking it opens Blizzard's
-  -- color picker with opacity; changes apply as the color is picked, and
+  -- color picker, with opacity unless noAlpha (then a stays 1); changes apply
+  -- as the color is picked, and
   -- Cancel puts back the color from before it opened. The Default button next
   -- to it restores the default color. apply runs after every change.
-  local function ColorSwatch(label, key, apply, disabled)
+  local function ColorSwatch(label, key, apply, disabled, noAlpha)
     local sw = CreateFrame("Button", nil, page) -- the size of the checkbox's box
     sw:SetSize(20, 20)
     local edge = sw:CreateTexture(nil, "BACKGROUND")
@@ -300,12 +314,12 @@ function ns.BuildOptions()
     end
     local function FromPicker()
       local r, g, b = ColorPickerFrame:GetColorRGB()
-      Set(r, g, b, ColorPickerFrame:GetColorAlpha())
+      Set(r, g, b, noAlpha and 1 or ColorPickerFrame:GetColorAlpha())
     end
     sw:SetScript("OnClick", function()
       local old = db[key]
       ColorPickerFrame:SetupColorPickerAndShow({
-        r = old.r, g = old.g, b = old.b, opacity = old.a, hasOpacity = true,
+        r = old.r, g = old.g, b = old.b, opacity = old.a, hasOpacity = not noAlpha,
         swatchFunc = FromPicker, opacityFunc = FromPicker,
         cancelFunc = function() Set(old.r, old.g, old.b, old.a) end,
       })
@@ -370,6 +384,7 @@ function ns.BuildOptions()
   Command("/wu", "Open options")
   Command("/wu 30 60 90", "Set the marks (0 = off)")
   Command("/wu reset", "Reset all settings")
+  if ns.isWarrior then Command("/wu range", "Range debug commands") end
   Command("/wuutil", "Same as /wu")
 
   Heading("Bugs, features and questions")
@@ -423,30 +438,35 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- Range tab: what the range display shows on the left, its settings on the
-  -- right (see Range.lua). Everything but the display switch is greyed out
-  -- while the display is off, and the tape's size settings unless the Tape look
-  -- is picked. Warriors only (see Tabs).
+  -- Range tab (see Range.lua), in three sub-tabs: Display (what it shows, when
+  -- and how it looks), Nameplate & Labels (the nameplate display and the
+  -- focus and mouseover labels) and Zones (zones set by hand, colours and the
+  -- debug commands). Everything but the display switch is greyed out while the
+  -- display is off, and each group's settings while that group is off.
+  -- Warriors only (see Tabs).
   ------------------------------------------------------------------------------
   if pages.range then
-    local left, right = Columns(pages.range)
+    local sub, ShowSub = Tabs(pages.range, {
+      { "display", "Display" }, { "plates", "Nameplate & Labels" }, { "zones", "Zones" },
+    }, 0, 0, 150, -36, 0, 0)
     local function Off() return db.rangeOff end
     local function NotTape() return db.rangeOff or db.rangeLook ~= "tape" end
 
+    -- Display
+    local left, right = Columns(sub.display)
     Begin(left)
     Heading("Distance to your target")
     Bullets({
-      "Shows how far your living enemy target is, in yards.",
-      Key("Green") .. ": melee range.",
-      Key("Blue") .. ": Charge, Intercept, Throw or Shoot, while you can use it right now.",
-      Key("Red") .. ": too close for those, too far for melee.",
-      Key("Grey") .. ": out of range. " .. Key("no data") .. " means the game gave no range answer.",
+      Key("Green") .. " melee, " .. Key("blue") .. " Charge, Intercept, Throw or Shoot while you can use it now.",
+      Key("Red") .. " dead zone, " .. Key("grey") .. " out of range or a friendly player.",
+      Key("no data") .. ": the game gave no range answer.",
       "Move it in " .. Key("Edit Mode") .. " (" .. Key("WU Range Display") .. ").",
       "Based on " .. Key("Good Range") .. " by Andrii Zolotarenko.",
     })
     Heading("Show")
     OnOff("Show range display", "rangeOff", ns.RefreshRange)
     OnOff("Show out of combat", "rangeOocOff", ns.RefreshRange, Off)
+    OnOff("Show on friendly players", "rangeFriendlyOff", ns.RefreshRange, Off)
     OnOff("Show \"yd\" after the number", "rangeUnitOff", ns.RefreshRange,
       function() return db.rangeOff or db.rangeLook == "badge" end)
 
@@ -460,6 +480,58 @@ function ns.BuildOptions()
     Stepper("Width", "rangeWidth", 80, 300, 10, ns.RefreshRange, NotTape)
     Stepper("Height", "rangeHeight", 16, 60, 1, ns.RefreshRange, NotTape)
     Stepper("Pixels per yard", "rangeScale", 10, 40, 2, ns.RefreshRange, NotTape)
+
+    -- Nameplate & Labels
+    left, right = Columns(sub.plates)
+    Begin(left)
+    Heading("Nameplate")
+    Bullets({
+      "Puts the display on your target's nameplate, with the same look.",
+      Key("Nameplate") .. " uses the screen spot while the target has no nameplate.",
+    })
+    local function NoPlate() return db.rangeOff or db.rangePlace == "screen" end
+    Choice("Show on", "rangePlace", ns.RefreshRange, Off)
+    Stepper("Height above nameplate", "rangePlateY", 0, 60, 2, ns.RefreshRange, NoPlate)
+    Stepper("Nameplate size (%)", "rangePlateScale", 50, 150, 10, ns.RefreshRange, NoPlate)
+
+    Begin(right)
+    Heading("Focus and mouseover")
+    Bullets({
+      "Small labels with the distance to your focus and to the unit under the mouse.",
+      "Move the focus label in " .. Key("Edit Mode") .. " (" .. Key("WU Range Focus") .. "); with nameplates on, it sits on the focus's nameplate.",
+    })
+    OnOff("Focus label", "rangeFocusOff", ns.RefreshRange, Off)
+    OnOff("Mouseover label", "rangeMouseOff", ns.RefreshRange, Off)
+    Stepper("Label size (%)", "rangeLabelScale", 50, 200, 10, ns.RefreshRange,
+      function() return db.rangeOff or db.rangeFocusOff and db.rangeMouseOff end)
+
+    -- Zones
+    left, right = Columns(sub.zones)
+    Begin(left)
+    Heading("Zones")
+    Bullets({
+      Key("Automatic") .. " zones follow what you can use right now.",
+      "Untick it to set them by hand, in a row from 0 yd: each ends where you set it.",
+      "Set a zone's end to the one before it to leave it out.",
+    })
+    local function Auto() return db.rangeOff or not db.rangeAutoOff end
+    OnOff("Automatic zones", "rangeAutoOff", ns.RefreshRange, Off)
+    Stepper("Melee (green) to", "rangeZone1", 0, 50, 1, ns.RefreshRange, Auto)
+    Stepper("Dead zone (red) to", "rangeZone2", 0, 50, 1, ns.RefreshRange, Auto)
+    Stepper("Ranged (blue) to", "rangeZone3", 0, 50, 1, ns.RefreshRange, Auto)
+
+    Begin(right)
+    Heading("Colors")
+    ColorSwatch("Melee", "rangeColorPrimary", ns.RefreshRange, Off, true)
+    ColorSwatch("Ranged", "rangeColorSecondary", ns.RefreshRange, Off, true)
+    ColorSwatch("Dead zone", "rangeColorDead", ns.RefreshRange, Off, true)
+    ColorSwatch("Out of range", "rangeColorFar", ns.RefreshRange, Off, true)
+    Heading("Debug commands")
+    Command("/wu range list", "Range steps and answers", 112)
+    Command("/wu range stats", "The estimate's error", 112)
+    Command("/wu range clear", "Clear the stats", 112)
+
+    ShowSub("display")
   end
 
   ------------------------------------------------------------------------------
@@ -544,6 +616,7 @@ end
 --   /wu            open options
 --   /wu 30 60 [90] set marks (the third is optional; 0 = off)
 --   /wu reset
+--   /wu range list | stats | clear   range debug output (warriors, see Range.lua)
 -- SLASH_WU1, SLASH_WU2 and SlashCmdList.WU are globals the game requires.
 --------------------------------------------------------------------------------
 SLASH_WU1, SLASH_WU2 = "/wu", "/wuutil"
@@ -553,6 +626,8 @@ SlashCmdList.WU = function(msg)
   local a, b, c = msg:match("^(%d+)%s+(%d+)%s*(%d*)$")
   if msg == "" then
     Open()
+  elseif ns.isWarrior and msg:match("^range") then
+    ns.RangeCommand(strtrim(msg:sub(6)))
   elseif msg == "reset" then
     wipe(db)
     ns.LoadDB()
@@ -572,6 +647,6 @@ SlashCmdList.WU = function(msg)
     end
     print("WU - Warrior Utilities marks set to " .. table.concat(shown, " / "))
   else
-    print("WU - Warrior Utilities: /wu, /wu 30 60 90, /wu reset")
+    print("WU - Warrior Utilities: /wu, /wu 30 60 90, /wu reset" .. (ns.isWarrior and ", /wu range" or ""))
   end
 end

@@ -1,17 +1,20 @@
 local addonName, ns = ...
 
 --------------------------------------------------------------------------------
--- Range tape (warriors only; part of the range display, see Range.lua)
--- Adapted from Good Range's display by Andrii Zolotarenko (MIT, see
--- LICENSE-GoodRange.txt). Draws a distance in one of four looks:
+-- Range tape and label (warriors only; part of the range display, see Range.lua)
+-- Adapted from Good Range's displays by Andrii Zolotarenko (MIT, see
+-- LICENSE-GoodRange.txt). The tape draws a distance in one of four looks:
 --   tape    a ruler sliding under a gold needle, ticks every 0.1 yd (fewer when
 --           the scale would crowd them), the distance above it
 --   label   a zone badge (MELEE, CHARGE, OUT OF RANGE ...) and the distance
 --   badge   the zone badge alone
 --   number  the distance alone
+-- The label (focus and mouseover) is a small rounded box in the zone's colour
+-- with the distance in whole yards on it.
 -- Everything is coloured by zone: green melee, blue another range the warrior
--- can use right now, red the dead zone between them, grey out of range. With no
--- range answer at all it turns grey, half transparent, and says "no data".
+-- can use right now, red the dead zone between them, grey out of range (the
+-- colours can be changed, see Tape.SetColors). With no range answer at all it
+-- turns grey, half transparent, and says "no data" ("?" on a label).
 -- Cheap to run: the ticks sit on one ruler frame that is moved as a whole each
 -- frame and are only restyled when the tape passes a tick.
 -- Events: none
@@ -37,14 +40,9 @@ local FONTS = {
 local DIGIT = { changa = { D = 0.725, R = 0.13 } }
 local DEFAULT_DIGIT = { D = 0.72, R = 0.1 }
 
-local COLORS = {
-  primary = { 0.373, 0.878, 0.416 },
-  secondary = { 0.302, 0.659, 1 },
-  dead = { 0.95, 0.33, 0.31 },
-  far = { 0.545, 0.565, 0.6 },
-}
+local COLORS = {} -- zone kind -> { r, g, b }, set by Tape.SetColors
 -- Every badge text Range.lua uses, so the badge is as wide as the longest.
-local LABELS = { "MELEE", "CHARGE", "THROW", "SHOOT", "DEAD ZONE", "OUT OF RANGE", "NO DATA" }
+local LABELS = { "MELEE", "CHARGE", "THROW", "SHOOT", "RANGED", "DEAD ZONE", "OUT OF RANGE", "FRIENDLY", "NO DATA" }
 
 -- Most translations call the game's yard a metre without converting the number,
 -- so only the label changes.
@@ -55,6 +53,12 @@ local UNIT = METRES[GetLocale()] and "m" or "yd"
 local Tape = {}
 Tape.__index = Tape
 ns.RangeTape = Tape
+
+-- Sets the zone colours from { primary, secondary, dead, far }, each
+-- { r, g, b }. Displays pick them up on their next SetLayout.
+function Tape.SetColors(colors)
+  for kind, c in pairs(colors) do COLORS[kind] = { c.r, c.g, c.b } end
+end
 
 -- Alpha of a column at x on a plate whose middle is cx: 1 in the middle,
 -- fading to 0 at the sides.
@@ -365,4 +369,94 @@ function Tape:Draw(v, label)
       for _, t in ipairs(self.caps) do t:SetVertexColor(c[1], c[2], c[3], 0.95) end
     end
   end
+end
+
+--------------------------------------------------------------------------------
+-- Label: the focus and mouseover display. Nine slices of one texture (white
+-- with a thin dark rim, tinted by zone), so the corners keep their shape at
+-- any size.
+--------------------------------------------------------------------------------
+local Label = {}
+Label.__index = Label
+ns.RangeLabel = Label
+local LABEL_H = 18 -- px at scale 1
+
+-- Creates a label inside parent, centred on it. Returns the label.
+function Label.New(parent)
+  local self = setmetatable({ parts = {} }, Label)
+  local root = CreateFrame("Frame", nil, parent)
+  root:SetPoint("CENTER")
+  self.root = root
+  local u = { 0, 0.25, 0.75, 1 }
+  for i = 1, 9 do
+    local t = root:CreateTexture(nil, "BORDER")
+    t:SetTexture(ASSET .. "range-label")
+    local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
+    t:SetTexCoord(u[col + 1], u[col + 2], u[row + 1], u[row + 2])
+    self.parts[i] = t
+  end
+  local p = self.parts
+  p[1]:SetPoint("TOPLEFT")
+  p[3]:SetPoint("TOPRIGHT")
+  p[7]:SetPoint("BOTTOMLEFT")
+  p[9]:SetPoint("BOTTOMRIGHT")
+  p[2]:SetPoint("TOPLEFT", p[1], "TOPRIGHT")
+  p[2]:SetPoint("BOTTOMRIGHT", p[3], "BOTTOMLEFT")
+  p[8]:SetPoint("TOPLEFT", p[7], "TOPRIGHT")
+  p[8]:SetPoint("BOTTOMRIGHT", p[9], "BOTTOMLEFT")
+  p[4]:SetPoint("TOPLEFT", p[1], "BOTTOMLEFT")
+  p[4]:SetPoint("BOTTOMRIGHT", p[7], "TOPRIGHT")
+  p[6]:SetPoint("TOPLEFT", p[3], "BOTTOMLEFT")
+  p[6]:SetPoint("BOTTOMRIGHT", p[9], "TOPRIGHT")
+  p[5]:SetPoint("TOPLEFT", p[1], "BOTTOMRIGHT")
+  p[5]:SetPoint("BOTTOMRIGHT", p[9], "TOPLEFT")
+  self.text = root:CreateFontString(nil, "OVERLAY")
+  return self
+end
+
+-- scale: the Label size setting (1 = 100%). font: a FONTS key. o: opacity, 0 to 1.
+function Label:SetLayout(scale, font, o)
+  local h = math.max(10, math.floor(LABEL_H * scale + 0.5))
+  local size = math.max(8, math.floor(h * 0.72 + 0.5))
+  SetFont(self.text, FONTS[font], size, "")
+  -- One width for every value, the widest, so nothing shifts.
+  self.text:SetText("99+")
+  self.root:SetSize(math.floor(self.text:GetStringWidth() + h * 0.6 + 0.5), h)
+  local corner = math.max(3, math.floor(h * 0.22 + 0.5))
+  for _, i in ipairs({ 1, 3, 7, 9 }) do self.parts[i]:SetSize(corner, corner) end
+  local m = DIGIT[font] or DEFAULT_DIGIT
+  self.text:ClearAllPoints()
+  self.text:SetPoint("CENTER", self.root, "CENTER", 0, -m.R * size)
+  self.text:SetTextColor(0.06, 0.06, 0.07)
+  self.opacity = o
+  self.shownText, self.kind = nil, nil -- repaint on the next Set
+  self.text:SetText("")
+  self.root:SetAlpha(o)
+end
+
+-- text: the distance; kind: its zone ("primary", "secondary", "dead", "far").
+function Label:Set(text, kind)
+  if self.noData then
+    self.noData = false
+    self.root:SetAlpha(self.opacity)
+  end
+  if text == self.shownText and kind == self.kind then return end
+  self.shownText, self.kind = text, kind
+  local c = COLORS[kind]
+  for _, t in ipairs(self.parts) do t:SetVertexColor(c[1], c[2], c[3], 0.95) end
+  self.text:SetText(text)
+end
+
+-- No range answer at all: "?", grey and half transparent.
+function Label:SetNoData()
+  if self.noData then return end
+  self:Set("?", "far")
+  self.noData = true
+  self.root:SetAlpha(self.opacity * 0.5)
+end
+
+-- A new unit: forget the last value until the next Set.
+function Label:Clear()
+  self.shownText, self.kind = nil, nil
+  self.text:SetText("")
 end

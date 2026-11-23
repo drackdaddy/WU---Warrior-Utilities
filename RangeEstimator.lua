@@ -12,6 +12,8 @@ local _, ns = ...
 -- now. Where the game gives the player's position and the target stands still,
 -- it instead places the target's spot from the last few crossings and
 -- measures to it.
+-- Every crossing is an exact distance, so the estimate's error is measured
+-- there and kept in stats (for /wu range stats).
 -- Events: none
 -- SavedVariables: none
 --------------------------------------------------------------------------------
@@ -38,12 +40,22 @@ local function clamp(v, lo, hi)
 end
 
 function Estimator.new()
-  return setmetatable({}, Estimator)
+  local e = setmetatable({}, Estimator)
+  e:clearStats()
+  return e
 end
 
--- Forgets everything (a new target).
+-- Forgets everything but the stats (a new target).
 function Estimator:reset()
+  local stats = self.stats
   wipe(self)
+  self.stats = stats
+end
+
+-- Clears the stats: n crossings timed, err / worst the estimate's total and
+-- largest error there, mid / midn the bracket middle's total error and count.
+function Estimator:clearStats()
+  self.stats = { n = 0, err = 0, worst = 0, mid = 0, midn = 0 }
 end
 
 -- The estimate for the bracket [lo, hi]: the middle of it until the first
@@ -138,6 +150,14 @@ function Estimator:update(now, dt, lo, hi, sp, px, py, still, mine)
   end
 
   if at then
+    local s = self.stats
+    if oldHi then
+      s.mid, s.midn = s.mid + math.abs((oldLo + oldHi) / 2 - at), s.midn + 1
+    end
+    if self.b then
+      local e = math.abs(clamp(self.b, oldLo, oldHi) - at)
+      s.n, s.err, s.worst = s.n + 1, s.err + e, math.max(s.worst, e)
+    end
     -- It happened between the last check and this one: on average half a tick ago.
     local t = now - dt / 2
     local last = self.last
