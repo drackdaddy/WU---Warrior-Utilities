@@ -1,10 +1,10 @@
 # WU - Warrior Utilities
 
-A lightweight rage bar, out of range warning, Battle Shout timer and stance cooldown bar for warriors on **World of Warcraft: Forever**.
+A lightweight rage bar, range display, Battle Shout timer and stance cooldown bar for warriors on **World of Warcraft: Forever**.
 
-WU keeps your rage on screen with marks at the amounts you care about, warns you when your target is out of melee range, shows how long your Battle Shout has left on the player frame, and tracks the key cooldowns for the stance you're in. The addon loads on warriors and druids, and settings are saved per character.
+WU keeps your rage on screen with marks at the amounts you care about, shows how far your target is and what you can reach it with, shows how long your Battle Shout has left on the player frame, and tracks the key cooldowns for the stance you're in. The addon loads on warriors and druids, and settings are saved per character.
 
-On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range warning, Battle Shout timer and cooldown bar are warriors only.
+On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range display, Battle Shout timer and cooldown bar are warriors only.
 
 ## Install
 
@@ -40,19 +40,57 @@ Plus **Reset To Default** and **Reset To Default Position**.
 - Outside Edit Mode the bar can't be moved and clicks pass through it.
 - The bar does not snap to the Edit Mode grid or to other frames.
 
-## Out of range warning (warriors only)
+## Range display (warriors only)
 
-Flashes **OUT OF RANGE** while you have a living enemy targeted that is out of melee range (Heroic Strike range). In Edit Mode, click **WU Range Warning** to move it and open its panel:
+Shows how far your target is, in yards, colored by what you can do from there. Adapted from [Good Range](https://www.curseforge.com/wow/addons/good-range-target-distance-range-finder) by Andrii Zolotarenko (MIT).
+
+| Color | Meaning |
+| --- | --- |
+| Green | Melee range (0 to 5 yd) |
+| Blue | Charge, Intercept, Throw or Shoot range, while you can use it right now (enough rage, the right stance and weapon, off cooldown); the label names it |
+| Red | Dead zone: too close for those, too far for melee |
+| Grey | Out of range, or a friendly player (**FRIENDLY**: a warrior has no heals or buffs to reach them with) |
+
+- The game only answers "in range or not" at fixed ranges (range-check items, interact distances and your own spells). WU checks the ones around the last reading many times a second and estimates the distance smoothly between them from how fast you and the target move.
+- Answers the game hides in combat are skipped, never read. If none are left, the display turns grey and says **no data**. On friendly players in combat the game allows no item or interact checks, so expect **no data** there.
+- It only reads range answers; it never casts or targets anything.
+
+Set it up on the **Range** tab of the options page (`/wu`), which has three sub-tabs.
+
+**Display**
 
 | Setting | Notes |
 | --- | --- |
-| Disable Range Warning | Turns the warning off (it shows faded in Edit Mode so you can turn it back on) |
-| Font | Friz Quadrata, Arial Narrow, Morpheus, Skurri (default Friz Quadrata) |
-| Font Size | 16 to 64 (default 32) |
-| Flash | Pulse, Blink, Steady (no flash) (default Pulse) |
-| Flash Speed | Slow, Normal, Fast (default Normal) |
+| Show range display | Turns the whole feature on or off (default on) |
+| Show out of combat | (default on) |
+| Show on friendly players | Friendly NPCs never show (default off) |
+| Show "yd" after the number | (default on) |
+| Look | Tape (a sliding ruler), Label + Number, Label Only, Number Only (default Tape) |
+| Font | Changa Bold, Skurri, Arial Narrow, 2002 Bold, Friz Quadrata, Nimrod, Morpheus (default Changa Bold) |
+| Font size | 12 to 64 (default 32) |
+| Opacity (%) | 10 to 100 (default 100); also used by the labels |
+| Width, Height, Pixels per yard | Tape look only (default 130, 31 and 20) |
 
-Its position is per Edit Mode layout, like the rage bar's.
+**Nameplate & Labels**
+
+| Setting | Notes |
+| --- | --- |
+| Show on | Screen, Nameplate, Screen and Nameplate (default Screen). Nameplate uses the screen spot while the target has no nameplate |
+| Height above nameplate | 0 to 60 (default 4) |
+| Nameplate size (%) | 50 to 150 (default 100) |
+| Focus label | A small label with the distance to your focus (default off). With nameplates on, it sits on the focus's nameplate |
+| Mouseover label | A small label beside the cursor with the distance to the unit under it, when that isn't your target (default off) |
+| Label size (%) | 50 to 200 (default 100) |
+
+**Zones**
+
+| Setting | Notes |
+| --- | --- |
+| Automatic zones | Zones follow what you can use right now (default on) |
+| Melee (green) to, Dead zone (red) to, Ranged (blue) to | With automatic zones off: the zones run in a row from 0 yd, each ending where you set it, 0 to 50 (default 5, 8, 25). Set one to the same as the zone before it to leave it out |
+| Colors | Melee, Ranged, Dead zone and Out of range colors. **Default** puts one back |
+
+In Edit Mode, click **WU Range Display** to move the screen display, or **WU Range Focus** to move the focus label (positions are per Edit Mode layout). Each can be turned off there too. In Edit Mode they show sample values when there's nothing to measure.
 
 ## Battle Shout timer (warriors only)
 
@@ -85,26 +123,30 @@ A row of icons for the stance you're in, each with the cooldown swipe and the ti
 | Defensive | Taunt, Shield Block, Revenge, Shield Slam, Shield Bash, Disarm, Last Stand, Shield Wall, Victory Rush, Bloodrage |
 | Berserker | Intercept, Bloodthirst, Whirlwind, Reckless Swings, Pummel, Berserker Rage, Death Wish, Recklessness, Victory Rush, Bloodrage |
 
-Each stance has its own tab on the options page (`/wu`):
+Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`):
 
 | Setting | Notes |
 | --- | --- |
 | Show cooldown bar | Turns that stance's bar on or off (default on) |
-| Glow when ready | A pulsing gold border on each ability that is off cooldown and usable right now (default on) |
-| Abilities | One checkbox per ability (all on by default). **Up** and **Down** change where it sits on the bar (top of the list is leftmost) |
+| Glow when ready | A pulsing gold border on each ability that is off cooldown and usable right now (default on). Turns the glow off for the whole bar |
+| Abilities | One checkbox per ability (all on by default). **Glow** next to it turns that ability's ready glow on or off (all on by default). **Up** and **Down** change where it sits on the bar (top of the list is leftmost) |
 
 - The glow only shows when you could cast the ability: it's off cooldown, you have the rage for it, and any trigger it needs has happened (Victory Rush after a kill, Overpower after a dodge, Revenge after a block, dodge or parry). It stays on during the global cooldown, so it doesn't blink after every ability.
+- An icon greys out while you don't have enough rage for it. The game answers that itself, so it works in combat too.
 - The game draws the swipe and glow from the cooldown itself, so it works in combat without the addon reading cooldown times.
 - In Edit Mode, click **WU Cooldown Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
 - The icons only display cooldowns; clicking them does nothing.
 
 ## Options
 
-**Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
+**Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
 
-- **General** — how to use the addon, the slash commands and a Discord link to copy
+The minimap icon opens the options when clicked; drag it to move it around the minimap's edge. **Show minimap icon** on the General tab hides it (default on).
+
+- **General** — how to use the addon, the minimap icon switch, the slash commands and a Discord link to copy
 - **Battle Shout** (warriors only) — the Battle Shout timer settings
-- **Battle**, **Defensive**, **Berserker** (warriors only) — each stance's cooldown bar
+- **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
+- **CDM** (warriors only) — each stance's cooldown bar, on **Battle**, **Defensive** and **Berserker** sub-tabs
 
 ## Slash commands
 
@@ -112,7 +154,10 @@ Each stance has its own tab on the options page (`/wu`):
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60 90` | Set marks (0 turns one off; with only two numbers Mark III is left as is) |
-| `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range warning and cooldown bar positions in every layout to default |
+| `/wu range list` | Warriors: prints the range steps, the target's last answer at each, hidden answers counted and the zones |
+| `/wu range stats` | Warriors: the estimate's measured error at each step crossing, against the middle of the step |
+| `/wu range clear` | Warriors: clears those stats |
+| `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range display and cooldown bar positions in every layout to default |
 
 `/wuutil` is an alias.
 
@@ -123,9 +168,12 @@ Each stance has its own tab on the options page (`/wu`):
 | `Libs\LibEditMode` | LibEditMode by p3lim (Edit Mode support), embedded unmodified; see its `LICENSE.txt` |
 | `Core.lua` | Settings, shared Edit Mode helpers and event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
-| `RangeWarning.lua` | Out of range warning and its Edit Mode settings |
+| `RangeEstimator.lua` | Range display: turns range check answers into a smooth distance (from Good Range) |
+| `RangeTape.lua` | Range display: the tape's looks and the focus and mouseover label (from Good Range) |
+| `Range.lua` | Range display: range checks, zones, nameplate, focus and mouseover, Edit Mode positions and the `/wu range` commands |
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
+| `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the stance tabs), slash commands |
 
 ## Glow
@@ -134,6 +182,11 @@ Each stance has its own tab on the options page (`/wu`):
 - A mark set to 0 is off and adds no glow.
 - Marks are a percent of max rage (100 for warriors).
 - Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (fiery fill with a choice of eight borders, or none).
+
+## Credits
+
+- The range display is adapted from Good Range by Andrii Zolotarenko, MIT license; see `LICENSE-GoodRange.txt`. Its range-check item list comes from LibRangeCheck-3.0 (MIT).
+- The Changa Bold font in `Assets` is by The Changa Project Authors, SIL Open Font License 1.1; see `Assets/OFL-Changa.txt`.
 
 ## Disclaimer
 

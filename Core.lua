@@ -1,7 +1,8 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with up to three marks, an "OUT OF RANGE" warning, a Battle Shout timer on
-  the player frame and a cooldown bar for each stance. Loads on warriors and
+  Rage bar with up to three marks, a range display (distance to the target,
+  adapted from Good Range), a Battle Shout timer on the player frame and a
+  cooldown bar for each stance. Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
@@ -13,8 +14,8 @@
   Blizzard's Cooldown widget and curves, so it never reads their times.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
-  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer,
-  CooldownBar, Options.
+  ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
+  ShoutTimer, CooldownBar, Minimap, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -29,13 +30,24 @@ local LEM = ns.LibEditMode
 -- (WUDB points to it), so every file can keep its own reference to ns.db.
 --------------------------------------------------------------------------------
 local defaults = {
+  minimapOff = false, minimapAngle = 225, -- minimap icon; angle in degrees, counterclockwise from the right
   barOff = false, marksOff = false, mark1 = 30, mark2 = 60, mark3 = 0, hideTicks = false, -- mark 0 = off
   layouts = {}, -- rage bar position per Edit Mode layout name: { point, x, y }
   combatOnly = false, scale = 100,
   style = "rage", color = "red", border = "molten",
-  rangeOff = false, rangeFont = "friz", rangeSize = 32,
-  rangeFlash = "pulse", rangeSpeed = "normal",
-  rangeLayouts = {}, -- range warning position per Edit Mode layout name
+  rangeOff = false, rangeOocOff = false, -- range display on; shown out of combat
+  rangeLook = "tape", rangeTextFont = "changa", rangeSize = 32, -- rangeSize: number font size
+  rangeWidth = 130, rangeHeight = 31, rangeScale = 20, -- tape size; rangeScale: pixels per yard
+  rangeUnitOff = false, rangeOpacity = 100, rangeFriendlyOff = true,
+  rangeLayouts = {}, -- range display position per Edit Mode layout name
+  rangePlace = "screen", rangePlateY = 4, rangePlateScale = 100, -- nameplate display
+  rangeFocusOff = true, rangeMouseOff = true, rangeLabelScale = 100, -- focus and mouseover labels
+  rangeFocusLayouts = {}, -- focus label position per Edit Mode layout name
+  rangeAutoOff = false, rangeZone1 = 5, rangeZone2 = 8, rangeZone3 = 25, -- zones set by hand: where each ends
+  rangeColorPrimary = { r = 0.373, g = 0.878, b = 0.416, a = 1 },
+  rangeColorSecondary = { r = 0.302, g = 0.659, b = 1, a = 1 },
+  rangeColorDead = { r = 0.95, g = 0.33, b = 0.31, a = 1 },
+  rangeColorFar = { r = 0.545, g = 0.565, b = 0.6, a = 1 },
   shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
   shoutWarnSize = 14, -- "Battle Shout Missing" font size
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
@@ -46,6 +58,7 @@ local defaults = {
   battleAlertOff = false, defensiveAlertOff = false, berserkerAlertOff = false,
   cdHide = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: left off that stance's bar
   cdOrder = { battle = {}, defensive = {}, berserker = {} }, -- spell IDs in bar order; empty = default order
+  cdNoGlow = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: that ability never glows
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -57,12 +70,14 @@ ns.LISTS = {
     { "bronze", "Bloodied Bronze" }, { "chain", "Chain Link" }, { "molten", "Molten Cracks" },
     { "lava", "Lava Rock" }, { "blade", "Blade Ends" }, { "none", "None" },
   },
-  rangeFont = {
-    { "friz", "Friz Quadrata" }, { "arial", "Arial Narrow" },
-    { "morpheus", "Morpheus" }, { "skurri", "Skurri" },
+  rangeLook = {
+    { "tape", "Tape" }, { "label", "Label + Number" }, { "badge", "Label Only" }, { "number", "Number Only" },
   },
-  rangeFlash = { { "pulse", "Pulse" }, { "blink", "Blink" }, { "steady", "Steady (no flash)" } },
-  rangeSpeed = { { "slow", "Slow" }, { "normal", "Normal" }, { "fast", "Fast" } },
+  rangePlace = { { "screen", "Screen" }, { "plate", "Nameplate" }, { "both", "Screen and Nameplate" } },
+  rangeTextFont = {
+    { "changa", "Changa Bold" }, { "skurri", "Skurri" }, { "arial", "Arial Narrow" }, { "2002", "2002 Bold" },
+    { "friz", "Friz Quadrata" }, { "nimrod", "Nimrod" }, { "morpheus", "Morpheus" },
+  },
 }
 
 local db = {}
@@ -94,7 +109,7 @@ end
 
 --------------------------------------------------------------------------------
 -- Edit Mode helpers
--- Shared by the rage bar, the range warning and the cooldown bar. LibEditMode registers a frame
+-- Shared by the rage bar, the range display and the cooldown bar. LibEditMode registers a frame
 -- with Blizzard's Edit Mode: it draws the selection highlight, handles
 -- dragging, arrow-key nudges and "Reset To Default Position", shows the
 -- settings panel when the frame is selected, and reports the active Edit Mode
@@ -188,11 +203,12 @@ ev:SetScript("OnEvent", function(self, event, ...)
     ns.isWarrior = class == "WARRIOR"
     ns.BuildBar()
     if ns.isWarrior then
-      ns.BuildRangeWarning()
+      ns.BuildRange()
       ns.BuildShoutTimer()
       ns.BuildCooldownBar()
     end
     ns.BuildOptions()
+    ns.BuildMinimap()
     for name in pairs(handlers) do
       if name:find("^UNIT_") then
         self:RegisterUnitEvent(name, "player")
