@@ -5,16 +5,19 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --------------------------------------------------------------------------------
 -- Options page
 -- General tab (how to use the addon, slash commands and the Discord link) and,
--- on warriors only, a Battle Shout tab (the player frame timer's switches) and
--- one tab per stance (that stance's cooldown bar), shown in Esc > Options >
+-- on warriors only, a Battle Shout tab (the player frame timer's switches), a
+-- Range tab (the range display) and one tab per stance (that stance's cooldown
+-- bar), shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
---   shoutWarnSize, shoutColor, battleCdOff, defensiveCdOff, berserkerCdOff,
---   battleAlertOff, defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder
+--   shoutWarnSize, shoutColor, rangeOff, rangeOocOff, rangeLook, rangeTextFont,
+--   rangeSize, rangeWidth, rangeHeight, rangeScale, rangeUnitOff, rangeOpacity,
+--   battleCdOff, defensiveCdOff, berserkerCdOff, battleAlertOff,
+--   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder
 --------------------------------------------------------------------------------
 local category
 
@@ -56,14 +59,15 @@ function ns.BuildOptions()
   local TABS = { { "general", "General" } }
   if ns.isWarrior then
     TABS[2] = { "shout", "Battle Shout" }
+    TABS[3] = { "range", "Range" }
     for _, s in ipairs(ns.STANCES) do
       TABS[#TABS + 1] = { s.key, (s.name:gsub(" Stance", "")) }
     end
   end
   for i, info in ipairs(TABS) do
     local b = CreateFrame("Button", nil, opt)
-    b:SetSize(100, 28)
-    b:SetPoint("TOPLEFT", 18 + (i - 1) * 104, -56)
+    b:SetSize(96, 28)
+    b:SetPoint("TOPLEFT", 18 + (i - 1) * 100, -56)
     b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     b.label:SetPoint("CENTER", 0, 2)
     b.label:SetText(info[2])
@@ -164,7 +168,7 @@ function ns.BuildOptions()
     Place(c, 6)
   end
 
-  -- Setting controls (checkboxes, steppers and color swatches). Each has a label and
+  -- Setting controls (checkboxes, steppers, dropdowns and color swatches). Each has a label and
   -- a Draw method that draws it from db. All are redrawn when their page
   -- shows (so /wu reset is reflected) and after any of them changes, so a
   -- control whose disabled() returns true is greyed out as soon as the
@@ -247,6 +251,31 @@ function ns.BuildOptions()
     plus:SetPoint("LEFT", value, "RIGHT", 2, 0)
   end
 
+  -- Dropdown for db[key], one of the ns.LISTS[key] choices (see Core.lua): the
+  -- label, then Blizzard's dropdown button showing the current choice. Like the
+  -- stepper, the control itself is an empty checkbox-sized box so the label
+  -- lines up. apply runs after a pick.
+  local function Choice(label, key, apply, disabled)
+    local ch = CreateFrame("Frame", nil, page)
+    ch:SetSize(26, 26)
+    local dd = CreateFrame("DropdownButton", nil, page, "WowStyle1DropdownTemplate")
+    dd:SetWidth(150)
+    dd:SetupMenu(function(_, root)
+      for _, o in ipairs(ns.LISTS[key]) do
+        root:CreateRadio(o[2], function() return db[key] == o[1] end, function()
+          db[key] = o[1]
+          apply()
+          RefreshControls()
+        end)
+      end
+    end)
+    -- Regenerating the menu updates the shown choice (after /wu reset).
+    function ch:Draw() dd:GenerateMenu() end
+    function ch:SetEnabled(on) dd:SetEnabled(on) end
+    AddControl(ch, label, -4, disabled)
+    dd:SetPoint("LEFT", ch, "LEFT", 130, 0)
+  end
+
   -- Color swatch for db[key] ({ r, g, b, a }). Clicking it opens Blizzard's
   -- color picker with opacity; changes apply as the color is picked, and
   -- Cancel puts back the color from before it opened. The Default button next
@@ -294,7 +323,7 @@ function ns.BuildOptions()
 
   ------------------------------------------------------------------------------
   -- General tab, in two columns so it fits the Settings panel: the rage bar on
-  -- the left; the range warning (warriors), slash commands and Discord link on
+  -- the left; the range display (warriors), slash commands and Discord link on
   -- the right. The link is a read-only edit box because addons can't open URLs
   -- or write to the clipboard; clicking it selects the text for Ctrl+C.
   ------------------------------------------------------------------------------
@@ -330,10 +359,10 @@ function ns.BuildOptions()
 
   Begin(right)
   if ns.isWarrior then
-    Heading("Out of range warning")
+    Heading("Range display")
     Bullets({
-      "Flashes " .. Key("OUT OF RANGE") .. " when your target is out of melee range.",
-      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Range Warning") .. " to move it and set its font, size and flash.",
+      "Shows how far your enemy target is, colored by what you can do from there.",
+      "Set it up on the " .. Key("Range") .. " tab; move it in " .. Key("Edit Mode") .. " (" .. Key("WU Range Display") .. ").",
     })
   end
 
@@ -391,6 +420,46 @@ function ns.BuildOptions()
     Stepper("Text size", "shoutWarnSize", 10, 30, 2, ns.RefreshShout,
       function() return db.shoutOff or db.shoutWarnOff end)
     ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
+  end
+
+  ------------------------------------------------------------------------------
+  -- Range tab: what the range display shows on the left, its settings on the
+  -- right (see Range.lua). Everything but the display switch is greyed out
+  -- while the display is off, and the tape's size settings unless the Tape look
+  -- is picked. Warriors only (see Tabs).
+  ------------------------------------------------------------------------------
+  if pages.range then
+    local left, right = Columns(pages.range)
+    local function Off() return db.rangeOff end
+    local function NotTape() return db.rangeOff or db.rangeLook ~= "tape" end
+
+    Begin(left)
+    Heading("Distance to your target")
+    Bullets({
+      "Shows how far your living enemy target is, in yards.",
+      Key("Green") .. ": melee range.",
+      Key("Blue") .. ": Charge, Intercept, Throw or Shoot, while you can use it right now.",
+      Key("Red") .. ": too close for those, too far for melee.",
+      Key("Grey") .. ": out of range. " .. Key("no data") .. " means the game gave no range answer.",
+      "Move it in " .. Key("Edit Mode") .. " (" .. Key("WU Range Display") .. ").",
+      "Based on " .. Key("Good Range") .. " by Andrii Zolotarenko.",
+    })
+    Heading("Show")
+    OnOff("Show range display", "rangeOff", ns.RefreshRange)
+    OnOff("Show out of combat", "rangeOocOff", ns.RefreshRange, Off)
+    OnOff("Show \"yd\" after the number", "rangeUnitOff", ns.RefreshRange,
+      function() return db.rangeOff or db.rangeLook == "badge" end)
+
+    Begin(right)
+    Heading("Look")
+    Choice("Look", "rangeLook", ns.RefreshRange, Off)
+    Choice("Font", "rangeTextFont", ns.RefreshRange, Off)
+    Stepper("Font size", "rangeSize", 12, 64, 2, ns.RefreshRange, Off)
+    Stepper("Opacity (%)", "rangeOpacity", 10, 100, 10, ns.RefreshRange, Off)
+    Heading("Tape")
+    Stepper("Width", "rangeWidth", 80, 300, 10, ns.RefreshRange, NotTape)
+    Stepper("Height", "rangeHeight", 16, 60, 1, ns.RefreshRange, NotTape)
+    Stepper("Pixels per yard", "rangeScale", 10, 40, 2, ns.RefreshRange, NotTape)
   end
 
   ------------------------------------------------------------------------------

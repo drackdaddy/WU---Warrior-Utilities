@@ -1,7 +1,8 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with up to three marks, an "OUT OF RANGE" warning, a Battle Shout timer on
-  the player frame and a cooldown bar for each stance. Loads on warriors and
+  Rage bar with up to three marks, a range display (distance to the target,
+  adapted from Good Range), a Battle Shout timer on the player frame and a
+  cooldown bar for each stance. Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
@@ -13,8 +14,8 @@
   Blizzard's Cooldown widget and curves, so it never reads their times.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
-  ns.LibEditMode, no LibStub), Core, RageBar, RangeWarning, ShoutTimer,
-  CooldownBar, Options.
+  ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
+  ShoutTimer, CooldownBar, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -33,9 +34,11 @@ local defaults = {
   layouts = {}, -- rage bar position per Edit Mode layout name: { point, x, y }
   combatOnly = false, scale = 100,
   style = "rage", color = "red", border = "molten",
-  rangeOff = false, rangeFont = "friz", rangeSize = 32,
-  rangeFlash = "pulse", rangeSpeed = "normal",
-  rangeLayouts = {}, -- range warning position per Edit Mode layout name
+  rangeOff = false, rangeOocOff = false, -- range display on; shown out of combat
+  rangeLook = "tape", rangeTextFont = "changa", rangeSize = 32, -- rangeSize: number font size
+  rangeWidth = 130, rangeHeight = 31, rangeScale = 20, -- tape size; rangeScale: pixels per yard
+  rangeUnitOff = false, rangeOpacity = 100,
+  rangeLayouts = {}, -- range display position per Edit Mode layout name
   shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
   shoutWarnSize = 14, -- "Battle Shout Missing" font size
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
@@ -57,12 +60,13 @@ ns.LISTS = {
     { "bronze", "Bloodied Bronze" }, { "chain", "Chain Link" }, { "molten", "Molten Cracks" },
     { "lava", "Lava Rock" }, { "blade", "Blade Ends" }, { "none", "None" },
   },
-  rangeFont = {
-    { "friz", "Friz Quadrata" }, { "arial", "Arial Narrow" },
-    { "morpheus", "Morpheus" }, { "skurri", "Skurri" },
+  rangeLook = {
+    { "tape", "Tape" }, { "label", "Label + Number" }, { "badge", "Label Only" }, { "number", "Number Only" },
   },
-  rangeFlash = { { "pulse", "Pulse" }, { "blink", "Blink" }, { "steady", "Steady (no flash)" } },
-  rangeSpeed = { { "slow", "Slow" }, { "normal", "Normal" }, { "fast", "Fast" } },
+  rangeTextFont = {
+    { "changa", "Changa Bold" }, { "skurri", "Skurri" }, { "arial", "Arial Narrow" }, { "2002", "2002 Bold" },
+    { "friz", "Friz Quadrata" }, { "nimrod", "Nimrod" }, { "morpheus", "Morpheus" },
+  },
 }
 
 local db = {}
@@ -94,7 +98,7 @@ end
 
 --------------------------------------------------------------------------------
 -- Edit Mode helpers
--- Shared by the rage bar, the range warning and the cooldown bar. LibEditMode registers a frame
+-- Shared by the rage bar, the range display and the cooldown bar. LibEditMode registers a frame
 -- with Blizzard's Edit Mode: it draws the selection highlight, handles
 -- dragging, arrow-key nudges and "Reset To Default Position", shows the
 -- settings panel when the frame is selected, and reports the active Edit Mode
@@ -188,7 +192,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
     ns.isWarrior = class == "WARRIOR"
     ns.BuildBar()
     if ns.isWarrior then
-      ns.BuildRangeWarning()
+      ns.BuildRange()
       ns.BuildShoutTimer()
       ns.BuildCooldownBar()
     end

@@ -1,10 +1,10 @@
 # WU - Warrior Utilities
 
-A lightweight rage bar, out of range warning, Battle Shout timer and stance cooldown bar for warriors on **World of Warcraft: Forever**.
+A lightweight rage bar, range display, Battle Shout timer and stance cooldown bar for warriors on **World of Warcraft: Forever**.
 
-WU keeps your rage on screen with marks at the amounts you care about, warns you when your target is out of melee range, shows how long your Battle Shout has left on the player frame, and tracks the key cooldowns for the stance you're in. The addon loads on warriors and druids, and settings are saved per character.
+WU keeps your rage on screen with marks at the amounts you care about, shows how far your target is and what you can reach it with, shows how long your Battle Shout has left on the player frame, and tracks the key cooldowns for the stance you're in. The addon loads on warriors and druids, and settings are saved per character.
 
-On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range warning, Battle Shout timer and cooldown bar are warriors only.
+On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range display, Battle Shout timer and cooldown bar are warriors only.
 
 ## Install
 
@@ -40,19 +40,35 @@ Plus **Reset To Default** and **Reset To Default Position**.
 - Outside Edit Mode the bar can't be moved and clicks pass through it.
 - The bar does not snap to the Edit Mode grid or to other frames.
 
-## Out of range warning (warriors only)
+## Range display (warriors only)
 
-Flashes **OUT OF RANGE** while you have a living enemy targeted that is out of melee range (Heroic Strike range). In Edit Mode, click **WU Range Warning** to move it and open its panel:
+Shows how far your living enemy target is, in yards, colored by what you can do from there. Adapted from [Good Range](https://www.curseforge.com/wow/addons/good-range-target-distance-range-finder) by Andrii Zolotarenko (MIT).
+
+| Color | Meaning |
+| --- | --- |
+| Green | Melee range (0 to 5 yd) |
+| Blue | Charge, Intercept, Throw or Shoot range, while you can use it right now (enough rage, the right stance and weapon, off cooldown); the label names it |
+| Red | Dead zone: too close for those, too far for melee |
+| Grey | Out of range |
+
+- The game only answers "in range or not" at fixed ranges (range-check items, interact distances and your own spells). WU checks the ones around the last reading many times a second and estimates the distance smoothly between them from how fast you and the target move.
+- Answers the game hides in combat are skipped, never read. If none are left, the display turns grey and says **no data**.
+- It only reads range answers; it never casts or targets anything.
+
+Set it up on the **Range** tab of the options page (`/wu`):
 
 | Setting | Notes |
 | --- | --- |
-| Disable Range Warning | Turns the warning off (it shows faded in Edit Mode so you can turn it back on) |
-| Font | Friz Quadrata, Arial Narrow, Morpheus, Skurri (default Friz Quadrata) |
-| Font Size | 16 to 64 (default 32) |
-| Flash | Pulse, Blink, Steady (no flash) (default Pulse) |
-| Flash Speed | Slow, Normal, Fast (default Normal) |
+| Show range display | Turns the display on or off (default on) |
+| Show out of combat | (default on) |
+| Show "yd" after the number | (default on) |
+| Look | Tape (a sliding ruler), Label + Number, Label Only, Number Only (default Tape) |
+| Font | Changa Bold, Skurri, Arial Narrow, 2002 Bold, Friz Quadrata, Nimrod, Morpheus (default Changa Bold) |
+| Font size | 12 to 64 (default 32) |
+| Opacity (%) | 10 to 100 (default 100) |
+| Width, Height, Pixels per yard | Tape look only (default 130, 31 and 20) |
 
-Its position is per Edit Mode layout, like the rage bar's.
+In Edit Mode, click **WU Range Display** to move it (its position is per Edit Mode layout, like the rage bar's) or to turn it off. In Edit Mode it shows a sample distance when you have no target.
 
 ## Battle Shout timer (warriors only)
 
@@ -104,6 +120,7 @@ Each stance has its own tab on the options page (`/wu`):
 
 - **General** — how to use the addon, the slash commands and a Discord link to copy
 - **Battle Shout** (warriors only) — the Battle Shout timer settings
+- **Range** (warriors only) — the range display settings
 - **Battle**, **Defensive**, **Berserker** (warriors only) — each stance's cooldown bar
 
 ## Slash commands
@@ -112,7 +129,7 @@ Each stance has its own tab on the options page (`/wu`):
 | --- | --- |
 | `/wu` | Open options |
 | `/wu 30 60 90` | Set marks (0 turns one off; with only two numbers Mark III is left as is) |
-| `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range warning and cooldown bar positions in every layout to default |
+| `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range display and cooldown bar positions in every layout to default |
 
 `/wuutil` is an alias.
 
@@ -123,7 +140,9 @@ Each stance has its own tab on the options page (`/wu`):
 | `Libs\LibEditMode` | LibEditMode by p3lim (Edit Mode support), embedded unmodified; see its `LICENSE.txt` |
 | `Core.lua` | Settings, shared Edit Mode helpers and event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
-| `RangeWarning.lua` | Out of range warning and its Edit Mode settings |
+| `RangeEstimator.lua` | Range display: turns range check answers into a smooth distance (from Good Range) |
+| `RangeTape.lua` | Range display: the tape, label and number looks (from Good Range) |
+| `Range.lua` | Range display: range checks, zones, showing and Edit Mode position |
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the stance tabs), slash commands |
@@ -134,6 +153,11 @@ Each stance has its own tab on the options page (`/wu`):
 - A mark set to 0 is off and adds no glow.
 - Marks are a percent of max rage (100 for warriors).
 - Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (fiery fill with a choice of eight borders, or none).
+
+## Credits
+
+- The range display is adapted from Good Range by Andrii Zolotarenko, MIT license; see `LICENSE-GoodRange.txt`. Its range-check item list comes from LibRangeCheck-3.0 (MIT).
+- The Changa Bold font in `Assets` is by The Changa Project Authors, SIL Open Font License 1.1; see `Assets/OFL-Changa.txt`.
 
 ## Disclaimer
 
