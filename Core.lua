@@ -58,6 +58,7 @@ local defaults = {
   battleAlertOff = false, defensiveAlertOff = false, berserkerAlertOff = false,
   cdHide = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: left off that stance's bar
   cdOrder = { battle = {}, defensive = {}, berserker = {} }, -- spell IDs in bar order; empty = default order
+  cdNoGlow = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: that ability never glows
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.

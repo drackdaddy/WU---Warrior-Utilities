@@ -7,8 +7,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- General tab (how to use the addon, the minimap icon switch, slash commands
 -- and the Discord link) and,
 -- on warriors only, a Battle Shout tab (the player frame timer's switches), a
--- Range tab (the range display, in three sub-tabs) and one tab per stance (that stance's cooldown
--- bar), shown in Esc > Options >
+-- Range tab (the range display, in three sub-tabs) and a CDM tab with one
+-- sub-tab per stance (that stance's cooldown bar), shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
@@ -22,7 +22,7 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   rangeZone2, rangeZone3, rangeColorPrimary, rangeColorSecondary,
 --   rangeColorDead, rangeColorFar,
 --   battleCdOff, defensiveCdOff, berserkerCdOff, battleAlertOff,
---   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder
+--   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow
 --------------------------------------------------------------------------------
 local category
 
@@ -92,9 +92,7 @@ function ns.BuildOptions()
   if ns.isWarrior then
     TABS[2] = { "shout", "Battle Shout" }
     TABS[3] = { "range", "Range" }
-    for _, s in ipairs(ns.STANCES) do
-      TABS[#TABS + 1] = { s.key, (s.name:gsub(" Stance", "")) }
-    end
+    TABS[4] = { "cdm", "CDM" }
   end
   local pages, ShowTab = Tabs(opt, TABS, 18, -56, 96, -96, -18, 16)
 
@@ -366,7 +364,7 @@ function ns.BuildOptions()
   if ns.isWarrior then
     Heading("Cooldown bar")
     Bullets({
-      "Set up each stance's bar on its own tab above.",
+      "Set up each stance's bar on the " .. Key("CDM") .. " tab above.",
       "In " .. Key("Edit Mode") .. ", click " .. Key("WU Cooldown Bar") .. " to move it, set its icon size"
         .. " or turn on " .. Key("Only Show in Combat") .. ".",
     })
@@ -540,18 +538,23 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- Stance tabs: one per stance, for that stance's cooldown bar (see
+  -- CDM tab: one sub-tab per stance, for that stance's cooldown bar (see
   -- CooldownBar.lua): the bar and its ready glow on the left, the abilities on
-  -- the right in bar order. Each ability row is a slot: row i shows whichever
-  -- ability is i-th in the stance's order, so moving one up or down redraws
-  -- the rows. Everything but the bar switch is greyed out while the bar is
-  -- off. Warriors only (see Tabs).
+  -- the right in bar order, each with its own glow switch. Each ability row is
+  -- a slot: row i shows whichever ability is i-th in the stance's order, so
+  -- moving one up or down redraws the rows. Everything but the bar switch is
+  -- greyed out while the bar is off, and the ability glow switches while the
+  -- stance's glow is off. Warriors only (see Tabs).
   ------------------------------------------------------------------------------
-  for _, s in ipairs(ns.STANCES) do
-    if pages[s.key] then
-      local barKey = s.key .. "CdOff"
+  if pages.cdm then
+    local list = {}
+    for _, s in ipairs(ns.STANCES) do list[#list + 1] = { s.key, (s.name:gsub(" Stance", "")) } end
+    local sub, ShowSub = Tabs(pages.cdm, list, 0, 0, 120, -36, 0, 0)
+    for _, s in ipairs(ns.STANCES) do
+      local barKey, alertKey = s.key .. "CdOff", s.key .. "AlertOff"
       local function BarOff() return db[barKey] end
-      local left, right = Columns(pages[s.key])
+      local function GlowOff() return db[barKey] or db[alertKey] end
+      local left, right = Columns(sub[s.key])
 
       Begin(left)
       Heading(s.name .. " cooldowns")
@@ -559,23 +562,24 @@ function ns.BuildOptions()
         "Shows while you are in " .. Key(s.name) .. ".",
         "Each icon shows its cooldown and the time left.",
         "Abilities you haven't learned are left off.",
+        "An icon greys out while you don't have the rage for it.",
         "Move it and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Cooldown Bar") .. ").",
       })
       Heading("Settings")
       OnOff("Show cooldown bar", barKey, ns.RefreshCooldowns)
-      OnOff("Glow when ready", s.key .. "AlertOff", ns.RefreshCooldowns, BarOff)
+      OnOff("Glow when ready", alertKey, ns.RefreshCooldowns, BarOff)
 
       Begin(right)
       Heading("Abilities")
-      Text("Untick an ability to leave it off. " .. Key("Up") .. " and " .. Key("Down")
-        .. " move it along the bar (top is leftmost).")
+      Text("Untick an ability to leave it off. " .. Key("Glow") .. " lets it glow when ready. "
+        .. Key("Up") .. " and " .. Key("Down") .. " move it along the bar (top is leftmost).")
       local last = #s.spells
 
       -- Button that swaps the ability in row i with the one in row i + dir
       -- and saves the new order.
       local function MoveButton(text, i, dir)
         local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
-        b:SetSize(44, 20)
+        b:SetSize(40, 20)
         b:SetText(text)
         b:SetScript("OnClick", function()
           local order = ns.CooldownOrder(s)
@@ -587,14 +591,32 @@ function ns.BuildOptions()
         return b
       end
 
+      -- The Glow checkbox for row i, with its label to the right.
+      local function GlowBox(i)
+        local g = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
+        g:SetSize(22, 22)
+        g.label = g:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        g.label:SetPoint("LEFT", g, "RIGHT", 0, 0)
+        g.label:SetText("Glow")
+        g:SetScript("OnClick", function(self)
+          db.cdNoGlow[s.key][ns.CooldownOrder(s)[i]] = not self:GetChecked() or nil
+          ns.RefreshCooldowns()
+        end)
+        return g
+      end
+
       for i = 1, last do
         local cb = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
         cb:SetSize(26, 26)
+        local glow = GlowBox(i)
         local up, down = MoveButton("Up", i, -1), MoveButton("Down", i, 1)
         function cb:Draw()
           local id = ns.CooldownOrder(s)[i]
           self.label:SetText("|T" .. C_Spell.GetSpellTexture(id) .. ":16|t  " .. C_Spell.GetSpellName(id))
           self:SetChecked(not db.cdHide[s.key][id])
+          glow:SetChecked(not db.cdNoGlow[s.key][id])
+          glow:SetEnabled(not GlowOff())
+          glow.label:SetFontObject(GlowOff() and "GameFontDisableSmall" or "GameFontHighlightSmall")
           up:SetEnabled(not BarOff() and i > 1)
           down:SetEnabled(not BarOff() and i < last)
         end
@@ -604,10 +626,12 @@ function ns.BuildOptions()
           RefreshControls()
         end)
         AddControl(cb, "", -4, BarOff)
-        up:SetPoint("LEFT", cb, "LEFT", 180, 0)
+        glow:SetPoint("LEFT", cb, "LEFT", 168, 0)
+        up:SetPoint("LEFT", glow, "RIGHT", 30, 0)
         down:SetPoint("LEFT", up, "RIGHT", 2, 0)
       end
     end
+    ShowSub(list[1][1])
   end
 
   ShowTab("general")

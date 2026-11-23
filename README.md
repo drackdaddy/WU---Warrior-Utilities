@@ -123,15 +123,16 @@ A row of icons for the stance you're in, each with the cooldown swipe and the ti
 | Defensive | Taunt, Shield Block, Revenge, Shield Slam, Shield Bash, Disarm, Last Stand, Shield Wall, Victory Rush, Bloodrage |
 | Berserker | Intercept, Bloodthirst, Whirlwind, Reckless Swings, Pummel, Berserker Rage, Death Wish, Recklessness, Victory Rush, Bloodrage |
 
-Each stance has its own tab on the options page (`/wu`):
+Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`):
 
 | Setting | Notes |
 | --- | --- |
 | Show cooldown bar | Turns that stance's bar on or off (default on) |
-| Glow when ready | A pulsing gold border on each ability that is off cooldown and usable right now (default on) |
-| Abilities | One checkbox per ability (all on by default). **Up** and **Down** change where it sits on the bar (top of the list is leftmost) |
+| Glow when ready | A pulsing gold border on each ability that is off cooldown and usable right now (default on). Turns the glow off for the whole bar |
+| Abilities | One checkbox per ability (all on by default). **Glow** next to it turns that ability's ready glow on or off (all on by default). **Up** and **Down** change where it sits on the bar (top of the list is leftmost) |
 
 - The glow only shows when you could cast the ability: it's off cooldown, you have the rage for it, and any trigger it needs has happened (Victory Rush after a kill, Overpower after a dodge, Revenge after a block, dodge or parry). It stays on during the global cooldown, so it doesn't blink after every ability.
+- An icon greys out while you don't have enough rage for it. The game answers that itself, so it works in combat too.
 - The game draws the swipe and glow from the cooldown itself, so it works in combat without the addon reading cooldown times.
 - In Edit Mode, click **WU Cooldown Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
 - The icons only display cooldowns; clicking them does nothing.
@@ -145,7 +146,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 - **General** — how to use the addon, the minimap icon switch, the slash commands and a Discord link to copy
 - **Battle Shout** (warriors only) — the Battle Shout timer settings
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **Battle**, **Defensive**, **Berserker** (warriors only) — each stance's cooldown bar
+- **CDM** (warriors only) — each stance's cooldown bar, on **Battle**, **Defensive** and **Berserker** sub-tabs
 
 ## Slash commands
 
