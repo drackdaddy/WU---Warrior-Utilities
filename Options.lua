@@ -464,7 +464,6 @@ function ns.BuildOptions()
       Key("Red") .. " dead zone, " .. Key("grey") .. " out of range or a friendly player.",
       Key("no data") .. ": the game gave no range answer.",
       "Move it in " .. Key("Edit Mode") .. " (" .. Key("WU Range Display") .. ").",
-      "Based on " .. Key("Good Range") .. " by Andrii Zolotarenko.",
     })
     Heading("Show")
     OnOff("Show range display", "rangeOff", ns.RefreshRange)
@@ -472,6 +471,10 @@ function ns.BuildOptions()
     OnOff("Show on friendly players", "rangeFriendlyOff", ns.RefreshRange, Off)
     OnOff("Show \"yd\" after the number", "rangeUnitOff", ns.RefreshRange,
       function() return db.rangeOff or db.rangeLook == "badge" end)
+    Heading("Credits")
+    Text("Thanks to " .. Key("artand") .. " (Andrii Zolotarenko), creator of the "
+      .. Key("Good Range") .. " addon, for the idea behind this range display. "
+      .. "It is adapted from Good Range under the MIT license.")
 
     Begin(right)
     Heading("Look")
