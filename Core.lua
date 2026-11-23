@@ -15,7 +15,7 @@
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
-  ShoutTimer, CooldownBar, Options.
+  ShoutTimer, CooldownBar, Minimap, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -30,6 +30,7 @@ local LEM = ns.LibEditMode
 -- (WUDB points to it), so every file can keep its own reference to ns.db.
 --------------------------------------------------------------------------------
 local defaults = {
+  minimapOff = false, minimapAngle = 225, -- minimap icon; angle in degrees, counterclockwise from the right
   barOff = false, marksOff = false, mark1 = 30, mark2 = 60, mark3 = 0, hideTicks = false, -- mark 0 = off
   layouts = {}, -- rage bar position per Edit Mode layout name: { point, x, y }
   combatOnly = false, scale = 100,
@@ -206,6 +207,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
       ns.BuildCooldownBar()
     end
     ns.BuildOptions()
+    ns.BuildMinimap()
     for name in pairs(handlers) do
       if name:find("^UNIT_") then
         self:RegisterUnitEvent(name, "player")

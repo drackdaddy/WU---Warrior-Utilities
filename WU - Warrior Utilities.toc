@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: WU - Warrior Utilities
-## Notes: Rage bar with marks and styles, set up and moved in Edit Mode, a range display showing the distance to your target, a Battle Shout timer on the player frame and a cooldown bar for each stance.
+## Notes: Rage bar with marks and styles, set up and moved in Edit Mode, a range display showing the distance to your target, a Battle Shout timer on the player frame a cooldown bar for each stance and a minimap icon to open the options.
 ## Author: WU
 ## Version: 3.7.0
 ## IconTexture: Interface\AddOns\WU - Warrior Utilities\icon
@@ -17,4 +17,5 @@ RangeTape.lua
 Range.lua
 ShoutTimer.lua
 CooldownBar.lua
+Minimap.lua
 Options.lua

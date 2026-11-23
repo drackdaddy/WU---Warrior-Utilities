@@ -4,7 +4,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
--- General tab (how to use the addon, slash commands and the Discord link) and,
+-- General tab (how to use the addon, the minimap icon switch, slash commands
+-- and the Discord link) and,
 -- on warriors only, a Battle Shout tab (the player frame timer's switches), a
 -- Range tab (the range display, in three sub-tabs) and one tab per stance (that stance's cooldown
 -- bar), shown in Esc > Options >
@@ -13,7 +14,7 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
--- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
+-- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
 --   shoutWarnSize, shoutColor, rangeOff, rangeOocOff, rangeFriendlyOff,
 --   rangeLook, rangeTextFont, rangeSize, rangeWidth, rangeHeight, rangeScale,
 --   rangeUnitOff, rangeOpacity, rangePlace, rangePlateY, rangePlateScale,
@@ -26,8 +27,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 local category
 
 -- Opens the Settings panel on this addon's page (only built on warriors and
--- druids).
-local function Open()
+-- druids). Used by /wu and the minimap icon.
+function ns.OpenOptions()
   if category then Settings.OpenToCategory(category:GetID()) end
 end
 
@@ -371,6 +372,10 @@ function ns.BuildOptions()
     })
   end
 
+  Heading("Minimap icon")
+  Text("Click it to open these options; drag it around the minimap's edge to move it.")
+  OnOff("Show minimap icon", "minimapOff", ns.RefreshMinimap)
+
   Begin(right)
   if ns.isWarrior then
     Heading("Range display")
@@ -625,13 +630,14 @@ SlashCmdList.WU = function(msg)
   msg = strtrim(msg:lower())
   local a, b, c = msg:match("^(%d+)%s+(%d+)%s*(%d*)$")
   if msg == "" then
-    Open()
+    ns.OpenOptions()
   elseif ns.isWarrior and msg:match("^range") then
     ns.RangeCommand(strtrim(msg:sub(6)))
   elseif msg == "reset" then
     wipe(db)
     ns.LoadDB()
     ns.RefreshBar()
+    ns.RefreshMinimap()
     if ns.isWarrior then
       ns.RefreshRange()
       ns.RefreshShout()

@@ -138,9 +138,11 @@ Each stance has its own tab on the options page (`/wu`):
 
 ## Options
 
-**Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` opens the same page.
+**Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
 
-- **General** — how to use the addon, the slash commands and a Discord link to copy
+The minimap icon opens the options when clicked; drag it to move it around the minimap's edge. **Show minimap icon** on the General tab hides it (default on).
+
+- **General** — how to use the addon, the minimap icon switch, the slash commands and a Discord link to copy
 - **Battle Shout** (warriors only) — the Battle Shout timer settings
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
 - **Battle**, **Defensive**, **Berserker** (warriors only) — each stance's cooldown bar
@@ -170,6 +172,7 @@ Each stance has its own tab on the options page (`/wu`):
 | `Range.lua` | Range display: range checks, zones, nameplate, focus and mouseover, Edit Mode positions and the `/wu range` commands |
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
+| `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the stance tabs), slash commands |
 
 ## Glow
