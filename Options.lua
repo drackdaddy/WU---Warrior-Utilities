@@ -150,7 +150,7 @@ function ns.BuildOptions()
   -- line that ends at the page's right edge.
   local function Command(cmd, desc)
     local c = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    c:SetWidth(72)
+    c:SetWidth(88)
     c:SetJustifyH("LEFT")
     c:SetTextColor(unpack(GOLD))
     c:SetText(cmd)
@@ -307,7 +307,7 @@ function ns.BuildOptions()
     "Press " .. Key("Esc") .. ", choose " .. Key("Edit Mode") .. " and click the " .. Key("WU Rage Bar") .. ".",
     Key("Style") .. ", " .. Key("Border") .. ", " .. Key("Color") .. " and "
       .. Key("Bar Size") .. " change the look.",
-    Key("Mark I") .. " and " .. Key("Mark II") .. " set the glow points.",
+    Key("Mark I") .. ", " .. Key("Mark II") .. " and " .. Key("Mark III") .. " set the glow points; 0 turns one off.",
     Key("Only Show in Combat") .. " or " .. Key("Disable Rage Bar") .. " hide it.",
     "Druids only see it in " .. Key("Bear Form") .. " and " .. Key("Dire Bear Form") .. ".",
   })
@@ -339,7 +339,7 @@ function ns.BuildOptions()
 
   Heading("Slash commands")
   Command("/wu", "Open options")
-  Command("/wu 30 60", "Set the marks (1 to 99)")
+  Command("/wu 30 60 90", "Set the marks (0 = off)")
   Command("/wu reset", "Reset all settings")
   Command("/wuutil", "Same as /wu")
 
@@ -473,7 +473,7 @@ end
 --------------------------------------------------------------------------------
 -- Slash commands: /wu (or /wuutil)
 --   /wu            open options
---   /wu 30 60      set marks
+--   /wu 30 60 [90] set marks (the third is optional; 0 = off)
 --   /wu reset
 -- SLASH_WU1, SLASH_WU2 and SlashCmdList.WU are globals the game requires.
 --------------------------------------------------------------------------------
@@ -481,7 +481,7 @@ SLASH_WU1, SLASH_WU2 = "/wu", "/wuutil"
 SlashCmdList.WU = function(msg)
   if not ns.built then return end -- not a warrior or druid
   msg = strtrim(msg:lower())
-  local a, b = msg:match("^(%d+)%s+(%d+)$")
+  local a, b, c = msg:match("^(%d+)%s+(%d+)%s*(%d*)$")
   if msg == "" then
     Open()
   elseif msg == "reset" then
@@ -495,9 +495,14 @@ SlashCmdList.WU = function(msg)
     end
     print("WU - Warrior Utilities reset")
   elseif a then
-    ns.SetMarks(a, b)
-    print(string.format("WU - Warrior Utilities marks set to %d / %d", db.mark1, db.mark2))
+    ns.SetMarks(a, b, c ~= "" and c or nil)
+    local shown = {}
+    for i = 1, 3 do
+      local m = db["mark" .. i]
+      shown[i] = m > 0 and m or "off"
+    end
+    print("WU - Warrior Utilities marks set to " .. table.concat(shown, " / "))
   else
-    print("WU - Warrior Utilities: /wu, /wu 30 60, /wu reset")
+    print("WU - Warrior Utilities: /wu, /wu 30 60 90, /wu reset")
   end
 end

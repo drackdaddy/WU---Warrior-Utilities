@@ -3,7 +3,8 @@ local db, LEM = ns.db, ns.LibEditMode
 
 --------------------------------------------------------------------------------
 -- Rage bar
--- The bar: rage fill and number, two marks with a glow past each, three
+-- The bar: rage fill and number, up to three marks with a glow past each
+-- (a mark set to 0 is off; the highest mark gets the brightest glow), three
 -- styles (Rage has a choice of borders), four colors, size, "only show in
 -- combat", and switches to turn off the marks or the whole bar. It is moved
 -- and set up in Blizzard's Edit Mode (see Edit Mode below).
@@ -15,7 +16,7 @@ local db, LEM = ns.db, ns.LibEditMode
 -- and Dire Bear Form); UNIT_DISPLAYPOWER fires when a form change swaps it.
 -- Events: UNIT_POWER_UPDATE, UNIT_MAXPOWER, UNIT_DISPLAYPOWER (player),
 --   PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED
--- SavedVariables: barOff, marksOff, mark1, mark2, hideTicks, layouts,
+-- SavedVariables: barOff, marksOff, mark1, mark2, mark3, hideTicks, layouts,
 --   combatOnly, scale, style, color, border
 --------------------------------------------------------------------------------
 local RAGE = Enum.PowerType.Rage
@@ -24,9 +25,10 @@ local FONT = "Fonts\\FRIZQT__.TTF"
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local BASE_W, BASE_H = 268, 38 -- bar size at 100%
 local BORDER = { 0.32, 0.28, 0.22, 1 } -- Modern panel edge
-local holder, bar, label, glow, glow2, plate, trough
+local holder, bar, label, plate, trough
 local ticks = {}
-local loCurve, hiCurve
+local glows = {} -- glow layers, dimmest first
+local curves = {} -- curves[i] gates glows[i]; nil when fewer marks are on
 
 --------------------------------------------------------------------------------
 -- Marks, glow and value
@@ -42,13 +44,20 @@ local function GateCurve(at)
   return c
 end
 
+-- Builds one curve per mark that is on (not 0), lowest mark first, so the
+-- brightest glow layer goes with the highest mark whichever slot it is in.
 local function BuildCurves()
-  loCurve = GateCurve(math.min(db.mark1, db.mark2) / 100)
-  hiCurve = GateCurve(math.max(db.mark1, db.mark2) / 100)
+  local at = {}
+  for i = 1, #glows do
+    local mark = db["mark" .. i]
+    if mark > 0 then at[#at + 1] = mark end
+  end
+  table.sort(at)
+  for i = 1, #glows do curves[i] = at[i] and GateCurve(at[i] / 100) end
 end
 
--- Places the two marks and shows or hides them, their values and the glow
--- ("Disable Marks" turns off both the marks and the glow).
+-- Places the marks and shows or hides them, their values and the glow
+-- ("Disable Marks" turns off all marks and the glow; a mark at 0 is off).
 local function ApplyMarks()
   local w, h = bar:GetWidth(), bar:GetHeight()
   for i, tick in ipairs(ticks) do
@@ -56,12 +65,11 @@ local function ApplyMarks()
     tick:ClearAllPoints()
     tick:SetPoint("CENTER", bar, "LEFT", w * mark / 100, 0)
     tick:SetHeight(h + 6)
-    tick:SetShown(not db.marksOff)
+    tick:SetShown(not db.marksOff and mark > 0)
     tick.text:SetText(mark)
     tick.text:SetShown(not db.hideTicks)
   end
-  glow:SetShown(not db.marksOff)
-  glow2:SetShown(not db.marksOff)
+  for i, g in ipairs(glows) do g:SetShown(not db.marksOff and curves[i] ~= nil) end
 end
 
 -- Draws the current rage: fill, number and glow. UnitPower may be secret in
@@ -70,8 +78,9 @@ local function UpdateRage()
   local rage = UnitPower("player", RAGE)
   bar:SetValue(rage)
   label:SetText(rage)
-  glow:SetAlpha(UnitPowerPercent("player", RAGE, false, loCurve))
-  glow2:SetAlpha(UnitPowerPercent("player", RAGE, false, hiCurve))
+  for i, g in ipairs(glows) do
+    if curves[i] then g:SetAlpha(UnitPowerPercent("player", RAGE, false, curves[i])) end
+  end
 end
 
 local function UpdateMax()
@@ -100,14 +109,15 @@ ns.On("PLAYER_ENTERING_WORLD", UpdateShown)
 ns.On("PLAYER_REGEN_DISABLED", UpdateShown)
 ns.On("PLAYER_REGEN_ENABLED", UpdateShown)
 
--- Nearest whole number to n (number or text), limited to 1..99.
+-- Nearest whole number to n (number or text), limited to 0..99 (0 = off).
 local function MarkValue(n)
-  return math.min(99, math.max(1, math.floor((tonumber(n) or 1) + 0.5)))
+  return math.min(99, math.max(0, math.floor((tonumber(n) or 0) + 0.5)))
 end
 
--- Sets both marks from numbers or text and redraws the bar.
-function ns.SetMarks(a, b)
-  db.mark1, db.mark2 = MarkValue(a), MarkValue(b)
+-- Sets the marks from numbers or text and redraws the bar. c is optional:
+-- when nil, Mark III keeps its value.
+function ns.SetMarks(a, b, c)
+  db.mark1, db.mark2, db.mark3 = MarkValue(a), MarkValue(b), MarkValue(c or db.mark3)
   BuildCurves()
   ApplyMarks()
   UpdateShown()
@@ -152,11 +162,13 @@ local BORDERS = {
   blade = { file = "border-blade", out = { 12, 4, 12, 4 } },
 }
 
+-- glow: one color per glow layer, dimmest first; the third is hotter so the
+-- highest mark stands out.
 local COLORS = {
-  red = { bar = { 0.86, 0.18, 0.14 }, glow = { 0.95, 0.16, 0.08 }, glow2 = { 0.70, 0.28, 0.08 } },
-  blue = { bar = { 0.25, 0.55, 1.0 }, glow = { 0.15, 0.40, 1.0 }, glow2 = { 0.30, 0.50, 0.70 } },
-  yellow = { bar = { 1.0, 0.78, 0.12 }, glow = { 1.0, 0.72, 0.08 }, glow2 = { 0.70, 0.58, 0.22 } },
-  green = { bar = { 0.20, 0.85, 0.28 }, glow = { 0.10, 0.70, 0.18 }, glow2 = { 0.28, 0.62, 0.24 } },
+  red = { bar = { 0.86, 0.18, 0.14 }, glow = { { 0.95, 0.16, 0.08 }, { 0.70, 0.28, 0.08 }, { 1.0, 0.55, 0.20 } } },
+  blue = { bar = { 0.25, 0.55, 1.0 }, glow = { { 0.15, 0.40, 1.0 }, { 0.30, 0.50, 0.70 }, { 0.50, 0.75, 1.0 } } },
+  yellow = { bar = { 1.0, 0.78, 0.12 }, glow = { { 1.0, 0.72, 0.08 }, { 0.70, 0.58, 0.22 }, { 1.0, 0.92, 0.45 } } },
+  green = { bar = { 0.20, 0.85, 0.28 }, glow = { { 0.10, 0.70, 0.18 }, { 0.28, 0.62, 0.24 }, { 0.50, 0.95, 0.50 } } },
 }
 
 local function ApplyStyle()
@@ -188,9 +200,9 @@ local function ApplyStyle()
 
   -- Glow: Classic glows in the bar's art shape, the others are a flat inset fill.
   local inset = s.trough and 0 or 1
-  for i, g in ipairs({ glow, glow2 }) do
+  for i, g in ipairs(glows) do
     g.tex:SetTexture(s.trough and tex or WHITE)
-    g.tex:SetVertexColor(unpack(i == 1 and c.glow or c.glow2))
+    g.tex:SetVertexColor(unpack(c.glow[i]))
     g:ClearAllPoints()
     g:SetPoint("TOPLEFT", inset, -inset)
     g:SetPoint("BOTTOMRIGHT", -inset, inset)
@@ -232,12 +244,12 @@ local function NotRage() return db.style ~= "rage" end
 local function MarksOff() return db.barOff or db.marksOff end
 
 local function ApplyMarkValues()
-  ns.SetMarks(db.mark1, db.mark2)
+  ns.SetMarks(db.mark1, db.mark2, db.mark3)
 end
 
 local function RegisterEditMode()
   local T, Option, Choices = LEM.SettingType, ns.EditModeOption, ns.EditModeChoices
-  local mark = { minValue = 1, maxValue = 99, valueStep = 1 }
+  local mark = { minValue = 0, maxValue = 99, valueStep = 1 } -- 0 = off
   local borders = Choices("border")
   borders.hidden = NotRage -- the Style dropdown refreshes the panel, so this follows it
   ApplyPosition = ns.AddEditModeFrame(holder, "layouts", DEFAULT_POS, "WU Rage Bar", {
@@ -250,6 +262,7 @@ local function RegisterEditMode()
     Option(T.Checkbox, "Disable Marks", "marksOff", ApplyMarks, BarOff),
     Option(T.Slider, "Mark I", "mark1", ApplyMarkValues, MarksOff, mark),
     Option(T.Slider, "Mark II", "mark2", ApplyMarkValues, MarksOff, mark),
+    Option(T.Slider, "Mark III", "mark3", ApplyMarkValues, MarksOff, mark),
     Option(T.Checkbox, "Hide Mark Values", "hideTicks", ApplyMarks, MarksOff),
   }, UpdateShown)
 end
@@ -322,12 +335,15 @@ function ns.BuildBar()
   bar.bg = bar:CreateTexture(nil, "BACKGROUND")
   bar.bg:SetAllPoints()
   bar:SetScript("OnSizeChanged", ApplyMarks)
-  glow = FlashLayer(0.22, 0.55, 0.70)
-  glow2 = FlashLayer(0.16, 0.38, 0.36)
+  -- Glow layers stack (ADD blend), so each mark passed adds light; the third
+  -- pulses hardest and fastest.
+  glows[1] = FlashLayer(0.22, 0.55, 0.70)
+  glows[2] = FlashLayer(0.16, 0.38, 0.36)
+  glows[3] = FlashLayer(0.25, 0.70, 0.22)
 
   plate = Layer(12):CreateTexture(nil, "ARTWORK") -- anchored by ApplyStyle
   label = Layer(14):CreateFontString(nil, "OVERLAY")
-  ticks[1], ticks[2] = MakeTick(), MakeTick()
+  ticks[1], ticks[2], ticks[3] = MakeTick(), MakeTick(), MakeTick()
 
   RegisterEditMode()
   ns.RefreshBar()
