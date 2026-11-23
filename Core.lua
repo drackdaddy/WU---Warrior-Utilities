@@ -1,6 +1,6 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
-  Rage bar with two marks, an "OUT OF RANGE" warning, a Battle Shout timer on
+  Rage bar with up to three marks, an "OUT OF RANGE" warning, a Battle Shout timer on
   the player frame and a cooldown bar for each stance. Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
@@ -29,7 +29,7 @@ local LEM = ns.LibEditMode
 -- (WUDB points to it), so every file can keep its own reference to ns.db.
 --------------------------------------------------------------------------------
 local defaults = {
-  barOff = false, marksOff = false, mark1 = 30, mark2 = 60, hideTicks = false,
+  barOff = false, marksOff = false, mark1 = 30, mark2 = 60, mark3 = 0, hideTicks = false, -- mark 0 = off
   layouts = {}, -- rage bar position per Edit Mode layout name: { point, x, y }
   combatOnly = false, scale = 100,
   style = "rage", color = "red", border = "molten",

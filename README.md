@@ -29,8 +29,8 @@ Open Edit Mode (**Esc > Edit Mode**) and drag the bar, or click it and use the a
 | Style | Modern, Classic, Rage (default Rage) |
 | Border | Rage style only: Iron, Riveted Plate, Spiked, Bloodied Bronze, Chain Link, Molten Cracks, Lava Rock, Blade Ends, None (default Molten Cracks) |
 | Color | Red, Blue, Yellow, Green (default Red) |
-| Disable Marks | Hides both marks and the glow |
-| Mark I / Mark II | 1 to 99 (default 30 / 60) |
+| Disable Marks | Hides all marks and the glow |
+| Mark I / Mark II / Mark III | 0 to 99, 0 turns that mark off (default 30 / 60 / 0) |
 | Hide Mark Values | |
 
 Plus **Reset To Default** and **Reset To Default Position**.
@@ -111,7 +111,7 @@ Each stance has its own tab on the options page (`/wu`):
 | Command | Action |
 | --- | --- |
 | `/wu` | Open options |
-| `/wu 30 60` | Set marks |
+| `/wu 30 60 90` | Set marks (0 turns one off; with only two numbers Mark III is left as is) |
 | `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range warning and cooldown bar positions in every layout to default |
 
 `/wuutil` is an alias.
@@ -130,8 +130,8 @@ Each stance has its own tab on the options page (`/wu`):
 
 ## Glow
 
-- **Mark I:** bar glow at the first mark.
-- **Mark II:** brighter glow at the second mark.
+- Each mark you pass adds more glow; the highest mark gets the brightest glow, whichever slot it is in.
+- A mark set to 0 is off and adds no glow.
 - Marks are a percent of max rage (100 for warriors).
 - Rage bar styles: **Modern** (flat), **Classic** (vanilla gold frame), **Rage** (fiery fill with a choice of eight borders, or none).
 

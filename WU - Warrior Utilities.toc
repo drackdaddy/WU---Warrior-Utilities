@@ -2,7 +2,7 @@
 ## Title: WU - Warrior Utilities
 ## Notes: Rage bar with marks and styles, set up and moved in Edit Mode, an out of melee range warning, a Battle Shout timer on the player frame and a cooldown bar for each stance.
 ## Author: WU
-## Version: 3.6.1
+## Version: 3.6.2
 ## IconTexture: Interface\AddOns\WU - Warrior Utilities\icon
 ## SavedVariablesPerCharacter: WUDB
 ## Dependencies: Blizzard_AuraContainer
