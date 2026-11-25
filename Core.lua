@@ -16,7 +16,8 @@
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
-  ShoutTimer, Debuffs, Alerts, CooldownBar, CustomBar, Minimap, Options.
+  ShoutTimer, Debuffs, Alerts, CooldownLook, CooldownBar, CustomBar, Minimap,
+  Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -70,6 +71,8 @@ local defaults = {
   cdNoGlow = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: that ability never glows
   customOff = false, customList = {}, -- custom bar entries in bar order: { kind = "spell" or "item", id }
   customLayouts = {}, customSize = 36, customCombatOnly = false, -- custom bar position, icon size
+  glowStyle = "pulse", glowSpeed = "medium", glowSize = 2, glowOocOff = false, -- cooldown icon look
+  glowColor = { r = 1, g = 0.82, b = 0.2, a = 1 }, cdLook = "normal",
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -92,6 +95,9 @@ ns.LISTS = {
   },
 }
 ns.LISTS.debuffFont = ns.LISTS.rangeTextFont
+ns.LISTS.glowStyle = { { "pulse", "Pulsing border" }, { "sparks", "Marching sparks" }, { "static", "Static border" } }
+ns.LISTS.glowSpeed = { { "slow", "Slow" }, { "medium", "Medium" }, { "fast", "Fast" } }
+ns.LISTS.cdLook = { { "normal", "Normal" }, { "grey", "Greyed out" }, { "faded", "Faded" }, { "hidden", "Hidden" } }
 ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }
 
 -- Spell IDs of every rank, shared by the files that watch these auras.
@@ -267,6 +273,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
       ns.BuildShoutTimer()
       ns.BuildDebuffs()
       ns.BuildAlerts()
+      ns.BuildCooldownLook()
       ns.BuildCooldownBar()
       ns.BuildCustomBar()
     end

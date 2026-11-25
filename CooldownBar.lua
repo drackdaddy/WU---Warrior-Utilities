@@ -5,21 +5,12 @@ local db, LEM = ns.db, ns.LibEditMode
 -- Cooldown bar (warriors only)
 -- A row of ability icons for the stance the player is in, each with
 -- Blizzard's cooldown swipe and countdown. Each stance has its own list, set
--- up on its tab under CDM on the options page: the bar on or off, a "ready"
--- glow on or off for the whole bar and for each ability, each ability on or
--- off, and the order they show in. Abilities the player hasn't learned are
--- left out. An icon greys out while the player doesn't have the rage for it.
--- In combat cooldown times can be secret, so Lua never reads them. The game
--- hands back a duration object for each ability's cooldown: the Cooldown
--- widget draws the swipe from it, and the ready glow's alpha is a curve the
--- object evaluates (1 while the time left is at most GRACE seconds, else 0),
--- the same way the rage bar's glow works. GRACE covers the global cooldown so
--- the glow doesn't blink off after every ability. The glow also needs the
--- ability to be usable (C_Spell.IsSpellUsable): enough rage, and for
--- abilities like Victory Rush, Overpower and Revenge, their trigger. That
--- answer may be secret too, so it only goes to SetAlphaFromBoolean. So does
--- its second answer, "not enough rage", which shows a greyed-out copy of the
--- icon over the normal one. The icons are plain frames with no mouse input: they only show cooldowns and
+-- up on the Stances tab under CDM on the options page: the bar on or off, a
+-- "ready" glow on or off for the whole bar and for each ability, each ability
+-- on or off, and the order they show in. Abilities the player hasn't learned
+-- are left out. The icons, their glow and how they look on cooldown or short
+-- of rage come from CooldownLook.lua, which never reads cooldown times. The
+-- icons are plain frames with no mouse input: they only show cooldowns and
 -- never cast anything.
 -- Moved and set up in Edit Mode as "WU Cooldown Bar" (see ns.AddEditModeFrame
 -- in Core.lua): icon size and "only show in combat". In Edit Mode it always
@@ -72,13 +63,9 @@ ns.STANCES = {
   } },
 }
 
-local GRACE = 1.6 -- seconds left that still count as ready (the global cooldown)
-local INTERVAL = 0.1 -- seconds between glow updates
 local GAP = 4 -- pixels between icons
-local GOLD = { 1, 0.82, 0.2 }
-local WHITE = "Interface\\Buttons\\WHITE8X8"
 local DEFAULT_POS = { point = "CENTER", x = 0, y = -215 }
-local holder, watcher, readyCurve, PlacePosition
+local holder, PlacePosition
 local icons, count = {}, 0 -- icon frames (reused) and how many are in use
 
 -- Returns a new list of stance s's abilities in the player's order: the saved
@@ -107,89 +94,9 @@ local function CurrentStance()
   end
 end
 
--- Returns icon frame i, creating it the first time: the ability's icon, a
--- greyed-out copy over it (shown while short of rage), its cooldown swipe and
--- a pulsing gold ready glow, shown through two layers whose alpha Glow sets:
--- ready (off cooldown) and usable.
-local function Icon(i)
-  if icons[i] then return icons[i] end
-  local f = CreateFrame("Frame", nil, holder)
-  f.tex = f:CreateTexture(nil, "ARTWORK")
-  f.tex:SetAllPoints()
-  f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trims the icon art's own border
-  f.gray = CreateFrame("Frame", nil, f)
-  f.gray:SetAllPoints()
-  f.gray:SetFrameLevel(f:GetFrameLevel() + 1)
-  f.gray:SetAlpha(0)
-  f.grayTex = f.gray:CreateTexture(nil, "ARTWORK")
-  f.grayTex:SetAllPoints()
-  f.grayTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-  f.grayTex:SetDesaturated(true)
-  f.grayTex:SetVertexColor(0.55, 0.55, 0.55)
-  f.cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-  f.cd:SetAllPoints()
-  f.cd:SetFrameLevel(f:GetFrameLevel() + 2)
-  f.cd:SetHideCountdownNumbers(false)
-
-  f.ready = CreateFrame("Frame", nil, f)
-  f.ready:SetAllPoints()
-  f.ready:SetFrameLevel(f.cd:GetFrameLevel() + 2)
-  f.ready:SetAlpha(0)
-  f.usable = CreateFrame("Frame", nil, f.ready)
-  f.usable:SetAllPoints()
-  local pulse = CreateFrame("Frame", nil, f.usable, "BackdropTemplate")
-  pulse:SetPoint("TOPLEFT", -2, 2)
-  pulse:SetPoint("BOTTOMRIGHT", 2, -2)
-  pulse:SetBackdrop({ edgeFile = WHITE, edgeSize = 2 })
-  pulse:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
-  local shine = pulse:CreateTexture(nil, "ARTWORK")
-  shine:SetPoint("TOPLEFT", 2, -2)
-  shine:SetPoint("BOTTOMRIGHT", -2, 2)
-  shine:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.25)
-  shine:SetBlendMode("ADD")
-  local ag = pulse:CreateAnimationGroup()
-  ag:SetLooping("BOUNCE")
-  local fade = ag:CreateAnimation("Alpha")
-  fade:SetFromAlpha(1)
-  fade:SetToAlpha(0.3)
-  fade:SetDuration(0.5)
-  ag:Play()
-
-  icons[i] = f
-  return f
-end
-
--- Greys out each icon while the player is short of rage for it and, where
--- its glow is on, sets its ready glow from its cooldown and whether it can be
--- used now. These answers may be secret, so they are only handed to the alpha
--- setters, never tested. Runs on every watcher tick, which also catches rage
--- changes and Victory Rush's window opening and closing.
-local function Glow()
-  for i = 1, count do
-    local f = icons[i]
-    local usable, noRage = C_Spell.IsSpellUsable(f.spell)
-    f.gray:SetAlphaFromBoolean(noRage, 1, 0)
-    if f.glow and f.dur then
-      f.usable:SetAlphaFromBoolean(usable, 1, 0)
-      f.ready:SetAlpha(f.dur:EvaluateRemainingDuration(readyCurve))
-    else
-      f.ready:SetAlpha(0)
-    end
-  end
-end
-
--- Fetches each icon's cooldown and hands it to the swipe and the glow.
+-- Hands each icon's cooldown to its swipe and glow (see CooldownLook.lua).
 local function UpdateCooldowns()
-  for i = 1, count do
-    local f = icons[i]
-    f.dur = C_Spell.GetSpellCooldownDuration(f.spell)
-    if f.dur then
-      f.cd:SetCooldownFromDurationObject(f.dur)
-    else
-      f.cd:Clear()
-    end
-  end
-  Glow()
+  for i = 1, count do ns.UpdateIconCooldown(icons[i]) end
 end
 
 -- Lays out the icons for the current stance (Battle Stance in Edit Mode when
@@ -207,10 +114,13 @@ local function Update()
     for _, id in ipairs(ns.CooldownOrder(s)) do
       if IsPlayerSpell(id) and not hide[id] then
         count = count + 1
-        local f = Icon(count)
-        f.spell, f.glow = id, glow and not noGlow[id]
-        f.tex:SetTexture(C_Spell.GetSpellTexture(id))
-        f.grayTex:SetTexture(C_Spell.GetSpellTexture(id))
+        icons[count] = icons[count] or ns.NewCooldownIcon(holder)
+        local f, tex = icons[count], C_Spell.GetSpellTexture(id)
+        f.spell = id
+        ns.SetIconGlow(f, glow and not noGlow[id])
+        f.tex:SetTexture(tex)
+        f.cdGrey.tex:SetTexture(tex)
+        f.noRage.tex:SetTexture(tex)
         f:SetSize(db.cdSize, db.cdSize)
         f:ClearAllPoints()
         f:SetPoint("LEFT", (count - 1) * (db.cdSize + GAP), 0)
@@ -225,16 +135,16 @@ local function Update()
   holder:SetShown(edit or not off and count > 0
     and (not db.cdCombatOnly or UnitAffectingCombat("player")))
   holder:SetAlpha(off and 0.4 or 1)
-  watcher:SetShown(holder:IsShown() and count > 0)
   UpdateCooldowns()
 end
 
-ns.On("PLAYER_ENTERING_WORLD", Update)
-ns.On("PLAYER_REGEN_DISABLED", Update)
-ns.On("PLAYER_REGEN_ENABLED", Update)
-ns.On("UPDATE_SHAPESHIFT_FORM", Update)
-ns.On("SPELLS_CHANGED", Update)
-ns.On("SPELL_UPDATE_COOLDOWN", function() if holder:IsShown() then UpdateCooldowns() end end)
+ns.On("PLAYER_ENTERING_WORLD", function() if holder then Update() end end)
+local function Changed() if holder then Update() end end
+ns.On("PLAYER_REGEN_DISABLED", Changed)
+ns.On("PLAYER_REGEN_ENABLED", Changed)
+ns.On("UPDATE_SHAPESHIFT_FORM", Changed)
+ns.On("SPELLS_CHANGED", Changed)
+ns.On("SPELL_UPDATE_COOLDOWN", function() if holder and holder:IsShown() then UpdateCooldowns() end end)
 
 -- Applies every cooldown bar setting; used when built, after a setting
 -- changes on the options page and after /wu reset.
@@ -246,23 +156,6 @@ end
 function ns.BuildCooldownBar()
   holder = CreateFrame("Frame", nil, UIParent)
   holder:SetClampedToScreen(true)
-
-  readyCurve = C_CurveUtil.CreateCurve()
-  readyCurve:AddPoint(0, 1)
-  readyCurve:AddPoint(GRACE, 1)
-  readyCurve:AddPoint(GRACE + 0.01, 0)
-  readyCurve:AddPoint(3600, 0)
-
-  -- The glow and grey-out need redrawing as time and rage change.
-  local elapsed = 0
-  watcher = CreateFrame("Frame", nil, UIParent)
-  watcher:Hide()
-  watcher:SetScript("OnUpdate", function(_, dt)
-    elapsed = elapsed + dt
-    if elapsed < INTERVAL then return end
-    elapsed = 0
-    Glow()
-  end)
 
   local T, Option = LEM.SettingType, ns.EditModeOption
   PlacePosition = ns.AddEditModeFrame(holder, "cdLayouts", DEFAULT_POS, "WU Cooldown Bar", {

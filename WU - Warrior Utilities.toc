@@ -2,7 +2,7 @@
 ## Title: WU - Warrior Utilities
 ## Notes: Rage bar with marks and styles, set up and moved in Edit Mode, a range display showing the distance to your target, a Battle Shout timer on the player frame, a Sunder Armor and Demoralizing Shout tracker, audio alerts, a cooldown bar for each stance, a custom cooldown bar for any spell or item and a minimap icon to open the options.
 ## Author: WU
-## Version: 3.10.0
+## Version: 3.11.0
 ## IconTexture: Interface\AddOns\WU - Warrior Utilities\icon
 ## SavedVariablesPerCharacter: WUDB
 ## Dependencies: Blizzard_AuraContainer
@@ -18,6 +18,7 @@ Range.lua
 ShoutTimer.lua
 Debuffs.lua
 Alerts.lua
+CooldownLook.lua
 CooldownBar.lua
 CustomBar.lua
 Minimap.lua

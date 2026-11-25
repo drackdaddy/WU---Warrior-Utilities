@@ -161,13 +161,13 @@ A row of icons for the stance you're in, each with the cooldown swipe and the ti
 | Defensive | Taunt, Shield Block, Revenge, Shield Slam, Shield Bash, Disarm, Last Stand, Shield Wall, Victory Rush, Bloodrage |
 | Berserker | Intercept, Bloodthirst, Whirlwind, Reckless Swings, Pummel, Berserker Rage, Death Wish, Recklessness, Victory Rush, Bloodrage |
 
-Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`):
+Set the bars up on the **Stances** sub-tab under **CDM** on the options page (`/wu`). Pick a stance from the **Stance** dropdown at the top to set up its bar:
 
 | Setting | Notes |
 | --- | --- |
 | Show cooldown bar | Turns that stance's bar on or off (default on) |
-| Glow when ready | A pulsing gold border on each ability that is off cooldown and usable right now (default on). Turns the glow off for the whole bar |
-| Abilities | One checkbox per ability (all on by default). **Glow** next to it turns that ability's ready glow on or off (all on by default). **Up** and **Down** change where it sits on the bar (top of the list is leftmost) |
+| Glow when ready | Turns the ready glow off for that whole bar (default on) |
+| Abilities | One icon per ability, in bar order (top left is leftmost). **Click** an icon to put it on or off the bar (off icons show faded). **Right-click** for its options: show on bar, glow when ready, move left or right. **Drag** an icon onto another to move it. A gold tick marks the ones that glow |
 
 - The glow only shows when you could cast the ability: it's off cooldown, you have the rage for it, and any trigger it needs has happened (Victory Rush after a kill, Overpower after a dodge, Revenge after a block, dodge or parry). It stays on during the global cooldown, so it doesn't blink after every ability.
 - An icon greys out while you don't have enough rage for it. The game answers that itself, so it works in combat too.
@@ -175,12 +175,27 @@ Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`
 - In Edit Mode, click **WU Cooldown Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
 - The icons only display cooldowns; clicking them does nothing.
 
+### Appearance
+
+The **Appearance** sub-tab under **CDM** sets how the icons on every cooldown bar look (each stance's bar and the custom bar), with a preview of an icon that is ready and one on cooldown:
+
+| Setting | Notes |
+| --- | --- |
+| Glow | Pulsing border, Marching sparks (bright dashes running around the edge) or Static border (default Pulsing border) |
+| Glow color | **Default** puts back gold |
+| Speed | Slow, Medium, Fast (default Medium); not for the static border |
+| Thickness | 1 to 4 (default 2) |
+| Glow out of combat | Off: the glow only shows in combat (default on) |
+| While on cooldown: Icon | Normal, Greyed out, Faded, Hidden (default Normal). Hidden icons keep their place on the bar |
+
+- Every effect is drawn by the game from the cooldown itself, so it all works in combat. Items on the custom bar only show their cooldown swipe.
+
 ## Custom bar (warriors only)
 
 A bar for any cooldowns you want to watch, such as trinkets. Set it up on the **Custom** sub-tab under **CDM** (`/wu`):
 
 - Type a spell ID or an item ID (for trinkets and other usable items) and press **Add**. A number can be both a spell and an item, so WU picks, in order: an item you have equipped or in your bags, a spell you know, any item, any spell. The row shows which it picked. You can find IDs on Wowhead: it's the number in the page's address.
-- Up to 12 entries. **Up** and **Down** change where each sits on the bar (top of the list is leftmost); **Remove** takes it off.
+- Up to 12 entries, shown as icons in bar order (top left is leftmost). **Right-click** an icon for its options (glow when ready for spells, remove); **drag** it onto another to move it. The bar's icons use the look set on the **Appearance** sub-tab.
 - **Show custom bar** turns it on or off (default on).
 - Each icon shows the game's cooldown swipe and countdown, so it works in combat without the addon reading cooldown times. The icons only display cooldowns; clicking them does nothing.
 - In Edit Mode, click **WU Custom Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
@@ -193,7 +208,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer and its alert on **Battle Shout**, the debuff tracker and debuff alerts on **Debuffs**, and the custom bar on **Custom**
+- **CDM** (warriors only) — each stance's cooldown bar on **Stances**, the Battle Shout timer and its alert on **Battle Shout**, the debuff tracker and debuff alerts on **Debuffs**, the custom bar on **Custom**, and the cooldown icons' look on **Appearance**
 
 ## Slash commands
 
@@ -221,6 +236,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `Debuffs.lua` | Sunder Armor and Demoralizing Shout tracker on the target and its Edit Mode settings |
 | `Alerts.lua` | Audio alerts for Sunder Armor, Demoralizing Shout and Battle Shout |
+| `CooldownLook.lua` | Cooldown icons shared by the cooldown bars: ready glow styles, on-cooldown look |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
 | `CustomBar.lua` | Custom cooldown bar for spells and items picked by ID, and its Edit Mode settings |
 | `Minimap.lua` | Minimap icon that opens the options |

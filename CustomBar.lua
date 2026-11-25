@@ -5,18 +5,19 @@ local db, LEM = ns.db, ns.LibEditMode
 -- Custom bar (warriors only)
 -- A row of icons for cooldowns the player picks on the Custom tab under CDM:
 -- spells by spell ID and items (such as trinkets) by item ID, in the order
--- added. Each icon shows Blizzard's cooldown swipe and countdown. In combat
--- cooldown times can be secret, so Lua never reads them: a spell's duration
--- object (C_Spell.GetSpellCooldownDuration) and an item's start and duration
--- (C_Item.GetItemCooldown) go straight to the Cooldown widget. The icons have
--- no mouse input and never cast or use anything.
+-- set there. Each icon shows Blizzard's cooldown swipe and countdown. The
+-- icons and their look come from CooldownLook.lua, which never reads
+-- cooldown times: spells get the ready glow (unless turned off for that
+-- entry) and the on-cooldown look; items only the swipe, as the game gives
+-- no duration object for them. The icons have no mouse input and never cast
+-- or use anything.
 -- Moved and set up in Edit Mode as "WU Custom Bar" (icon size, only show in
 -- combat). In Edit Mode it always shows, faded when off or empty, so it can
 -- be placed.
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED,
 --   SPELL_UPDATE_COOLDOWN, BAG_UPDATE_COOLDOWN, ITEM_DATA_LOAD_RESULT
--- SavedVariables: customOff, customList, customLayouts, customSize,
---   customCombatOnly
+-- SavedVariables: customOff, customList (entries: kind, id, noGlow),
+--   customLayouts, customSize, customCombatOnly
 --------------------------------------------------------------------------------
 local GAP = 4 -- pixels between icons
 local DEFAULT_POS = { point = "CENTER", x = 0, y = -305 }
@@ -34,33 +35,9 @@ function ns.CustomInfo(e)
   return C_Spell.GetSpellName(e.id), C_Spell.GetSpellTexture(e.id)
 end
 
--- Returns icon frame i, creating it the first time: the icon and its
--- cooldown swipe with countdown numbers.
-local function Icon(i)
-  if icons[i] then return icons[i] end
-  local f = CreateFrame("Frame", nil, holder)
-  f.tex = f:CreateTexture(nil, "ARTWORK")
-  f.tex:SetAllPoints()
-  f.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- trims the icon art's own border
-  f.cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-  f.cd:SetAllPoints()
-  f.cd:SetHideCountdownNumbers(false)
-  icons[i] = f
-  return f
-end
-
--- Hands each icon's cooldown to its swipe without reading it.
+-- Hands each icon's cooldown to its swipe and glow (see CooldownLook.lua).
 local function UpdateCooldowns()
-  for i = 1, count do
-    local f = icons[i]
-    if f.kind == "item" then
-      local start, duration = C_Item.GetItemCooldown(f.id)
-      f.cd:SetCooldown(start, duration)
-    else
-      local dur = C_Spell.GetSpellCooldownDuration(f.id)
-      if dur then f.cd:SetCooldownFromDurationObject(dur) else f.cd:Clear() end
-    end
-  end
+  for i = 1, count do ns.UpdateIconCooldown(icons[i]) end
 end
 
 -- Lays out an icon per entry, sizes the bar to fit and shows or hides it.
@@ -69,10 +46,16 @@ local function Update()
   count = 0
   for _, e in ipairs(db.customList) do
     local _, tex = ns.CustomInfo(e)
+    tex = tex or 134400 -- question mark until an item's data loads
     count = count + 1
-    local f = Icon(count)
-    f.kind, f.id = e.kind, e.id
-    f.tex:SetTexture(tex or 134400) -- question mark until an item's data loads
+    icons[count] = icons[count] or ns.NewCooldownIcon(holder)
+    local f = icons[count]
+    f.spell = e.kind == "spell" and e.id or nil
+    f.item = e.kind == "item" and e.id or nil
+    ns.SetIconGlow(f, f.spell ~= nil and not e.noGlow)
+    f.tex:SetTexture(tex)
+    f.cdGrey.tex:SetTexture(tex)
+    f.noRage.tex:SetTexture(tex)
     f:SetSize(db.customSize, db.customSize)
     f:ClearAllPoints()
     f:SetPoint("LEFT", (count - 1) * (db.customSize + GAP), 0)
