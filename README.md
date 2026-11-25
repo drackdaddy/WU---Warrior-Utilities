@@ -223,10 +223,10 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 
 ## Combat text (warriors only)
 
-Adapted from [SCT Mover](https://github.com/dbspringer/sct-mover) by KidMoxie (MIT). It moves the game's own combat text; it doesn't draw its own. Set it up on the **Combat Text** tab (`/wu`).
+Adapted from [SCT Mover](https://github.com/dbspringer/sct-mover) by KidMoxie (MIT). It moves the game's own combat text; it doesn't draw its own. Set it up on the **Mover** sub-tab under **Combat Text** (`/wu`).
 
-- **Target text**: the numbers above your target (damage you deal, heals, misses). **Target height** (-40 to 40, default 0) lifts or lowers them, for example clear of nameplates; **Reset height** puts them back. It's a game setting, so it stays even with WU off.
-- **Self text**: the numbers near your character (damage you take, heals you get). **Show above other UI elements** draws them on top. **Horizontal** and **Vertical** move them, or click **Move** for a box with sample text where they start: drag it, then **Done**. **Reset position** puts them back. Not in combat. Greyed out while self text is off in the game's options.
+- **Target text**: the numbers above your target (damage you deal, heals, misses). **Target height** (a slider, -40 to 40, default 0) lifts or lowers them, for example clear of nameplates; **Reset height** puts them back. It's a game setting, so it stays even with WU off.
+- **Self text**: the numbers near your character (damage you take, heals you get). **Show above other UI elements** draws them on top. The **Horizontal** and **Vertical** sliders move them, or click **Move** for a box with sample text where they start: drag it, then **Done**. **Reset position** puts them back. Not in combat. Greyed out while self text is off in the game's options.
 - In Forever, an addon that writes to the game's combat text frame breaks it (the amounts are secret values), so WU only moves it with an animation, and draws the sample text itself.
 
 ## Options
@@ -239,7 +239,7 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **Combat Text** (warriors only) — moving the game's combat text
+- **Combat Text** (warriors only) — moving the game's combat text, on the **Mover** sub-tab
 - **Trinket** (warriors only) — the trinket and usable gear bars, rotation and mount swap
 - **CDM** (warriors only) — each stance's cooldown bar on **Stances**, the Battle Shout timer and its alert on **Battle Shout**, the debuff tracker and debuff alerts on **Debuffs**, the custom bar on **Custom**, and the cooldown icons' look on **Appearance**
 

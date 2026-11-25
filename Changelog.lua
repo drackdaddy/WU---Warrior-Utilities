@@ -23,7 +23,7 @@ ns.CHANGELOG = {
       "Usable gear bar (off by default) for other on-use gear: engineering helms, cloaks, rings and weapons, with the same swap list.",
       "Border around the trinket and gear bars: none, thin line, dark panel, tooltip or gold.",
       "Right-click the minimap icon to unlock the trinket bars and drag them (out of combat), and again to lock them.",
-      "Combat Text tab, adapted from SCT Mover by KidMoxie (MIT): lift or lower the game's damage numbers above your target (clear of nameplates), and draw the numbers near your character above other UI or move them anywhere, by offsets or by dragging a box with sample text.",
+      "Combat Text tab with a Mover sub-tab, adapted from SCT Mover by KidMoxie (MIT): sliders to lift or lower the game's damage numbers above your target (clear of nameplates), and draw the numbers near your character above other UI or move them anywhere, with sliders or by dragging a box with sample text.",
       "This change log, from the Change Log button on the options page.",
     },
     changed = {

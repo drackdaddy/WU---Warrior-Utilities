@@ -257,10 +257,6 @@ function ns.BuildOptions()
   -- empty box the size of a checkbox, so the label lines up with the others.
   -- apply runs after every change.
   local function Stepper(label, key, low, high, step, apply, disabled)
-    -- key can also be { get = function, set = function } for a value not in
-    -- db (a game setting).
-    local get = type(key) == "table" and key.get or function() return db[key] end
-    local set = type(key) == "table" and key.set or function(v) db[key] = v end
     local st = CreateFrame("Frame", nil, page)
     st:SetSize(26, 26)
     local value = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -270,14 +266,14 @@ function ns.BuildOptions()
       b:SetSize(24, 22)
       b:SetText(text)
       b:SetScript("OnClick", function()
-        set(math.min(high, math.max(low, get() + dir * step)))
+        db[key] = math.min(high, math.max(low, db[key] + dir * step))
         apply()
         RefreshControls()
       end)
       return b
     end
     local minus, plus = StepButton("-", -1), StepButton("+", 1)
-    function st:Draw() value:SetText(get()) end
+    function st:Draw() value:SetText(db[key]) end
     function st:SetEnabled(on)
       minus:SetEnabled(on)
       plus:SetEnabled(on)
@@ -287,6 +283,33 @@ function ns.BuildOptions()
     minus:SetPoint("LEFT", st.label, "RIGHT", 10, 0)
     value:SetPoint("LEFT", minus, "RIGHT", 2, 0)
     plus:SetPoint("LEFT", value, "RIGHT", 2, 0)
+  end
+
+  -- Slider for a whole number from low to high: the label, then Blizzard's
+  -- slider with arrows at each end and the value on its right. key is a db
+  -- key, or { get = function, set = function } for a game setting. apply runs
+  -- after the player moves it, not when the page redraws it. Like the
+  -- stepper, the control itself is an empty checkbox-sized box so the label
+  -- lines up.
+  local function Slider(label, key, low, high, apply, disabled)
+    local get = type(key) == "table" and key.get or function() return db[key] end
+    local set = type(key) == "table" and key.set or function(v) db[key] = v end
+    local sl = CreateFrame("Frame", nil, page)
+    sl:SetSize(26, 26)
+    local bar = CreateFrame("Frame", nil, page, "MinimalSliderWithSteppersTemplate")
+    bar:SetWidth(150)
+    local Right = MinimalSliderWithSteppersMixin.Label.Right
+    bar:Init(get(), low, high, high - low, { [Right] = CreateMinimalSliderFormatter(Right) })
+    bar:RegisterCallback("OnValueChanged", function(_, v)
+      if v ~= get() then
+        set(v)
+        apply()
+      end
+    end, sl)
+    function sl:Draw() bar:SetValue(get()) end
+    function sl:SetEnabled(on) bar:SetEnabled(on) end
+    AddControl(sl, label, -4, disabled)
+    bar:SetPoint("LEFT", sl, "LEFT", 100, 0)
   end
 
   -- Dropdown: the label, then Blizzard's dropdown button showing the current
@@ -1082,18 +1105,19 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- Combat Text tab (see CombatText.lua): target text on the left, self text
-  -- on the right. The self text controls are greyed out while self text is
+  -- Combat Text tab (see CombatText.lua), with a Mover sub-tab: target text
+  -- on the left, self text on the right. The self text controls are greyed out while self text is
   -- off in the game's options. Warriors only (see Tabs).
   ------------------------------------------------------------------------------
   if pages.combat then
-    local left, right = Columns(pages.combat)
+    local sub, ShowSub = Tabs(pages.combat, { { "mover", "Mover" } }, 0, 0, 120, -36, 0, 0)
+    local left, right = Columns(sub.mover)
     Begin(left)
     Heading("Target text")
     if ns.HasTargetText() then
       Text("The numbers above your target: damage you deal, heals, misses. Lift them when nameplates hide them."
         .. " This is a game setting, so it stays even with WU off.")
-      Stepper("Target height", { get = ns.GetTargetHeight, set = ns.SetTargetHeight }, -40, 40, 1, Nothing)
+      Slider("Target height", { get = ns.GetTargetHeight, set = ns.SetTargetHeight }, -40, 40, Nothing)
       local reset = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
       reset:SetSize(120, 22)
       reset:SetText("Reset height")
@@ -1124,8 +1148,8 @@ function ns.BuildOptions()
       db.ctRaised = on
       ns.RefreshCombatText()
     end, Off)
-    Stepper("Horizontal", "ctX", -ns.CT_MAX_X, ns.CT_MAX_X, 8, ns.RefreshCombatText, Off)
-    Stepper("Vertical", "ctY", -ns.CT_MAX_Y, ns.CT_MAX_Y, 8, ns.RefreshCombatText, Off)
+    Slider("Horizontal", "ctX", -ns.CT_MAX_X, ns.CT_MAX_X, ns.RefreshCombatText, Off)
+    Slider("Vertical", "ctY", -ns.CT_MAX_Y, ns.CT_MAX_Y, ns.RefreshCombatText, Off)
     local move = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
     move:SetSize(80, 22)
     move:SetText("Move")
@@ -1142,6 +1166,7 @@ function ns.BuildOptions()
     end)
     Text(Key("Move") .. " shows a box with sample text where self text starts: drag it, then click "
       .. Key("Done") .. ". Not in combat.")
+    ShowSub("mover")
   end
 
   ------------------------------------------------------------------------------
