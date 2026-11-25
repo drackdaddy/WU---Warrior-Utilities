@@ -492,24 +492,21 @@ function ns.BuildOptions()
 
   Heading("Moving the bar")
   Bullets({
-    "Drag it, or click it and use the " .. Key("arrow keys") .. ".",
-    Key("Shift") .. " moves 10 pixels at a time.",
+    "Drag it, or click it and use the " .. Key("arrow keys") .. " (" .. Key("Shift") .. ": 10 pixels).",
     "Each Edit Mode layout keeps its own position.",
   })
 
   if ns.isWarrior then
-    Heading("Cooldown bar")
+    Heading("Cooldown bars")
     Bullets({
-      "Set up each stance's bar, the " .. Key("Battle Shout") .. " timer, the " .. Key("Debuffs")
-        .. " tracker and the " .. Key("Custom") .. " bar on the " .. Key("CDM") .. " tab above.",
-      "In " .. Key("Edit Mode") .. ", click " .. Key("WU Cooldown Bar") .. " to move it, set its icon size"
-        .. " or turn on " .. Key("Only Show in Combat") .. ".",
-      "Move the debuff tracker (" .. Key("WU Debuffs") .. ") and the custom bar (" .. Key("WU Custom Bar") .. ") the same way.",
+      "Set them up on the " .. Key("CDM") .. " tab, and the trinket bars on " .. Key("Trinket") .. ".",
+      "Move and size them in " .. Key("Edit Mode") .. ", where each has a " .. Key("WU") .. " name.",
     })
   end
 
   Heading("Minimap icon")
-  Text("Click it to open these options; drag it around the minimap's edge to move it.")
+  Text("Click it to open these options" .. (ns.isWarrior and "; right-click to unlock the trinket bars" or "")
+    .. ". Drag it around the minimap's edge to move it.")
   OnOff("Show minimap icon", "minimapOff", ns.RefreshMinimap)
 
   Begin(right)
