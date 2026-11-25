@@ -285,19 +285,18 @@ function ns.BuildOptions()
     plus:SetPoint("LEFT", value, "RIGHT", 2, 0)
   end
 
-  -- Slider for a whole number from low to high: the label, then Blizzard's
-  -- slider with arrows at each end and the value on its right. key is a db
+  -- Slider for a whole number from low to high: the label, with Blizzard's
+  -- slider (arrows at each end, the value on its right) under it. key is a db
   -- key, or { get = function, set = function } for a game setting. apply runs
-  -- after the player moves it, not when the page redraws it. Like the
-  -- stepper, the control itself is an empty checkbox-sized box so the label
-  -- lines up.
+  -- after the player moves it, not when the page redraws it. The control is an
+  -- empty box tall enough for both, so the label lines up with the others.
   local function Slider(label, key, low, high, apply, disabled)
     local get = type(key) == "table" and key.get or function() return db[key] end
     local set = type(key) == "table" and key.set or function(v) db[key] = v end
     local sl = CreateFrame("Frame", nil, page)
-    sl:SetSize(26, 26)
+    sl:SetSize(26, 42)
     local bar = CreateFrame("Frame", nil, page, "MinimalSliderWithSteppersTemplate")
-    bar:SetWidth(150)
+    bar:SetWidth(220)
     local Right = MinimalSliderWithSteppersMixin.Label.Right
     bar:Init(get(), low, high, high - low, { [Right] = CreateMinimalSliderFormatter(Right) })
     bar:RegisterCallback("OnValueChanged", function(_, v)
@@ -309,7 +308,9 @@ function ns.BuildOptions()
     function sl:Draw() bar:SetValue(get()) end
     function sl:SetEnabled(on) bar:SetEnabled(on) end
     AddControl(sl, label, -4, disabled)
-    bar:SetPoint("LEFT", sl, "LEFT", 100, 0)
+    sl.label:ClearAllPoints()
+    sl.label:SetPoint("TOPLEFT", sl, "TOPLEFT", LABEL_X + 4, 0)
+    bar:SetPoint("TOPLEFT", sl.label, "BOTTOMLEFT", -6, -4)
   end
 
   -- Dropdown: the label, then Blizzard's dropdown button showing the current
