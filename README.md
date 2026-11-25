@@ -145,8 +145,8 @@ In combat, WU says the name out loud when **Sunder Armor** or **Demoralizing Sho
 | Sunder Armor alert, Demoralizing Shout alert | CDM > Debuffs | (default on) |
 | Battle Shout alert | CDM > Battle Shout | (default on) |
 | Seconds left | Next to each alert | When it plays, 0 to 10 (default 5); 0 plays when it runs out |
-| Voice | CDM > Debuffs | Five choices: your installed Windows text-to-speech voices first, then the Raid Warning, Ready Check and Alarm Clock sounds. **Test** plays it |
-| Volume | CDM > Debuffs | High, Medium, Low (default High) |
+| Voice | General | Five choices: your installed Windows text-to-speech voices first, then the Raid Warning, Ready Check and Alarm Clock sounds. **Test** plays it |
+| Volume | General | High, Medium, Low (default High) |
 
 ## Cooldown bar (warriors only)
 
@@ -178,9 +178,9 @@ Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`
 
 The minimap icon opens the options when clicked; drag it to move it around the minimap's edge. **Show minimap icon** on the General tab hides it (default on).
 
-- **General** — how to use the addon, the minimap icon switch, the slash commands and a Discord link to copy
+- **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer and its alert on **Battle Shout**, and the debuff tracker, debuff alerts and alert voice on **Debuffs**
+- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer and its alert on **Battle Shout**, and the debuff tracker and debuff alerts on **Debuffs**
 
 ## Slash commands
 

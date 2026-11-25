@@ -4,8 +4,9 @@ local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
--- General tab (how to use the addon, the minimap icon switch, slash commands
--- and the Discord link) and, on warriors only, a Range tab (the range display,
+-- General tab (how to use the addon, the minimap icon switch, slash commands,
+-- the Discord link and, on warriors, the audio alert voice) and, on warriors
+-- only, a Range tab (the range display,
 -- in three sub-tabs) and a CDM tab with one sub-tab per stance (that stance's
 -- cooldown bar), a Battle Shout sub-tab (the player frame timer's switches)
 -- and a Debuffs sub-tab (the debuff tracker's switches), shown in Esc > Options >
@@ -197,6 +198,10 @@ function ns.BuildOptions()
       c:Draw()
     end
   end
+
+  -- Audio alert settings are read when an alert plays (see Alerts.lua), so
+  -- changing one needs nothing else applied.
+  local function Nothing() end
 
   -- Every control's label starts this far right of the page's left edge, so
   -- labels line up whatever the control's size.
@@ -417,6 +422,18 @@ function ns.BuildOptions()
   end)
   Text("Click the link, then press Ctrl+C to copy.", 6, -6)
 
+  -- The voice and volume every audio alert uses (warriors only).
+  if ns.isWarrior then
+    Heading("Audio alert voice")
+    Choice("Voice", "alertVoice", Nothing, nil, ns.AlertVoices)
+    Choice("Volume", "alertVolume", Nothing)
+    local test = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+    test:SetSize(80, 22)
+    test:SetText("Test")
+    test:SetScript("OnClick", function() ns.PlayAlert("Sunder") end)
+    Place(test, 8, 4)
+  end
+
   ------------------------------------------------------------------------------
   -- Range tab (see Range.lua), in three sub-tabs: Display (what it shows, when
   -- and how it looks), Nameplate & Labels (the nameplate display and the
@@ -615,10 +632,6 @@ function ns.BuildOptions()
       end
     end
 
-    -- Audio alert settings are read when an alert plays (see Alerts.lua), so
-    -- changing one needs nothing else applied.
-    local function Nothing() end
-
     -- Battle Shout sub-tab: what the player frame timer shows and its
     -- switches (see ShoutTimer.lua), then its audio alert. The rest of the
     -- timer is greyed out while the whole timer is off.
@@ -645,13 +658,13 @@ function ns.BuildOptions()
 
     Heading("Audio alert")
     Text("Says " .. Key("Battle Shout") .. " in combat when it is about to run out, or when you enter combat"
-      .. " without it. Voice and volume are on the " .. Key("Debuffs") .. " tab.")
+      .. " without it. Voice and volume are on the " .. Key("General") .. " tab.")
     OnOff("Battle Shout alert", "shoutAlertOff", Nothing)
     Stepper("Seconds left when it plays", "shoutAlertSec", 0, 10, 1, Nothing, function() return db.shoutAlertOff end)
 
     -- Debuffs sub-tab: the debuff tracker (see Debuffs.lua) on the left, its
-    -- debuff switches greyed out while it is off; the audio alerts (see
-    -- Alerts.lua) and the voice they all use on the right.
+    -- debuff switches greyed out while it is off; the debuff audio alerts
+    -- (see Alerts.lua) on the right. Their voice is on the General tab.
     local left, right = Columns(sub.debuffs)
     Begin(left)
     local function TrackerOff() return db.debuffOff end
@@ -682,15 +695,6 @@ function ns.BuildOptions()
     Stepper("Seconds left", "sunderAlertSec", 0, 10, 1, Nothing, function() return db.sunderAlertOff end)
     OnOff("Demoralizing Shout alert", "demoAlertOff", Nothing)
     Stepper("Seconds left", "demoAlertSec", 0, 10, 1, Nothing, function() return db.demoAlertOff end)
-    Heading("Voice")
-    Choice("Voice", "alertVoice", Nothing, nil, ns.AlertVoices)
-    Choice("Volume", "alertVolume", Nothing)
-    local test = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
-    test:SetSize(80, 22)
-    test:SetText("Test")
-    test:SetScript("OnClick", function() ns.PlayAlert("Sunder") end)
-    Place(test, 8, 4)
-
     ShowSub(list[1][1])
   end
 
