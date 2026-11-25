@@ -4,7 +4,8 @@
   adapted from Good Range), a Battle Shout timer on the player frame, a
   tracker for Sunder Armor and Demoralizing Shout on the target with audio
   alerts, a cooldown bar for each stance, a custom cooldown bar and trinket
-  and usable gear bars with swapping (adapted from Forever Trinket Menu). Loads on warriors and
+  and usable gear bars with swapping (adapted from Forever Trinket Menu) and
+  combat text. Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
@@ -18,7 +19,7 @@
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
   ShoutTimer, Debuffs, Alerts, CooldownLook, CooldownBar, CustomBar, Trinkets,
-  TrinketAuto, Minimap, Changelog, Options.
+  TrinketAuto, CombatText, Minimap, Changelog, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -80,6 +81,10 @@ local defaults = {
   gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, -- usable gear bar, off by default
   trinketQueue = { [13] = {}, [14] = {} }, rotate13Off = true, rotate14Off = true, -- rotation (item IDs by slot)
   mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket the riding one replaced
+  ctOff = false, ctInOff = false, ctOutOff = false, ctOutGroupOff = true, -- combat text; outgoing solo only
+  ctInLayouts = {}, ctOutLayouts = {}, ctSize = 20, ctFont = "friz", ctTime = 1.5, ctShort = false,
+  ctHurtColor = { r = 1, g = 0.25, b = 0.25, a = 1 }, ctHealColor = { r = 0.3, g = 1, b = 0.4, a = 1 },
+  ctHitColor = { r = 1, g = 1, b = 1, a = 1 }, ctCritColor = { r = 1, g = 0.8, b = 0, a = 1 },
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -102,6 +107,7 @@ ns.LISTS = {
   },
 }
 ns.LISTS.debuffFont = ns.LISTS.rangeTextFont
+ns.LISTS.ctFont = ns.LISTS.rangeTextFont
 ns.LISTS.glowStyle = { { "pulse", "Pulsing border" }, { "sparks", "Marching sparks" }, { "static", "Static border" } }
 -- An ability's own glow type: the Appearance one, or one of the above.
 ns.GLOW_TYPES = { { "default", "Appearance setting" } }
@@ -261,9 +267,13 @@ end
 local handlers, units = {}, {}
 
 -- Adds fn as a handler for event; for a UNIT_ event, unit1 and unit2 (if
--- given) replace "player" as the units it is registered for.
+-- given) replace "player" as the units it is registered for. Units named by
+-- several handlers of one event are combined (at most two).
 function ns.On(event, fn, unit1, unit2)
-  if unit1 then units[event] = { unit1, unit2 } end
+  for _, unit in ipairs({ unit1, unit2 }) do
+    units[event] = units[event] or {}
+    if not tContains(units[event], unit) then table.insert(units[event], unit) end
+  end
   handlers[event] = handlers[event] or {}
   table.insert(handlers[event], fn)
 end
@@ -292,6 +302,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
       ns.BuildCustomBar()
       ns.BuildTrinkets()
       ns.BuildTrinketAuto()
+      ns.BuildCombatText()
     end
     ns.BuildOptions()
     ns.BuildMinimap()

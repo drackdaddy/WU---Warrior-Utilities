@@ -10,7 +10,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- with Stances (each stance's cooldown bar), Battle Shout (the player frame
 -- timer), Debuffs (the debuff tracker), Custom (the custom cooldown bar) and
 -- Appearance (the look the cooldown bars share) sub-tabs, and a Trinket tab
--- (the trinket and gear bars, rotation and mount swap), shown in Esc > Options >
+-- (the trinket and gear bars, rotation and mount swap) and a Combat Text tab,
+-- shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
@@ -32,7 +33,9 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow,
 --   customOff, customList, glowStyle, glowColor, glowSpeed, glowSize,
 --   glowOocOff, cdLook, trinketOff, trinketMenuOff, gearOff, trinketQueue,
---   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder
+--   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder, ctOff,
+--   ctInOff, ctOutOff, ctOutGroupOff, ctSize, ctFont, ctTime, ctShort,
+--   ctHurtColor, ctHealColor, ctHitColor, ctCritColor
 --------------------------------------------------------------------------------
 local category
 
@@ -106,6 +109,7 @@ function ns.BuildOptions()
     TABS[2] = { "range", "Range" }
     TABS[3] = { "cdm", "CDM" }
     TABS[4] = { "trinket", "Trinket" }
+    TABS[5] = { "combat", "Combat Text" }
   end
   local pages, ShowTab = Tabs(opt, TABS, 18, -56, 96, -96, -18, 16)
 
@@ -1075,6 +1079,44 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
+  -- Combat Text tab (see CombatText.lua): what shows and how it looks on the
+  -- left, the colors on the right. Everything but the main switch is greyed
+  -- out while combat text is off. Warriors only (see Tabs).
+  ------------------------------------------------------------------------------
+  if pages.combat then
+    local left, right = Columns(pages.combat)
+    local function Off() return db.ctOff end
+    Begin(left)
+    Heading("Combat text")
+    Bullets({
+      Key("Incoming") .. " (left): damage you take, heals and what you avoid.",
+      Key("Outgoing") .. " (right): hits on your target and what it avoids. The game tells addons every hit"
+        .. " your target takes, not only yours, so in a group it would show everyone's.",
+      "Move each column in " .. Key("Edit Mode") .. " (" .. Key("WU Incoming Text") .. ", "
+        .. Key("WU Outgoing Text") .. ").",
+    })
+    OnOff("Show combat text", "ctOff", ns.RefreshCombatText)
+    OnOff("Incoming", "ctInOff", Nothing, Off)
+    OnOff("Outgoing", "ctOutOff", Nothing, Off)
+    OnOff("Outgoing in a group too", "ctOutGroupOff", Nothing, function() return db.ctOff or db.ctOutOff end)
+
+    Heading("Look")
+    Choice("Font", "ctFont", Nothing, Off)
+    Stepper("Text size", "ctSize", 12, 40, 2, Nothing, Off)
+    Stepper("Seconds on screen", "ctTime", 1, 3, 0.5, Nothing, Off)
+    Check("Shorten big numbers (1.2K)", function() return db.ctShort end, function(on) db.ctShort = on end, Off)
+
+    Begin(right)
+    Heading("Colors")
+    ColorSwatch("Damage taken", "ctHurtColor", Nothing, Off, true)
+    ColorSwatch("Heals", "ctHealColor", Nothing, Off, true)
+    ColorSwatch("Your hits", "ctHitColor", Nothing, Off, true)
+    ColorSwatch("Critical hits", "ctCritColor", Nothing, Off, true)
+    Text("Magic damage you take uses its school's color. The game's own combat numbers are a separate setting"
+      .. " in its options.")
+  end
+
+  ------------------------------------------------------------------------------
   -- Change log: the Change Log button at the top right shows every version's
   -- changes (ns.CHANGELOG, see Changelog.lua) in a scrolling page in place of
   -- the tabs, filtered by the Version dropdown. Clicking a tab goes back.
@@ -1181,6 +1223,7 @@ SlashCmdList.WU = function(msg)
       ns.RefreshCooldowns()
       ns.RefreshCustom()
       ns.RefreshTrinkets()
+      ns.RefreshCombatText()
     end
     print("WU - Warrior Utilities reset")
   elseif a then
