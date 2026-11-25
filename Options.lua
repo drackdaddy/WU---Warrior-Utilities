@@ -715,7 +715,8 @@ function ns.BuildOptions()
     Heading("Custom cooldowns")
     Bullets({
       "Tracks the cooldowns you add here, in the order added.",
-      "Add a spell by its " .. Key("spell ID") .. ", or an item such as a trinket by its " .. Key("item ID") .. ".",
+      "Type a " .. Key("spell ID") .. " or an " .. Key("item ID") .. " (for trinkets) and press " .. Key("Add") .. ".",
+      "An ID that is both counts as an item you carry, then a spell you know.",
       "Find IDs on Wowhead: the number in the page's address.",
       "Move it and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Custom Bar") .. ").",
     })
@@ -730,32 +731,37 @@ function ns.BuildOptions()
     Place(box, 10, 10)
     local status = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     status:SetJustifyH("LEFT")
-    -- Adds the ID in the box as kind ("spell" or "item") if the game knows it.
-    local function AddButton(text, kind, x)
-      local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
-      b:SetSize(80, 22)
-      b:SetText(text)
-      b:SetPoint("LEFT", box, "RIGHT", x, 0)
-      b:SetScript("OnClick", function()
-        local id = tonumber(box:GetText())
-        local exists = id and (kind == "item" and C_Item.DoesItemExistByID(id) or kind == "spell" and C_Spell.DoesSpellExist(id))
-        if #db.customList >= ns.CUSTOM_MAX then
-          status:SetText("The bar holds " .. ns.CUSTOM_MAX .. " at most.")
-        elseif not exists then
-          status:SetText("No " .. kind .. " with that ID.")
-        else
-          if kind == "item" then C_Item.RequestLoadItemDataByID(id) end
-          table.insert(db.customList, { kind = kind, id = id })
-          box:SetText("")
-          status:SetText("")
-          ns.RefreshCustom()
-          RefreshControls()
-        end
-      end)
-      return b
+    -- Works out what an ID means, since a number can be both a spell and an
+    -- item: an item the player has (equipped or in the bags), then a spell
+    -- the player knows, then any item, then any spell. Returns "item",
+    -- "spell" or nil.
+    local function KindOf(id)
+      if C_Item.GetItemCount(id) > 0 then return "item" end
+      if IsPlayerSpell(id) then return "spell" end
+      if C_Item.DoesItemExistByID(id) then return "item" end
+      if C_Spell.DoesSpellExist(id) then return "spell" end
     end
-    AddButton("Add spell", "spell", 8)
-    AddButton("Add item", "item", 92)
+    -- Adds the ID in the box as whatever KindOf finds.
+    local add = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+    add:SetSize(80, 22)
+    add:SetText("Add")
+    add:SetPoint("LEFT", box, "RIGHT", 8, 0)
+    add:SetScript("OnClick", function()
+      local id = tonumber(box:GetText())
+      local kind = id and KindOf(id)
+      if #db.customList >= ns.CUSTOM_MAX then
+        status:SetText("The bar holds " .. ns.CUSTOM_MAX .. " at most.")
+      elseif not kind then
+        status:SetText("No spell or item with that ID.")
+      else
+        if kind == "item" then C_Item.RequestLoadItemDataByID(id) end
+        table.insert(db.customList, { kind = kind, id = id })
+        box:SetText("")
+        status:SetText("Added " .. kind .. " " .. id .. ".")
+        ns.RefreshCustom()
+        RefreshControls()
+      end
+    end)
     status:SetPoint("TOPLEFT", box, "BOTTOMLEFT", -6, -6)
     status:SetPoint("RIGHT", page, "RIGHT", -4, 0)
 

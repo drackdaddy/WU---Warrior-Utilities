@@ -179,7 +179,7 @@ Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`
 
 A bar for any cooldowns you want to watch, such as trinkets. Set it up on the **Custom** sub-tab under **CDM** (`/wu`):
 
-- Type an ID and press **Add spell** (a spell ID) or **Add item** (an item ID, for trinkets and other usable items). You can find IDs on Wowhead: it's the number in the page's address.
+- Type a spell ID or an item ID (for trinkets and other usable items) and press **Add**. A number can be both a spell and an item, so WU picks, in order: an item you have equipped or in your bags, a spell you know, any item, any spell. The row shows which it picked. You can find IDs on Wowhead: it's the number in the page's address.
 - Up to 12 entries. **Up** and **Down** change where each sits on the bar (top of the list is leftmost); **Remove** takes it off.
 - **Show custom bar** turns it on or off (default on).
 - Each icon shows the game's cooldown swipe and countdown, so it works in combat without the addon reading cooldown times. The icons only display cooldowns; clicking them does nothing.
