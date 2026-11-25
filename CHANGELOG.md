@@ -2,6 +2,11 @@
 
 Changes in each version of WU - Warrior Utilities, newest first. The same list is in game: **Change Log** at the top right of the options page (`/wu`).
 
+## 3.11.1 (2026-11-25)
+
+### Fixed
+- Getting off your mount didn't always put back the trinket the riding trinket replaced. It now keeps trying until the trinket is back, and the trinket rotation no longer takes that trinket while you ride.
+
 ## 3.11.0 (2026-11-25)
 
 ### Added

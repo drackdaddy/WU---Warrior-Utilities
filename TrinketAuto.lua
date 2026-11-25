@@ -14,7 +14,8 @@ local db = ns.db
 --                (put on by hand) is left alone.
 --   mount swap   on mounting, your riding trinket (Carrot on a Stick or
 --                Riding Crop) goes in the chosen trinket slot; on getting off,
---                the one it replaced goes back.
+--                the one it replaced goes back. While mounted the rotation
+--                leaves that trinket in the bags so it is there to go back.
 -- The game won't change gear in combat, so both only swap out of combat, and
 -- they only put items on: nothing ever uses an item or casts for the player.
 -- Swaps that come due in combat wait for it to end (see ns.Equip). Mounting
@@ -45,14 +46,16 @@ local function Left(id, slot)
 end
 
 -- Puts the first ready trinket on slot's list on, while the one worn is on
--- cooldown. The slot the mount swap holds is skipped while mounted.
+-- cooldown. While mounted, the slot the mount swap holds is skipped and the
+-- trinket the riding one replaced is left in the bags for the swap back.
 local function Rotate(slot)
   local list = db.trinketQueue[slot]
   if db["rotate" .. slot .. "Off"] or #list == 0 or (mounted and slot == db.mountSlot) then return end
   local worn = GetInventoryItemID("player", slot)
   if worn and (not ns.HasUse(worn) or Left(worn, slot) <= READY) then return end
+  local held = mounted and db.mountPrev
   for _, id in ipairs(list) do
-    if id ~= worn and ns.FindInBags(id) and Left(id) <= READY then
+    if id ~= worn and id ~= held and ns.FindInBags(id) and Left(id) <= READY then
       ns.Equip(id, slot)
       return
     end
@@ -69,23 +72,35 @@ local function RidingTrinket()
 end
 
 -- On mounting, the riding trinket goes on (what it replaced is saved in
--- mountPrev); on getting off, that trinket goes back.
+-- mountPrev). Off the mount, the saved trinket is put back on every check
+-- until it is worn: the game can refuse a swap while items are still moving
+-- or in combat, so one try isn't enough. It gives up if the riding trinket is
+-- no longer in the slot or the saved one is gone from the bags.
 local function CheckMount()
   local now = IsMounted()
-  if now == mounted then return end
+  local changed = now ~= mounted
   mounted = now
   if db.mountSwapOff then return end
-  local slot, riding = db.mountSlot, RidingTrinket()
-  if not riding then return end
+  local slot = db.mountSlot
   if now then
+    if not changed then return end
+    local riding = RidingTrinket()
     local worn = GetInventoryItemID("player", slot)
-    if worn ~= riding then
+    if riding and worn ~= riding then
       db.mountPrev = worn or 0
       ns.Equip(riding, slot)
     end
-  elseif db.mountPrev ~= 0 then
-    if GetInventoryItemID("player", slot) == riding then ns.Equip(db.mountPrev, slot) end
+    return
+  end
+  local prev = db.mountPrev
+  if prev == 0 then return end
+  local worn = GetInventoryItemID("player", slot)
+  local other = slot == 13 and 14 or 13
+  if worn == prev or not tContains(RIDING, worn)
+    or not (ns.FindInBags(prev) or GetInventoryItemID("player", other) == prev) then
     db.mountPrev = 0
+  else
+    ns.Equip(prev, slot)
   end
 end
 

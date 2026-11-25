@@ -10,6 +10,11 @@ local _, ns = ...
 -- and fixed lists (any may be left out).
 --------------------------------------------------------------------------------
 ns.CHANGELOG = {
+  { version = "3.11.1", date = "2026-11-25",
+    fixed = {
+      "Getting off your mount didn't always put back the trinket the riding trinket replaced. It now keeps trying until the trinket is back, and the trinket rotation no longer takes that trinket while you ride.",
+    },
+  },
   { version = "3.11.0", date = "2026-11-25",
     added = {
       "Debuff tracker: Sunder Armor (stacks and time left) and Demoralizing Shout (Demoralizing Roar and Curse of Weakness count too) on your target, from any caster. Moved in Edit Mode (WU Debuffs); set up on CDM > Debuffs.",
