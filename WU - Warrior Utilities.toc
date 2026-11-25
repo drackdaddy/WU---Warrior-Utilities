@@ -22,4 +22,5 @@ CooldownLook.lua
 CooldownBar.lua
 CustomBar.lua
 Minimap.lua
+Changelog.lua
 Options.lua

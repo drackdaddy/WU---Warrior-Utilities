@@ -204,6 +204,8 @@ A bar for any cooldowns you want to watch, such as trinkets. Set it up on the **
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
 
+**Change Log** at the top right shows what changed in each version (new, changed, removed, fixed); pick a version from the **Version** dropdown or show all. The same list is in `CHANGELOG.md`.
+
 The minimap icon opens the options when clicked; drag it to move it around the minimap's edge. **Show minimap icon** on the General tab hides it (default on).
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
@@ -239,6 +241,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 | `CooldownLook.lua` | Cooldown icons shared by the cooldown bars: ready glow styles, on-cooldown look |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
 | `CustomBar.lua` | Custom cooldown bar for spells and items picked by ID, and its Edit Mode settings |
+| `Changelog.lua` | Every version's changes, shown by the options page's Change Log button (the same as `CHANGELOG.md`) |
 | `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
 

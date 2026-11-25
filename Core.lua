@@ -17,7 +17,7 @@
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
   ShoutTimer, Debuffs, Alerts, CooldownLook, CooldownBar, CustomBar, Minimap,
-  Options.
+  Changelog, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]

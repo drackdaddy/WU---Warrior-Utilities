@@ -14,7 +14,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
--- The header shows the addon version from the TOC's ## Version line.
+-- The header shows the addon version from the TOC's ## Version line, and a
+-- Change Log button at the top right (see Changelog.lua).
 -- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
 --   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, debuffFont,
 --   debuffTextColor, debuffTextPos, sunderAlertOff,
@@ -63,14 +64,17 @@ function ns.BuildOptions()
   -- Builds a row of tabs on parent from list ({ key, name } each): buttons w
   -- px wide from (x, y), each with a page from (x, pageY) to (right, bottom)
   -- off parent's bottom right. Returns the pages by key and a function that
-  -- shows one of them.
+  -- shows one of them. A page added to pages afterwards has no tab button
+  -- (the change log); showing it leaves every tab unselected.
   local function Tabs(parent, list, x, y, w, pageY, right, bottom)
     local pages, btns = {}, {}
     local function Show(name)
       for k, page in pairs(pages) do
         page:SetShown(k == name)
-        btns[k].label:SetTextColor(unpack(k == name and GOLD or { 0.72, 0.70, 0.64 }))
-        btns[k].bar:SetShown(k == name)
+        if btns[k] then
+          btns[k].label:SetTextColor(unpack(k == name and GOLD or { 0.72, 0.70, 0.64 }))
+          btns[k].bar:SetShown(k == name)
+        end
       end
     end
     for i, info in ipairs(list) do
@@ -1008,6 +1012,77 @@ function ns.BuildOptions()
 
     ShowSub(list[1][1])
   end
+
+  ------------------------------------------------------------------------------
+  -- Change log: the Change Log button at the top right shows every version's
+  -- changes (ns.CHANGELOG, see Changelog.lua) in a scrolling page in place of
+  -- the tabs, filtered by the Version dropdown. Clicking a tab goes back.
+  ------------------------------------------------------------------------------
+  local log = CreateFrame("Frame", nil, opt)
+  log:SetPoint("TOPLEFT", 18, -96)
+  log:SetPoint("BOTTOMRIGHT", -18, 16)
+  log:Hide()
+  pages.changelog = log
+  local logButton = CreateFrame("Button", nil, opt, "UIPanelButtonTemplate")
+  logButton:SetSize(100, 22)
+  logButton:SetText("Change Log")
+  logButton:SetPoint("TOPRIGHT", -18, -14)
+  logButton:SetScript("OnClick", function() ShowTab("changelog") end)
+
+  local shown = "all" -- the version picked in the dropdown
+  local SECTIONS = { { "added", "New" }, { "changed", "Changed" }, { "removed", "Removed" }, { "fixed", "Fixed" } }
+  local scroll = CreateFrame("ScrollFrame", nil, log, "UIPanelScrollFrameTemplate")
+  scroll:SetPoint("TOPLEFT", 0, -36)
+  scroll:SetPoint("BOTTOMRIGHT", -26, 0)
+  local body = CreateFrame("Frame", nil, scroll)
+  scroll:SetScrollChild(body)
+  local text = body:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  text:SetPoint("TOPLEFT", 4, -4)
+  text:SetJustifyH("LEFT")
+  text:SetSpacing(4)
+
+  -- Writes the picked version (or every version) into the page and sizes
+  -- the scrolling area to fit it.
+  local function DrawLog()
+    local gold, bullet, lines = "|cffe6cc80", "|cffe6cc80\226\128\162|r  ", {}
+    for _, v in ipairs(ns.CHANGELOG) do
+      if shown == "all" or shown == v.version then
+        lines[#lines + 1] = gold .. "Version " .. v.version .. "|r  |cff9d9d9d" .. v.date .. "|r"
+        for _, sec in ipairs(SECTIONS) do
+          if v[sec[1]] then
+            lines[#lines + 1] = "|cffffffff" .. sec[2] .. "|r"
+            for _, item in ipairs(v[sec[1]]) do lines[#lines + 1] = bullet .. item end
+          end
+        end
+        lines[#lines + 1] = " "
+      end
+    end
+    local w = scroll:GetWidth()
+    body:SetWidth(w)
+    text:SetWidth(w - 8)
+    text:SetText(table.concat(lines, "\n"))
+    body:SetHeight(text:GetStringHeight() + 8)
+    scroll:SetVerticalScroll(0)
+  end
+  log:SetScript("OnShow", DrawLog)
+  scroll:SetScript("OnSizeChanged", DrawLog)
+
+  local versionLabel = log:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  versionLabel:SetPoint("TOPLEFT", 4, -8)
+  versionLabel:SetText("Version")
+  local versions = CreateFrame("DropdownButton", nil, log, "WowStyle1DropdownTemplate")
+  versions:SetWidth(150)
+  versions:SetPoint("LEFT", versionLabel, "RIGHT", 12, 0)
+  versions:SetupMenu(function(_, root)
+    local function Radio(value, name)
+      root:CreateRadio(name, function() return shown == value end, function()
+        shown = value
+        DrawLog()
+      end)
+    end
+    Radio("all", "All versions")
+    for _, v in ipairs(ns.CHANGELOG) do Radio(v.version, v.version) end
+  end)
 
   ShowTab("general")
 
