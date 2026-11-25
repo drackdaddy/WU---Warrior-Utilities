@@ -1,10 +1,10 @@
 # WU - Warrior Utilities
 
-A lightweight rage bar, range display, Battle Shout timer and stance cooldown bar for warriors on **World of Warcraft: Forever**.
+A lightweight rage bar, range display, Battle Shout timer, debuff tracker and stance cooldown bar for warriors on **World of Warcraft: Forever**.
 
-WU keeps your rage on screen with marks at the amounts you care about, shows how far your target is and what you can reach it with, shows how long your Battle Shout has left on the player frame, and tracks the key cooldowns for the stance you're in. The addon loads on warriors and druids, and settings are saved per character.
+WU keeps your rage on screen with marks at the amounts you care about, shows how far your target is and what you can reach it with, shows how long your Battle Shout has left on the player frame, tracks Sunder Armor and Demoralizing Shout on your target, and tracks the key cooldowns for the stance you're in. The addon loads on warriors and druids, and settings are saved per character.
 
-On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range display, Battle Shout timer and cooldown bar are warriors only.
+On druids you get the rage bar only: it shows in Bear Form and Dire Bear Form and hides in other forms (in Edit Mode it always shows so you can place it). The range display, Battle Shout timer, debuff tracker and cooldown bar are warriors only.
 
 ## Install
 
@@ -102,7 +102,7 @@ Shown on Blizzard's player frame, behind your name. It hides and scales with the
 - The game tracks the buff itself through Blizzard's aura containers and draws the bar, countdown, flash and warning, so it all works in combat. It sees any Battle Shout on you, including another warrior's, and notices when it's cancelled or removed.
 - It only attaches to Blizzard's player frame.
 
-Set it up on the **Battle Shout** tab of the options page (`/wu`):
+Set it up on the **Battle Shout** sub-tab under **CDM** on the options page (`/wu`):
 
 | Setting | Notes |
 | --- | --- |
@@ -112,6 +112,24 @@ Set it up on the **Battle Shout** tab of the options page (`/wu`):
 | Show "Battle Shout Missing" text | The warning above the player frame (default on) |
 | Text size | Size of that warning, 10 to 30 (default 14) |
 | Bar color | Opens the color picker, with opacity. **Default** puts back orange |
+
+## Debuff tracker (warriors only)
+
+A row of icons for the debuffs you keep on an enemy target. It shows while you target something you can attack.
+
+- **Sunder Armor**: the stack count (the game shows it from 2 stacks up) and the time left.
+- **Demoralizing Shout**: the time left. **Demoralizing Roar** (druid) and **Curse of Weakness** (warlock) fill the same slot.
+- A dimmed icon means that debuff is missing from the target. Every player's debuffs count, not just yours.
+- The game tracks the debuffs itself through Blizzard's aura containers and draws the icons, stacks and countdowns, so it works in combat without the addon reading the target's debuffs.
+- In Edit Mode, click **WU Debuffs** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
+
+Set it up on the **Debuffs** sub-tab under **CDM** on the options page (`/wu`):
+
+| Setting | Notes |
+| --- | --- |
+| Show debuff tracker | Turns the whole tracker on or off (default on) |
+| Track Sunder Armor | (default on) |
+| Track Demoralizing Shout | (default on) |
 
 ## Cooldown bar (warriors only)
 
@@ -144,9 +162,8 @@ Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`
 The minimap icon opens the options when clicked; drag it to move it around the minimap's edge. **Show minimap icon** on the General tab hides it (default on).
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands and a Discord link to copy
-- **Battle Shout** (warriors only) — the Battle Shout timer settings
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **CDM** (warriors only) — each stance's cooldown bar, on **Battle**, **Defensive** and **Berserker** sub-tabs
+- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer on **Battle Shout** and the debuff tracker on **Debuffs**
 
 ## Slash commands
 
@@ -157,7 +174,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 | `/wu range list` | Warriors: prints the range steps, the target's last answer at each, hidden answers counted and the zones |
 | `/wu range stats` | Warriors: the estimate's measured error at each step crossing, against the middle of the step |
 | `/wu range clear` | Warriors: clears those stats |
-| `/wu reset` | Reset all settings (including the Battle Shout timer and cooldown bar settings) and bar, range display and cooldown bar positions in every layout to default |
+| `/wu reset` | Reset all settings (including the Battle Shout timer, debuff tracker and cooldown bar settings) and bar, range display, debuff tracker and cooldown bar positions in every layout to default |
 
 `/wuutil` is an alias.
 
@@ -166,15 +183,16 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 | File | Contents |
 | --- | --- |
 | `Libs\LibEditMode` | LibEditMode by p3lim (Edit Mode support), embedded unmodified; see its `LICENSE.txt` |
-| `Core.lua` | Settings, shared Edit Mode helpers and event dispatch |
+| `Core.lua` | Settings, shared aura container and Edit Mode helpers, event dispatch |
 | `RageBar.lua` | Rage bar, marks, glow, styles, borders, size, Edit Mode position and settings |
 | `RangeEstimator.lua` | Range display: turns range check answers into a smooth distance (from Good Range) |
 | `RangeTape.lua` | Range display: the tape's looks and the focus and mouseover label (from Good Range) |
 | `Range.lua` | Range display: range checks, zones, nameplate, focus and mouseover, Edit Mode positions and the `/wu range` commands |
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
+| `Debuffs.lua` | Sunder Armor and Demoralizing Shout tracker on the target and its Edit Mode settings |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
 | `Minimap.lua` | Minimap icon that opens the options |
-| `Options.lua` | Options page in Esc > Options > AddOns (including the stance tabs), slash commands |
+| `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
 
 ## Glow
 

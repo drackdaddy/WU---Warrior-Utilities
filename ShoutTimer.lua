@@ -11,9 +11,9 @@ local db = ns.db
 -- The flash and warning turn off separately.
 --
 -- In combat the game won't tell addons whether the player has Battle Shout,
--- so the addon never asks. Blizzard's aura containers (AuraContainer frames
--- from Blizzard_AuraContainer) watch the player's buffs themselves, in and out
--- of combat, filtered to Battle Shout's rank spell IDs, and hold one frame
+-- so the addon never asks. Blizzard's aura containers (see ns.AuraContainer
+-- in Core.lua) watch the player's buffs themselves, in and out of combat,
+-- filtered to Battle Shout's rank spell IDs, and hold one frame
 -- while any Battle Shout is on the player (the player's own or another
 -- warrior's):
 --   timer     its frame carries the bar and countdown; the game fills the bar
@@ -27,8 +27,8 @@ local db = ns.db
 -- that layout is the game's. A frame the game set up is never touched again:
 -- a new color or the countdown switch builds a new timer container.
 -- Everything is parented to the player frame so it hides and scales with it;
--- the player frame itself is never changed. Set up on the Battle Shout tab of
--- the options page.
+-- the player frame itself is never changed. Set up on the Battle Shout tab
+-- under CDM on the options page.
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED
 -- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
 --   shoutWarnSize, shoutColor
@@ -41,29 +41,6 @@ local host, zone, presence, gate, alarm, warn, warnText, timer, timerLook
 local level, top -- frame levels under and above the player frame's art
 local inCombat = false
 
--- New aura container at the top left of parent, watching the player's
--- Battle Shout (any rank) with room for one w x h frame. init(frame), if
--- given, sets up that frame once when the game creates it.
-local function Container(parent, w, h, init)
-  local ids = {}
-  for _, id in ipairs(RANKS) do ids[id] = true end
-  local c = CreateFrame("AuraContainer", nil, parent, "CustomAuraContainerTemplate")
-  c:SetPoint("TOPLEFT")
-  c:AddAuraGroup("battleShout", "HELPFUL", {
-    candidateFilters = { includeSpellIDs = ids },
-    maxFrameCount = 1,
-    layout = { elementWidth = w, elementHeight = h },
-    initializeFrame = function(frame)
-      frame:SetSize(w, h)
-      frame:SetMouseClickEnabled(false)
-      frame:EnableMouseMotion(false)
-      if init then init(frame) end
-    end,
-  })
-  c:SetUnit("player")
-  return c
-end
-
 -- Builds the timer container with the current bar color and countdown
 -- switch, retiring the old one.
 local function BuildTimer()
@@ -72,7 +49,7 @@ local function BuildTimer()
     timer:Hide()
   end
   local c, w, h = db.shoutColor, host:GetSize()
-  timer = Container(host, w, h, function(frame)
+  timer = ns.AuraContainer(host, "player", "HELPFUL", RANKS, w, h, function(frame)
     local bar = CreateFrame("StatusBar", nil, frame)
     bar:SetAllPoints()
     bar:SetStatusBarTexture(WHITE)
@@ -150,7 +127,7 @@ function ns.BuildShoutTimer()
   -- bottom of the name box up past the warning (RefreshShout sets its top).
   zone = CreateFrame("Frame", nil, host)
   zone:SetPoint("BOTTOMLEFT", host, "BOTTOM", -ZONE / 2, 0)
-  presence = Container(zone, ZONE + 1, 1)
+  presence = ns.AuraContainer(zone, "player", "HELPFUL", RANKS, ZONE + 1, 1)
   gate = CreateFrame("Frame", nil, host)
   gate:SetAllPoints(zone)
   local clip = CreateFrame("Frame", nil, gate, "DisableUntrustedLayoutScriptsTemplate")

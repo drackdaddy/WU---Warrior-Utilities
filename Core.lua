@@ -1,7 +1,8 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
   Rage bar with up to three marks, a range display (distance to the target,
-  adapted from Good Range), a Battle Shout timer on the player frame and a
+  adapted from Good Range), a Battle Shout timer on the player frame, a
+  tracker for Sunder Armor and Demoralizing Shout on the target and a
   cooldown bar for each stance. Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
@@ -9,13 +10,13 @@
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
-  through curves; the Battle Shout timer is drawn by Blizzard's aura containers,
-  so the addon never reads the buff; the cooldown bar hands cooldowns to
+  through curves; the Battle Shout timer and the debuff tracker are drawn by
+  Blizzard's aura containers, so the addon never reads the auras; the cooldown bar hands cooldowns to
   Blizzard's Cooldown widget and curves, so it never reads their times.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
-  ShoutTimer, CooldownBar, Minimap, Options.
+  ShoutTimer, Debuffs, CooldownBar, Minimap, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -51,6 +52,9 @@ local defaults = {
   shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
   shoutWarnSize = 14, -- "Battle Shout Missing" font size
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
+  debuffOff = false, sunderOff = false, demoOff = false,
+  debuffLayouts = {}, -- debuff tracker position per Edit Mode layout name
+  debuffSize = 36, debuffCombatOnly = false, -- debuff icon size in pixels
   cdLayouts = {}, -- cooldown bar position per Edit Mode layout name
   cdSize = 36, -- cooldown icon size in pixels
   cdCombatOnly = false,
@@ -108,8 +112,43 @@ function ns.Default(key)
 end
 
 --------------------------------------------------------------------------------
+-- Aura containers
+-- Shared by the Battle Shout timer and the debuff tracker. Blizzard's aura
+-- containers (Blizzard_AuraContainer) watch a unit's auras themselves, in and
+-- out of combat, and draw what the addon hands them, so Lua never reads the
+-- auras. Spell ID filters only work on helpful auras of friendly units and
+-- harmful auras of enemies.
+--------------------------------------------------------------------------------
+
+-- New aura container at the top left of parent, watching unit's auras that
+-- match filter ("HELPFUL" or "HARMFUL") and whose spell ID is in ids (a
+-- list), from any caster, with room for one w x h frame. init(frame), if
+-- given, sets up that frame once when the game creates it. Returns the
+-- container.
+function ns.AuraContainer(parent, unit, filter, ids, w, h, init)
+  local set = {}
+  for _, id in ipairs(ids) do set[id] = true end
+  local c = CreateFrame("AuraContainer", nil, parent, "CustomAuraContainerTemplate")
+  c:SetPoint("TOPLEFT")
+  c:AddAuraGroup("aura", filter, {
+    candidateFilters = { includeSpellIDs = set },
+    maxFrameCount = 1,
+    layout = { elementWidth = w, elementHeight = h },
+    initializeFrame = function(frame)
+      frame:SetSize(w, h)
+      frame:SetMouseClickEnabled(false)
+      frame:EnableMouseMotion(false)
+      if init then init(frame) end
+    end,
+  })
+  c:SetUnit(unit)
+  return c
+end
+
+--------------------------------------------------------------------------------
 -- Edit Mode helpers
--- Shared by the rage bar, the range display and the cooldown bar. LibEditMode registers a frame
+-- Shared by the rage bar, the range display, the debuff tracker and the
+-- cooldown bar. LibEditMode registers a frame
 -- with Blizzard's Edit Mode: it draws the selection highlight, handles
 -- dragging, arrow-key nudges and "Reset To Default Position", shows the
 -- settings panel when the frame is selected, and reports the active Edit Mode
@@ -205,6 +244,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
     if ns.isWarrior then
       ns.BuildRange()
       ns.BuildShoutTimer()
+      ns.BuildDebuffs()
       ns.BuildCooldownBar()
     end
     ns.BuildOptions()

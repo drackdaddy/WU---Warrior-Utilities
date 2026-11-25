@@ -5,17 +5,18 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --------------------------------------------------------------------------------
 -- Options page
 -- General tab (how to use the addon, the minimap icon switch, slash commands
--- and the Discord link) and,
--- on warriors only, a Battle Shout tab (the player frame timer's switches), a
--- Range tab (the range display, in three sub-tabs) and a CDM tab with one
--- sub-tab per stance (that stance's cooldown bar), shown in Esc > Options >
+-- and the Discord link) and, on warriors only, a Range tab (the range display,
+-- in three sub-tabs) and a CDM tab with one sub-tab per stance (that stance's
+-- cooldown bar), a Battle Shout sub-tab (the player frame timer's switches)
+-- and a Debuffs sub-tab (the debuff tracker's switches), shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
---   shoutWarnSize, shoutColor, rangeOff, rangeOocOff, rangeFriendlyOff,
+--   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, rangeOff,
+--   rangeOocOff, rangeFriendlyOff,
 --   rangeLook, rangeTextFont, rangeSize, rangeWidth, rangeHeight, rangeScale,
 --   rangeUnitOff, rangeOpacity, rangePlace, rangePlateY, rangePlateScale,
 --   rangeFocusOff, rangeMouseOff, rangeLabelScale, rangeAutoOff, rangeZone1,
@@ -90,9 +91,8 @@ function ns.BuildOptions()
 
   local TABS = { { "general", "General" } }
   if ns.isWarrior then
-    TABS[2] = { "shout", "Battle Shout" }
-    TABS[3] = { "range", "Range" }
-    TABS[4] = { "cdm", "CDM" }
+    TABS[2] = { "range", "Range" }
+    TABS[3] = { "cdm", "CDM" }
   end
   local pages, ShowTab = Tabs(opt, TABS, 18, -56, 96, -96, -18, 16)
 
@@ -364,9 +364,11 @@ function ns.BuildOptions()
   if ns.isWarrior then
     Heading("Cooldown bar")
     Bullets({
-      "Set up each stance's bar on the " .. Key("CDM") .. " tab above.",
+      "Set up each stance's bar, the " .. Key("Battle Shout") .. " timer and the " .. Key("Debuffs")
+        .. " tracker on the " .. Key("CDM") .. " tab above.",
       "In " .. Key("Edit Mode") .. ", click " .. Key("WU Cooldown Bar") .. " to move it, set its icon size"
         .. " or turn on " .. Key("Only Show in Combat") .. ".",
+      "Move the debuff tracker the same way (" .. Key("WU Debuffs") .. ").",
     })
   end
 
@@ -411,34 +413,6 @@ function ns.BuildOptions()
     end
   end)
   Text("Click the link, then press Ctrl+C to copy.", 6, -6)
-
-  ------------------------------------------------------------------------------
-  -- Battle Shout tab: what the player frame timer shows and its switches (see
-  -- ShoutTimer.lua). The countdown and flash are greyed out while the whole
-  -- timer is off. Warriors only (see Tabs).
-  ------------------------------------------------------------------------------
-  if pages.shout then
-    Begin(pages.shout)
-    local function TimerOff() return db.shoutOff end
-
-    Heading("On the player frame")
-    Bullets({
-      "A bar behind your name empties as " .. Key("Battle Shout") .. " runs out.",
-      "A countdown at the end of your name shows the time left.",
-      "Your name flashes " .. Key("red") .. " while Battle Shout is missing in combat.",
-      Key("Battle Shout Missing") .. " also shows above the player frame then.",
-      "Out of combat, nothing shows while Battle Shout is missing.",
-    })
-
-    Heading("Settings")
-    OnOff("Show Battle Shout timer", "shoutOff", ns.RefreshShout)
-    OnOff("Show countdown", "shoutTextOff", ns.RefreshShout, TimerOff)
-    OnOff("Flash when missing in combat", "shoutFlashOff", ns.RefreshShout, TimerOff)
-    OnOff("Show \"Battle Shout Missing\" text", "shoutWarnOff", ns.RefreshShout, TimerOff)
-    Stepper("Text size", "shoutWarnSize", 10, 30, 2, ns.RefreshShout,
-      function() return db.shoutOff or db.shoutWarnOff end)
-    ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
-  end
 
   ------------------------------------------------------------------------------
   -- Range tab (see Range.lua), in three sub-tabs: Display (what it shows, when
@@ -541,7 +515,8 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- CDM tab: one sub-tab per stance, for that stance's cooldown bar (see
+  -- CDM tab: one sub-tab per stance, then Battle Shout and Debuffs.
+  -- Stance sub-tabs, for that stance's cooldown bar (see
   -- CooldownBar.lua): the bar and its ready glow on the left, the abilities on
   -- the right in bar order, each with its own glow switch. Each ability row is
   -- a slot: row i shows whichever ability is i-th in the stance's order, so
@@ -552,7 +527,9 @@ function ns.BuildOptions()
   if pages.cdm then
     local list = {}
     for _, s in ipairs(ns.STANCES) do list[#list + 1] = { s.key, (s.name:gsub(" Stance", "")) } end
-    local sub, ShowSub = Tabs(pages.cdm, list, 0, 0, 120, -36, 0, 0)
+    list[#list + 1] = { "shout", "Battle Shout" }
+    list[#list + 1] = { "debuffs", "Debuffs" }
+    local sub, ShowSub = Tabs(pages.cdm, list, 0, 0, 104, -36, 0, 0)
     for _, s in ipairs(ns.STANCES) do
       local barKey, alertKey = s.key .. "CdOff", s.key .. "AlertOff"
       local function BarOff() return db[barKey] end
@@ -634,6 +611,51 @@ function ns.BuildOptions()
         down:SetPoint("LEFT", up, "RIGHT", 2, 0)
       end
     end
+
+    -- Battle Shout sub-tab: what the player frame timer shows and its
+    -- switches (see ShoutTimer.lua). The rest is greyed out while the whole
+    -- timer is off.
+    Begin(sub.shout)
+    local function TimerOff() return db.shoutOff end
+
+    Heading("On the player frame")
+    Bullets({
+      "A bar behind your name empties as " .. Key("Battle Shout") .. " runs out.",
+      "A countdown at the end of your name shows the time left.",
+      "Your name flashes " .. Key("red") .. " while Battle Shout is missing in combat.",
+      Key("Battle Shout Missing") .. " also shows above the player frame then.",
+      "Out of combat, nothing shows while Battle Shout is missing.",
+    })
+
+    Heading("Settings")
+    OnOff("Show Battle Shout timer", "shoutOff", ns.RefreshShout)
+    OnOff("Show countdown", "shoutTextOff", ns.RefreshShout, TimerOff)
+    OnOff("Flash when missing in combat", "shoutFlashOff", ns.RefreshShout, TimerOff)
+    OnOff("Show \"Battle Shout Missing\" text", "shoutWarnOff", ns.RefreshShout, TimerOff)
+    Stepper("Text size", "shoutWarnSize", 10, 30, 2, ns.RefreshShout,
+      function() return db.shoutOff or db.shoutWarnOff end)
+    ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
+
+    -- Debuffs sub-tab: what the debuff tracker shows and its switches (see
+    -- Debuffs.lua). The debuff switches are greyed out while it is off.
+    Begin(sub.debuffs)
+    local function TrackerOff() return db.debuffOff end
+
+    Heading("On your target")
+    Bullets({
+      Key("Sunder Armor") .. " shows its stacks (from 2 up) and the time left.",
+      Key("Demoralizing Shout") .. " shows the time left; " .. Key("Demoralizing Roar") .. " and "
+        .. Key("Curse of Weakness") .. " count too.",
+      "A dimmed icon means that debuff is missing.",
+      "It shows while you target an enemy, and counts every player's debuffs.",
+      "Move it and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Debuffs") .. ").",
+    })
+
+    Heading("Settings")
+    OnOff("Show debuff tracker", "debuffOff", ns.RefreshDebuffs)
+    OnOff("Track Sunder Armor", "sunderOff", ns.RefreshDebuffs, TrackerOff)
+    OnOff("Track Demoralizing Shout", "demoOff", ns.RefreshDebuffs, TrackerOff)
+
     ShowSub(list[1][1])
   end
 
@@ -668,6 +690,7 @@ SlashCmdList.WU = function(msg)
     if ns.isWarrior then
       ns.RefreshRange()
       ns.RefreshShout()
+      ns.RefreshDebuffs()
       ns.RefreshCooldowns()
     end
     print("WU - Warrior Utilities reset")
