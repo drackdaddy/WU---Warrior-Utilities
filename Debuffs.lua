@@ -16,8 +16,8 @@ local db, LEM = ns.db, ns.LibEditMode
 -- (SetApplicationCount, which the game only shows from 2 up) and countdown
 -- (SetDurationText). Lua never reads the debuffs. Containers don't follow
 -- target changes on their own, so a target change asks them to refresh. A
--- frame the game set up is never touched again: a new icon size, countdown
--- font or countdown color builds new containers. The icons have no mouse input and never cast anything.
+-- frame the game set up is never touched again: a new icon size or countdown
+-- font, color or position builds new containers. The icons have no mouse input and never cast anything.
 -- Shown while the player has a target they can attack; always in Edit Mode
 -- (faded when the tracker is off) so it can be placed. Moved and set up in
 -- Edit Mode as "WU Debuffs" (icon size, only show in combat); switches on the
@@ -25,7 +25,7 @@ local db, LEM = ns.db, ns.LibEditMode
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_TARGET_CHANGED, PLAYER_REGEN_DISABLED,
 --   PLAYER_REGEN_ENABLED
 -- SavedVariables: debuffOff, sunderOff, demoOff, debuffLayouts, debuffSize,
---   debuffCombatOnly, debuffFont, debuffTextColor
+--   debuffCombatOnly, debuffFont, debuffTextColor, debuffTextPos
 --------------------------------------------------------------------------------
 
 -- Each slot: its on/off setting and the spell IDs it watches (every rank).
@@ -42,11 +42,15 @@ local SLOTS = {
 local GAP = 4 -- pixels between icons
 local FONT = "Fonts\\FRIZQT__.TTF"
 local DEFAULT_POS = { point = "CENTER", x = 0, y = -260 }
+-- Where the countdown goes, by debuffTextPos: its point, the icon's point, y.
+local TEXT_POS = {
+  middle = { "CENTER", "CENTER", 0 }, above = { "BOTTOM", "TOP", 2 }, below = { "TOP", "BOTTOM", -2 },
+}
 local holder, PlacePosition, builtLook
 
 -- Builds each slot's container at the current icon size, retiring the old
--- ones: the debuff's icon, the time left along its top (in the chosen font
--- and color) and its stack count in the bottom right corner.
+-- ones: the debuff's icon, the time left (in the chosen font, color and
+-- position) and its stack count in the bottom right corner.
 local function BuildContainers()
   local size, color = db.debuffSize, db.debuffTextColor
   for _, s in ipairs(SLOTS) do
@@ -65,7 +69,8 @@ local function BuildContainers()
       local time = frame:CreateFontString(nil, "OVERLAY")
       time:SetFont(ns.FONTS[db.debuffFont], math.floor(size * 0.4), "OUTLINE")
       time:SetTextColor(color.r, color.g, color.b)
-      time:SetPoint("TOP", 0, -2)
+      local p = TEXT_POS[db.debuffTextPos]
+      time:SetPoint(p[1], frame, p[2], 0, p[3])
       frame:SetDurationText(time, {})
     end)
   end
@@ -76,7 +81,7 @@ end
 local function Update()
   if not holder then return end -- not built (druids)
   local c = db.debuffTextColor
-  local look = table.concat({ db.debuffSize, db.debuffFont, c.r, c.g, c.b }, ",")
+  local look = table.concat({ db.debuffSize, db.debuffFont, db.debuffTextPos, c.r, c.g, c.b }, ",")
   if look ~= builtLook then
     builtLook = look
     BuildContainers()

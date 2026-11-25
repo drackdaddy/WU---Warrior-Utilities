@@ -17,7 +17,7 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
 --   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, debuffFont,
---   debuffTextColor, sunderAlertOff,
+--   debuffTextColor, debuffTextPos, sunderAlertOff,
 --   demoAlertOff, shoutAlertOff, sunderAlertSec, demoAlertSec, shoutAlertSec,
 --   alertVoice, alertVolume, rangeOff,
 --   rangeOocOff, rangeFriendlyOff,
@@ -686,6 +686,7 @@ function ns.BuildOptions()
     OnOff("Track Demoralizing Shout", "demoOff", ns.RefreshDebuffs, TrackerOff)
 
     Heading("Countdown")
+    Choice("Position", "debuffTextPos", ns.RefreshDebuffs, TrackerOff)
     Choice("Font", "debuffFont", ns.RefreshDebuffs, TrackerOff)
     ColorSwatch("Color", "debuffTextColor", ns.RefreshDebuffs, TrackerOff, true)
 

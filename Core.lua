@@ -56,6 +56,7 @@ local defaults = {
   debuffLayouts = {}, -- debuff tracker position per Edit Mode layout name
   debuffSize = 36, debuffCombatOnly = false, -- debuff icon size in pixels
   debuffFont = "friz", debuffTextColor = { r = 1, g = 1, b = 1, a = 1 }, -- debuff countdown
+  debuffTextPos = "middle",
   sunderAlertOff = false, demoAlertOff = false, shoutAlertOff = false, -- audio alerts
   sunderAlertSec = 5, demoAlertSec = 5, shoutAlertSec = 5, -- seconds left when each alert plays
   alertVoice = "tts1", alertVolume = "high", -- see ns.AlertVoices in Alerts.lua
@@ -89,6 +90,7 @@ ns.LISTS = {
   },
 }
 ns.LISTS.debuffFont = ns.LISTS.rangeTextFont
+ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }
 
 -- Spell IDs of every rank, shared by the files that watch these auras.
 ns.RANKS = {

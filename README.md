@@ -130,6 +130,7 @@ Set it up on the **Debuffs** sub-tab under **CDM** on the options page (`/wu`):
 | Show debuff tracker | Turns the whole tracker on or off (default on) |
 | Track Sunder Armor | (default on) |
 | Track Demoralizing Shout | (default on) |
+| Position | Where the countdown goes: Middle, Above the icon, Below the icon (default Middle) |
 | Font | The countdown's font: Changa Bold, Skurri, Arial Narrow, 2002 Bold, Friz Quadrata, Nimrod, Morpheus (default Friz Quadrata) |
 | Color | The countdown's color. **Default** puts back white |
 
