@@ -221,28 +221,6 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 | Carrot or Riding Crop when mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
 | Rotate Trinket 1, Rotate Trinket 2 | (default off) |
 
-## Combat text (warriors only)
-
-Numbers that float up and fade, set up on the **Combat Text** tab (`/wu`):
-
-- **Incoming** (left): damage you take (magic in its school's color), heals in green, and what you avoided (Dodge, Parry, Block, Miss, Resist...). Critical hits show bigger.
-- **Outgoing** (right): hits on your target and what it avoided; critical hits bigger, with a `!`.
-- WoW: Forever gives addons no combat log and no feed of only your own hits. The outgoing side shows every hit your target takes, so it is yours when you're solo and everyone's in a group. By default it only shows while you're solo; **Outgoing in a group too** turns it on in groups.
-- The game hands over the amounts as hidden values; WU only passes them to the game's own number formatting to show them, never reads them.
-- In Edit Mode, **WU Incoming Text** and **WU Outgoing Text** move each column.
-
-| Setting | Notes |
-| --- | --- |
-| Show combat text, Incoming, Outgoing | (default on) |
-| Outgoing in a group too | (default off) |
-| Font | The range display's fonts (default Friz Quadrata) |
-| Text size | 12 to 40 (default 20) |
-| Seconds on screen | 1 to 3 (default 1.5) |
-| Shorten big numbers | 1.2K instead of 1,234 (default off) |
-| Colors | Damage taken, Heals, Your hits, Critical hits |
-
-The game's own floating combat numbers are a separate setting in its options.
-
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
@@ -253,7 +231,6 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **Combat Text** (warriors only) — the combat text settings
 - **Trinket** (warriors only) — the trinket and usable gear bars, rotation and mount swap
 - **CDM** (warriors only) — each stance's cooldown bar on **Stances**, the Battle Shout timer and its alert on **Battle Shout**, the debuff tracker and debuff alerts on **Debuffs**, the custom bar on **Custom**, and the cooldown icons' look on **Appearance**
 
@@ -290,7 +267,6 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 | `Trinkets.lua` | Trinket and usable gear bars, swap list and combat queue (from Forever Trinket Menu) |
 | `TrinketAuto.lua` | Trinket rotation and mount swap (from Forever Trinket Menu) |
 | `Bindings.xml` | Key bindings for Use Trinket 1 and 2 |
-| `CombatText.lua` | Incoming and outgoing combat text |
 | `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
 

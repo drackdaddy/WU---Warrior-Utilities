@@ -16,7 +16,6 @@ Changes in each version of WU - Warrior Utilities, newest first. The same list i
 - Usable gear bar (off by default) for other on-use gear: engineering helms, cloaks, rings and weapons, with the same swap list.
 - Border around the trinket and gear bars: none, thin line, dark panel, tooltip or gold.
 - Right-click the minimap icon to unlock the trinket bars and drag them (out of combat), and again to lock them.
-- Combat Text tab: incoming damage, heals and avoids on one side, hits on your target on the other (only while solo unless turned on for groups, as the game reports everyone's hits on your target), with font, size, time, number style and colors. Moved in Edit Mode.
 - This change log, from the Change Log button on the options page.
 
 ### Changed
