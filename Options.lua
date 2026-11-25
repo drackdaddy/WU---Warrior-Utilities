@@ -1027,13 +1027,10 @@ function ns.BuildOptions()
     Begin(left)
     Heading("Trinket bar")
     Bullets({
-      Key("Click") .. " a trinket (or its key, set in " .. Key("Key Bindings") .. ") to use it.",
-      "Hover a slot for the items in your bags that fit it; click one to put it on.",
-      "A pick made in combat waits (gold border) and goes on when combat ends.",
+      Key("Click") .. " a trinket, or its key (" .. Key("Key Bindings") .. "), to use it.",
+      "Hover a slot to swap in an item from your bags; a pick made in combat goes on when it ends.",
       Key("Alt+click") .. " a trinket in that list to add it to the slot's rotation.",
-      "The gear bar does the same for your other on-use gear (helm, cloak, rings, weapons).",
-      "Move each bar and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Trinket Bar") .. ", "
-        .. Key("WU Gear Bar") .. "), or " .. Key("right-click") .. " the minimap icon to unlock them and drag.",
+      "Move the bars in " .. Key("Edit Mode") .. ", or " .. Key("right-click") .. " the minimap icon to unlock and drag them.",
     })
     OnOff("Show trinket bar", "trinketOff", ns.RefreshTrinkets)
     OnOff("Show the list on hover", "trinketMenuOff", ns.RefreshTrinkets)
@@ -1041,18 +1038,13 @@ function ns.BuildOptions()
     Choice("Bar border", "trinketBorder", ns.RefreshTrinkets)
 
     Heading("Mount")
-    OnOff("Riding trinket while mounted", "mountSwapOff", ns.RefreshTrinkets)
+    OnOff("Carrot or Riding Crop when mounted", "mountSwapOff", ns.RefreshTrinkets)
     Choice("Put it in", "mountSlot", ns.RefreshTrinkets, function() return db.mountSwapOff end)
-    Text("Carrot on a Stick or Riding Crop goes on when you mount; the trinket it replaced goes back"
-      .. " when you get off.")
-
-    Heading("Credits")
-    Text("Adapted from " .. Key("Forever Trinket Menu") .. " by " .. Key("sk0lu") .. ", under the MIT license.")
 
     Begin(right)
     Heading("Rotation")
-    Text("When the trinket you wear is on cooldown, the first ready one on the list goes on (out of combat)."
-      .. " " .. Key("Click") .. " one to select it, " .. Key("drag") .. " to change its priority.")
+    Text("When your trinket is on cooldown, the first ready one on the list goes on (out of combat)."
+      .. " " .. Key("Drag") .. " to change the order.")
     for i, slot in ipairs({ 13, 14 }) do
       local picked = 1
       local function Rotation() return db.trinketQueue[slot] end
@@ -1080,6 +1072,9 @@ function ns.BuildOptions()
       end)
       Place(remove, 4, 4)
     end
+
+    Heading("Credits")
+    Text("Adapted from " .. Key("Forever Trinket Menu") .. " by " .. Key("sk0lu") .. " (MIT license).")
   end
 
   ------------------------------------------------------------------------------
