@@ -10,7 +10,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- with Stances (each stance's cooldown bar), Battle Shout (the player frame
 -- timer), Debuffs (the debuff tracker), Custom (the custom cooldown bar) and
 -- Appearance (the look the cooldown bars share) sub-tabs, and a Trinket tab
--- (the trinket and gear bars, rotation and mount swap), shown in Esc > Options >
+-- (the trinket and gear bars, rotation and mount swap) and a Combat Text tab
+-- (moving the game's combat text), shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
@@ -32,7 +33,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow,
 --   customOff, customList, glowStyle, glowColor, glowSpeed, glowSize,
 --   glowOocOff, cdLook, trinketOff, trinketMenuOff, gearOff, trinketQueue,
---   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder
+--   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder, ctRaised,
+--   ctX, ctY
 --------------------------------------------------------------------------------
 local category
 
@@ -106,6 +108,7 @@ function ns.BuildOptions()
     TABS[2] = { "range", "Range" }
     TABS[3] = { "cdm", "CDM" }
     TABS[4] = { "trinket", "Trinket" }
+    TABS[5] = { "combat", "Combat Text" }
   end
   local pages, ShowTab = Tabs(opt, TABS, 18, -56, 96, -96, -18, 16)
 
@@ -254,6 +257,10 @@ function ns.BuildOptions()
   -- empty box the size of a checkbox, so the label lines up with the others.
   -- apply runs after every change.
   local function Stepper(label, key, low, high, step, apply, disabled)
+    -- key can also be { get = function, set = function } for a value not in
+    -- db (a game setting).
+    local get = type(key) == "table" and key.get or function() return db[key] end
+    local set = type(key) == "table" and key.set or function(v) db[key] = v end
     local st = CreateFrame("Frame", nil, page)
     st:SetSize(26, 26)
     local value = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -263,14 +270,14 @@ function ns.BuildOptions()
       b:SetSize(24, 22)
       b:SetText(text)
       b:SetScript("OnClick", function()
-        db[key] = math.min(high, math.max(low, db[key] + dir * step))
+        set(math.min(high, math.max(low, get() + dir * step)))
         apply()
         RefreshControls()
       end)
       return b
     end
     local minus, plus = StepButton("-", -1), StepButton("+", 1)
-    function st:Draw() value:SetText(db[key]) end
+    function st:Draw() value:SetText(get()) end
     function st:SetEnabled(on)
       minus:SetEnabled(on)
       plus:SetEnabled(on)
@@ -1075,6 +1082,69 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
+  -- Combat Text tab (see CombatText.lua): target text on the left, self text
+  -- on the right. The self text controls are greyed out while self text is
+  -- off in the game's options. Warriors only (see Tabs).
+  ------------------------------------------------------------------------------
+  if pages.combat then
+    local left, right = Columns(pages.combat)
+    Begin(left)
+    Heading("Target text")
+    if ns.HasTargetText() then
+      Text("The numbers above your target: damage you deal, heals, misses. Lift them when nameplates hide them."
+        .. " This is a game setting, so it stays even with WU off.")
+      Stepper("Target height", { get = ns.GetTargetHeight, set = ns.SetTargetHeight }, -40, 40, 1, Nothing)
+      local reset = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+      reset:SetSize(120, 22)
+      reset:SetText("Reset height")
+      reset:SetScript("OnClick", function()
+        ns.SetTargetHeight(0)
+        RefreshControls()
+      end)
+      Place(reset, 8, 4)
+    else
+      Text("This game client doesn't have the settings that move target text.")
+    end
+
+    Heading("Credits")
+    Text("Adapted from " .. Key("SCT Mover") .. " by " .. Key("KidMoxie") .. " (MIT license).")
+
+    Begin(right)
+    local function Off() return not ns.SelfTextOn() end
+    Heading("Self text")
+    Text("The numbers near your character: damage you take, heals you get.")
+    local note = Text("Self text is off in the game's options.")
+    note:SetTextColor(1, 0.25, 0.25)
+    local watch = CreateFrame("Frame", nil, page) -- shows the note only while self text is off
+    function watch:Draw() note:SetShown(Off()) end
+    function watch:SetEnabled() end
+    watch.label = watch:CreateFontString()
+    controls[#controls + 1] = watch
+    Check("Show above other UI elements", function() return db.ctRaised end, function(on)
+      db.ctRaised = on
+      ns.RefreshCombatText()
+    end, Off)
+    Stepper("Horizontal", "ctX", -ns.CT_MAX_X, ns.CT_MAX_X, 8, ns.RefreshCombatText, Off)
+    Stepper("Vertical", "ctY", -ns.CT_MAX_Y, ns.CT_MAX_Y, 8, ns.RefreshCombatText, Off)
+    local move = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+    move:SetSize(80, 22)
+    move:SetText("Move")
+    move:SetScript("OnClick", ns.MoveSelfText)
+    Place(move, 8, 4)
+    local resetPos = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+    resetPos:SetSize(120, 22)
+    resetPos:SetText("Reset position")
+    resetPos:SetPoint("LEFT", move, "RIGHT", 8, 0)
+    resetPos:SetScript("OnClick", function()
+      db.ctX, db.ctY = 0, 0
+      ns.RefreshCombatText()
+      RefreshControls()
+    end)
+    Text(Key("Move") .. " shows a box with sample text where self text starts: drag it, then click "
+      .. Key("Done") .. ". Not in combat.")
+  end
+
+  ------------------------------------------------------------------------------
   -- Change log: the Change Log button at the top right shows every version's
   -- changes (ns.CHANGELOG, see Changelog.lua) in a scrolling page in place of
   -- the tabs, filtered by the Version dropdown. Clicking a tab goes back.
@@ -1181,6 +1251,7 @@ SlashCmdList.WU = function(msg)
       ns.RefreshCooldowns()
       ns.RefreshCustom()
       ns.RefreshTrinkets()
+      ns.RefreshCombatText()
     end
     print("WU - Warrior Utilities reset")
   elseif a then

@@ -4,7 +4,8 @@
   adapted from Good Range), a Battle Shout timer on the player frame, a
   tracker for Sunder Armor and Demoralizing Shout on the target with audio
   alerts, a cooldown bar for each stance, a custom cooldown bar and trinket
-  and usable gear bars with swapping (adapted from Forever Trinket Menu). Loads on warriors and
+  and usable gear bars with swapping (adapted from Forever Trinket Menu) and
+  moving the game's combat text (adapted from SCT Mover). Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
@@ -18,7 +19,7 @@
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
   ShoutTimer, Debuffs, Alerts, CooldownLook, CooldownBar, CustomBar, Trinkets,
-  TrinketAuto, Minimap, Changelog, Options.
+  TrinketAuto, CombatText, Minimap, Changelog, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -80,6 +81,7 @@ local defaults = {
   gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, -- usable gear bar, off by default
   trinketQueue = { [13] = {}, [14] = {} }, rotate13Off = true, rotate14Off = true, -- rotation (item IDs by slot)
   mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket the riding one replaced
+  ctRaised = false, ctX = 0, ctY = 0, -- self text: above other UI, offset in Blizzard's reference units
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -256,7 +258,8 @@ end
 -- druids only. ns.isWarrior tells the other files which class loaded.
 -- UNIT_ events are registered for the player only, unless a handler names
 -- the units (at most two, as RegisterUnitEvent allows).
--- Events: ADDON_LOADED (settings), PLAYER_LOGIN (build frames, register events)
+-- Events: ADDON_LOADED (settings; other addons' go to the handlers),
+--   PLAYER_LOGIN (build frames, register events)
 --------------------------------------------------------------------------------
 local handlers, units = {}, {}
 
@@ -272,9 +275,8 @@ local ev = CreateFrame("Frame")
 ev:RegisterEvent("ADDON_LOADED")
 ev:RegisterEvent("PLAYER_LOGIN")
 ev:SetScript("OnEvent", function(self, event, ...)
-  if event == "ADDON_LOADED" then
-    if ... ~= addonName then return end
-    self:UnregisterEvent(event)
+  if event == "ADDON_LOADED" and ... == addonName then
+    self:UnregisterEvent(event) -- registered again at login if a feature waits for another addon
     ns.LoadDB(WUDB)
   elseif event == "PLAYER_LOGIN" then
     self:UnregisterEvent(event)
@@ -292,6 +294,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
       ns.BuildCustomBar()
       ns.BuildTrinkets()
       ns.BuildTrinketAuto()
+      ns.BuildCombatText()
     end
     ns.BuildOptions()
     ns.BuildMinimap()
@@ -303,7 +306,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
       end
     end
     ns.built = true
-  else
+  elseif handlers[event] then
     for _, fn in ipairs(handlers[event]) do fn(...) end
   end
 end)

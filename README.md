@@ -221,6 +221,14 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 | Carrot or Riding Crop when mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
 | Rotate Trinket 1, Rotate Trinket 2 | (default off) |
 
+## Combat text (warriors only)
+
+Adapted from [SCT Mover](https://github.com/dbspringer/sct-mover) by KidMoxie (MIT). It moves the game's own combat text; it doesn't draw its own. Set it up on the **Combat Text** tab (`/wu`).
+
+- **Target text**: the numbers above your target (damage you deal, heals, misses). **Target height** (-40 to 40, default 0) lifts or lowers them, for example clear of nameplates; **Reset height** puts them back. It's a game setting, so it stays even with WU off.
+- **Self text**: the numbers near your character (damage you take, heals you get). **Show above other UI elements** draws them on top. **Horizontal** and **Vertical** move them, or click **Move** for a box with sample text where they start: drag it, then **Done**. **Reset position** puts them back. Not in combat. Greyed out while self text is off in the game's options.
+- In Forever, an addon that writes to the game's combat text frame breaks it (the amounts are secret values), so WU only moves it with an animation, and draws the sample text itself.
+
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
@@ -231,6 +239,7 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
+- **Combat Text** (warriors only) — moving the game's combat text
 - **Trinket** (warriors only) — the trinket and usable gear bars, rotation and mount swap
 - **CDM** (warriors only) — each stance's cooldown bar on **Stances**, the Battle Shout timer and its alert on **Battle Shout**, the debuff tracker and debuff alerts on **Debuffs**, the custom bar on **Custom**, and the cooldown icons' look on **Appearance**
 
@@ -267,6 +276,7 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 | `Trinkets.lua` | Trinket and usable gear bars, swap list and combat queue (from Forever Trinket Menu) |
 | `TrinketAuto.lua` | Trinket rotation and mount swap (from Forever Trinket Menu) |
 | `Bindings.xml` | Key bindings for Use Trinket 1 and 2 |
+| `CombatText.lua` | Moving the game's target and self combat text (from SCT Mover) |
 | `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
 
@@ -280,6 +290,7 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 ## Credits
 
 - The trinket bar, swap list, rotation and mount swap are adapted from Forever Trinket Menu by sk0lu, MIT license; see `LICENSE-ForeverTrinketMenu.txt`.
+- Combat text moving is adapted from SCT Mover by KidMoxie (Derek Springer), MIT license; see `LICENSE-SCTMover.txt`.
 - The range display is adapted from Good Range by Andrii Zolotarenko, MIT license; see `LICENSE-GoodRange.txt`. Its range-check item list comes from LibRangeCheck-3.0 (MIT).
 - The Changa Bold font in `Assets` is by The Changa Project Authors, SIL Open Font License 1.1; see `Assets/OFL-Changa.txt`.
 
