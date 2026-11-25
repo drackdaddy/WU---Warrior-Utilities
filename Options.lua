@@ -9,7 +9,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- only, a Range tab (the range display, in three sub-tabs) and a CDM tab
 -- with Stances (each stance's cooldown bar), Battle Shout (the player frame
 -- timer), Debuffs (the debuff tracker), Custom (the custom cooldown bar) and
--- Appearance (the look the cooldown bars share) sub-tabs, shown in Esc > Options >
+-- Appearance (the look the cooldown bars share) sub-tabs, and a Trinket tab
+-- (the trinket and gear bars, rotation and mount swap), shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
@@ -30,7 +31,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   battleCdOff, defensiveCdOff, berserkerCdOff, battleAlertOff,
 --   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow,
 --   customOff, customList, glowStyle, glowColor, glowSpeed, glowSize,
---   glowOocOff, cdLook
+--   glowOocOff, cdLook, trinketOff, trinketMenuOff, gearOff, trinketQueue,
+--   rotate13Off, rotate14Off, mountSwapOff, mountSlot
 --------------------------------------------------------------------------------
 local category
 
@@ -103,6 +105,7 @@ function ns.BuildOptions()
   if ns.isWarrior then
     TABS[2] = { "range", "Range" }
     TABS[3] = { "cdm", "CDM" }
+    TABS[4] = { "trinket", "Trinket" }
   end
   local pages, ShowTab = Tabs(opt, TABS, 18, -56, 96, -96, -18, 16)
 
@@ -1014,6 +1017,71 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
+  -- Trinket tab (see Trinkets.lua and TrinketAuto.lua): the bars, the mount
+  -- swap and credits on the left; each trinket slot's rotation on the right,
+  -- as icon slots in priority order (click to select, drag to move). Warriors
+  -- only (see Tabs).
+  ------------------------------------------------------------------------------
+  if pages.trinket then
+    local left, right = Columns(pages.trinket)
+    Begin(left)
+    Heading("Trinket bar")
+    Bullets({
+      Key("Click") .. " a trinket (or its key, set in " .. Key("Key Bindings") .. ") to use it.",
+      "Hover a slot for the items in your bags that fit it; click one to put it on.",
+      "A pick made in combat waits (gold border) and goes on when combat ends.",
+      Key("Alt+click") .. " a trinket in that list to add it to the slot's rotation.",
+      "The gear bar does the same for your other on-use gear (helm, cloak, rings, weapons).",
+      "Move each bar and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Trinket Bar") .. ", "
+        .. Key("WU Gear Bar") .. ").",
+    })
+    OnOff("Show trinket bar", "trinketOff", ns.RefreshTrinkets)
+    OnOff("Show the list on hover", "trinketMenuOff", ns.RefreshTrinkets)
+    OnOff("Show usable gear bar", "gearOff", ns.RefreshTrinkets)
+
+    Heading("Mount")
+    OnOff("Riding trinket while mounted", "mountSwapOff", ns.RefreshTrinkets)
+    Choice("Put it in", "mountSlot", ns.RefreshTrinkets, function() return db.mountSwapOff end)
+    Text("Carrot on a Stick or Riding Crop goes on when you mount; the trinket it replaced goes back"
+      .. " when you get off.")
+
+    Heading("Credits")
+    Text("Adapted from " .. Key("Forever Trinket Menu") .. " by " .. Key("sk0lu") .. ", under the MIT license.")
+
+    Begin(right)
+    Heading("Rotation")
+    Text("When the trinket you wear is on cooldown, the first ready one on the list goes on (out of combat)."
+      .. " " .. Key("Click") .. " one to select it, " .. Key("drag") .. " to change its priority.")
+    for i, slot in ipairs({ 13, 14 }) do
+      local picked = 1
+      local function Rotation() return db.trinketQueue[slot] end
+      local function Off() return db["rotate" .. slot .. "Off"] end
+      OnOff("Rotate Trinket " .. i, "rotate" .. slot .. "Off", Nothing)
+      SlotGrid(6, 6, {
+        list = Rotation,
+        look = function(id)
+          return C_Item.GetItemIconByID(id), C_Item.GetItemNameByID(id) or ("Item " .. id), false, false
+        end,
+        selected = function() return picked end,
+        select = function(n) picked = n end,
+        move = function(from, to)
+          Move(Rotation(), from, to)
+          if picked == from then picked = to end
+        end,
+        empty = "Alt+click trinkets in the swap list to add them.",
+      }).disabled = Off
+      local remove = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+      remove:SetSize(130, 22)
+      remove:SetText("Remove selected")
+      remove:SetScript("OnClick", function()
+        if Rotation()[picked] then table.remove(Rotation(), picked) end
+        RefreshControls()
+      end)
+      Place(remove, 4, 4)
+    end
+  end
+
+  ------------------------------------------------------------------------------
   -- Change log: the Change Log button at the top right shows every version's
   -- changes (ns.CHANGELOG, see Changelog.lua) in a scrolling page in place of
   -- the tabs, filtered by the Version dropdown. Clicking a tab goes back.
@@ -1119,6 +1187,7 @@ SlashCmdList.WU = function(msg)
       ns.RefreshLook()
       ns.RefreshCooldowns()
       ns.RefreshCustom()
+      ns.RefreshTrinkets()
     end
     print("WU - Warrior Utilities reset")
   elseif a then

@@ -200,6 +200,25 @@ A bar for any cooldowns you want to watch, such as trinkets. Set it up on the **
 - Each icon shows the game's cooldown swipe and countdown, so it works in combat without the addon reading cooldown times. The icons only display cooldowns; clicking them does nothing.
 - In Edit Mode, click **WU Custom Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
 
+## Trinket bar (warriors only)
+
+Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/forever-trinket-menu) by sk0lu (MIT). Set it up on the **Trinket** tab of the options page (`/wu`).
+
+- **Trinket bar**: your two trinkets. Click one, or its key (**Esc > Key Bindings > WU - Warrior Utilities**: Use Trinket 1 and 2), to use it. Each shows its cooldown and key.
+- **Swap list**: hover a slot to see the items in your bags that fit it (for a trinket, also the one in the other slot); click one to put it on. In combat the game won't change gear, so the pick waits (gold border) and goes on when combat ends.
+- **Usable gear bar** (off by default): the same for your other gear with a "Use:" effect, worn or in your bags (engineering helms, cloaks, rings, weapons).
+- **Rotation**: **Alt+click** a trinket in the swap list to add it to that slot's list (or take it off). With **Rotate Trinket 1/2** on, when the trinket you wear is on cooldown, the first ready one on the list goes on (out of combat). One with 30 seconds or less left counts as ready, as putting a trinket on starts a 30 second cooldown anyway. A ready trinket stays on until you use it, and one without a "Use:" effect is left alone. Drag icons on the Trinket tab to change the order; **Remove selected** takes one off.
+- **Mount**: with **Riding trinket while mounted** on, Carrot on a Stick or Riding Crop goes in the chosen slot when you mount, and the trinket it replaced goes back when you get off.
+- The buttons only use an item when you click them; nothing is ever used or cast for you. In Edit Mode, **WU Trinket Bar** and **WU Gear Bar** each have **Icon Size** and **Only Show in Combat**.
+
+| Setting | Notes |
+| --- | --- |
+| Show trinket bar | (default on) |
+| Show the list on hover | The swap list (default on) |
+| Show usable gear bar | (default off) |
+| Riding trinket while mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
+| Rotate Trinket 1, Rotate Trinket 2 | (default off) |
+
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
@@ -210,6 +229,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
+- **Trinket** (warriors only) — the trinket and usable gear bars, rotation and mount swap
 - **CDM** (warriors only) — each stance's cooldown bar on **Stances**, the Battle Shout timer and its alert on **Battle Shout**, the debuff tracker and debuff alerts on **Debuffs**, the custom bar on **Custom**, and the cooldown icons' look on **Appearance**
 
 ## Slash commands
@@ -242,6 +262,9 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
 | `CustomBar.lua` | Custom cooldown bar for spells and items picked by ID, and its Edit Mode settings |
 | `Changelog.lua` | Every version's changes, shown by the options page's Change Log button (the same as `CHANGELOG.md`) |
+| `Trinkets.lua` | Trinket and usable gear bars, swap list and combat queue (from Forever Trinket Menu) |
+| `TrinketAuto.lua` | Trinket rotation and mount swap (from Forever Trinket Menu) |
+| `Bindings.xml` | Key bindings for Use Trinket 1 and 2 |
 | `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
 
@@ -254,6 +277,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 
 ## Credits
 
+- The trinket bar, swap list, rotation and mount swap are adapted from Forever Trinket Menu by sk0lu, MIT license; see `LICENSE-ForeverTrinketMenu.txt`.
 - The range display is adapted from Good Range by Andrii Zolotarenko, MIT license; see `LICENSE-GoodRange.txt`. Its range-check item list comes from LibRangeCheck-3.0 (MIT).
 - The Changa Bold font in `Assets` is by The Changa Project Authors, SIL Open Font License 1.1; see `Assets/OFL-Changa.txt`.
 

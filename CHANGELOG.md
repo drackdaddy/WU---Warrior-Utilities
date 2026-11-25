@@ -12,6 +12,8 @@ Changes in each version of WU - Warrior Utilities, newest first. The same list i
 - Custom cooldown bar (CDM > Custom): track any spell or item, such as a trinket, by its ID. Moved in Edit Mode (WU Custom Bar).
 - Appearance tab (CDM > Appearance): glow style (pulsing border, marching sparks, static border), color, speed, thickness and glow out of combat, and how icons look on cooldown (normal, greyed out, faded, hidden), with a preview.
 - Each ability can have its own glow type.
+- Trinket tab, adapted from Forever Trinket Menu by sk0lu (MIT): a trinket bar (click or a key to use, cooldowns), a list of the trinkets in your bags to swap in, picks made in combat put on when it ends, a trinket rotation per slot and your riding trinket while mounted.
+- Usable gear bar (off by default) for other on-use gear: engineering helms, cloaks, rings and weapons, with the same swap list.
 - This change log, from the Change Log button on the options page.
 
 ### Changed

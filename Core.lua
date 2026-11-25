@@ -3,7 +3,8 @@
   Rage bar with up to three marks, a range display (distance to the target,
   adapted from Good Range), a Battle Shout timer on the player frame, a
   tracker for Sunder Armor and Demoralizing Shout on the target with audio
-  alerts, a cooldown bar for each stance and a custom cooldown bar. Loads on warriors and
+  alerts, a cooldown bar for each stance, a custom cooldown bar and trinket
+  and usable gear bars with swapping (adapted from Forever Trinket Menu). Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
@@ -16,8 +17,8 @@
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
-  ShoutTimer, Debuffs, Alerts, CooldownLook, CooldownBar, CustomBar, Minimap,
-  Changelog, Options.
+  ShoutTimer, Debuffs, Alerts, CooldownLook, CooldownBar, CustomBar, Trinkets,
+  TrinketAuto, Minimap, Changelog, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -74,6 +75,10 @@ local defaults = {
   customLayouts = {}, customSize = 36, customCombatOnly = false, -- custom bar position, icon size
   glowStyle = "pulse", glowSpeed = "medium", glowSize = 2, glowOocOff = false, -- cooldown icon look
   glowColor = { r = 1, g = 0.82, b = 0.2, a = 1 }, cdLook = "normal",
+  trinketOff = false, trinketMenuOff = false, trinketLayouts = {}, trinketSize = 36, trinketCombatOnly = false,
+  gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, -- usable gear bar, off by default
+  trinketQueue = { [13] = {}, [14] = {} }, rotate13Off = true, rotate14Off = true, -- rotation (item IDs by slot)
+  mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket the riding one replaced
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -101,6 +106,7 @@ ns.LISTS.glowStyle = { { "pulse", "Pulsing border" }, { "sparks", "Marching spar
 ns.GLOW_TYPES = { { "default", "Appearance setting" } }
 for _, o in ipairs(ns.LISTS.glowStyle) do ns.GLOW_TYPES[#ns.GLOW_TYPES + 1] = o end
 ns.LISTS.glowSpeed = { { "slow", "Slow" }, { "medium", "Medium" }, { "fast", "Fast" } }
+ns.LISTS.mountSlot = { { 13, "Trinket 1" }, { 14, "Trinket 2" } }
 ns.LISTS.cdLook = { { "normal", "Normal" }, { "grey", "Greyed out" }, { "faded", "Faded" }, { "hidden", "Hidden" } }
 ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }
 
@@ -280,6 +286,8 @@ ev:SetScript("OnEvent", function(self, event, ...)
       ns.BuildCooldownLook()
       ns.BuildCooldownBar()
       ns.BuildCustomBar()
+      ns.BuildTrinkets()
+      ns.BuildTrinketAuto()
     end
     ns.BuildOptions()
     ns.BuildMinimap()
