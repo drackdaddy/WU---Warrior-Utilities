@@ -1,0 +1,4 @@
+<Bindings>
+  <Binding name="CLICK WUSlot13:LeftButton" header="WU" category="ADDONS"/>
+  <Binding name="CLICK WUSlot14:LeftButton" category="ADDONS"/>
+</Bindings>

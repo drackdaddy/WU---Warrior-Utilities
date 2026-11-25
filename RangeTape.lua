@@ -28,12 +28,14 @@ local TICK_GAP = 5 -- px; ticks closer than this run together, so fewer are draw
 local DIVS = { 10, 5, 4, 2, 1 } -- ticks per yard to choose from, finest first
 local YD_GAP = 2 -- px between the number and its unit
 
--- Font files by saved value (see ns.LISTS.rangeTextFont in Core.lua).
-local FONTS = {
+-- Font files by saved value (see ns.LISTS.rangeTextFont in Core.lua). Also
+-- used by the debuff tracker's countdown.
+ns.FONTS = {
   changa = ASSET .. "Changa-Bold.ttf", skurri = "Fonts\\skurri.ttf", arial = "Fonts\\ARIALN.TTF",
   ["2002"] = "Fonts\\2002B.ttf", friz = FALLBACK_FONT, nimrod = "Fonts\\NIM_____.ttf",
   morpheus = "Fonts\\MORPHEUS.TTF",
 }
+local FONTS = ns.FONTS
 -- Where the digits sit, as parts of the font size S, for a string placed by its
 -- centre: digit height D * S, digit middle R * S above the centre. Changa's
 -- values were measured in game; the default is a close guess for the others.

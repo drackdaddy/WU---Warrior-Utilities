@@ -1,21 +1,25 @@
 --[[
   WU - Warrior Utilities (WoW Forever)
   Rage bar with up to three marks, a range display (distance to the target,
-  adapted from Good Range), a Battle Shout timer on the player frame and a
-  cooldown bar for each stance. Loads on warriors and
+  adapted from Good Range), a Battle Shout timer on the player frame, a
+  tracker for Sunder Armor and Demoralizing Shout on the target with audio
+  alerts, a cooldown bar for each stance, a custom cooldown bar and trinket
+  and usable gear bars with swapping (adapted from Forever Trinket Menu) and
+  moving the game's combat text (adapted from SCT Mover). Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
   Forever runs the Midnight (12.x) UI engine and its addon restrictions: in
   combat some values are "secret" (they can be shown, but not compared, indexed
   or used in math). The rage bar only displays rage and turns it into glow
-  through curves; the Battle Shout timer is drawn by Blizzard's aura containers,
-  so the addon never reads the buff; the cooldown bar hands cooldowns to
+  through curves; the Battle Shout timer and the debuff tracker are drawn by
+  Blizzard's aura containers, so the addon never reads the auras; the cooldown bar hands cooldowns to
   Blizzard's Cooldown widget and curves, so it never reads their times.
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
-  ShoutTimer, CooldownBar, Minimap, Options.
+  ShoutTimer, Debuffs, Alerts, CooldownLook, CooldownBar, CustomBar, Trinkets,
+  TrinketAuto, CombatText, Minimap, Changelog, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -51,6 +55,14 @@ local defaults = {
   shoutOff = false, shoutTextOff = false, shoutFlashOff = false, shoutWarnOff = false,
   shoutWarnSize = 14, -- "Battle Shout Missing" font size
   shoutColor = { r = 0.85, g = 0.32, b = 0.08, a = 0.75 }, -- Battle Shout bar
+  debuffOff = false, sunderOff = false, demoOff = false,
+  debuffLayouts = {}, -- debuff tracker position per Edit Mode layout name
+  debuffSize = 36, debuffCombatOnly = false, -- debuff icon size in pixels
+  debuffFont = "friz", debuffTextColor = { r = 1, g = 1, b = 1, a = 1 }, -- debuff countdown
+  debuffTextPos = "middle",
+  sunderAlertOff = false, demoAlertOff = false, shoutAlertOff = false, -- audio alerts
+  sunderAlertSec = 5, demoAlertSec = 5, shoutAlertSec = 5, -- seconds left when each alert plays
+  alertVoice = "tts1", alertVolume = "high", -- see ns.AlertVoices in Alerts.lua
   cdLayouts = {}, -- cooldown bar position per Edit Mode layout name
   cdSize = 36, -- cooldown icon size in pixels
   cdCombatOnly = false,
@@ -59,6 +71,17 @@ local defaults = {
   cdHide = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: left off that stance's bar
   cdOrder = { battle = {}, defensive = {}, berserker = {} }, -- spell IDs in bar order; empty = default order
   cdNoGlow = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: that ability never glows
+  cdGlowStyle = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = that ability's own glow type
+  customOff = false, customList = {}, -- custom bar entries in bar order (see CustomBar.lua)
+  customLayouts = {}, customSize = 36, customCombatOnly = false, -- custom bar position, icon size
+  glowStyle = "pulse", glowSpeed = "medium", glowSize = 2, glowOocOff = false, -- cooldown icon look
+  glowColor = { r = 1, g = 0.82, b = 0.2, a = 1 }, cdLook = "normal",
+  trinketOff = false, trinketMenuOff = false, trinketLayouts = {}, trinketSize = 36, trinketCombatOnly = false,
+  trinketBorder = "none", -- border around the trinket and gear bars
+  gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, -- usable gear bar, off by default
+  trinketQueue = { [13] = {}, [14] = {} }, rotate13Off = true, rotate14Off = true, -- rotation (item IDs by slot)
+  mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket the riding one replaced
+  ctRaised = false, ctX = 0, ctY = 0, -- self text: above other UI, offset in Blizzard's reference units
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -73,11 +96,31 @@ ns.LISTS = {
   rangeLook = {
     { "tape", "Tape" }, { "label", "Label + Number" }, { "badge", "Label Only" }, { "number", "Number Only" },
   },
+  alertVolume = { { "high", "High" }, { "medium", "Medium" }, { "low", "Low" } },
   rangePlace = { { "screen", "Screen" }, { "plate", "Nameplate" }, { "both", "Screen and Nameplate" } },
   rangeTextFont = {
     { "changa", "Changa Bold" }, { "skurri", "Skurri" }, { "arial", "Arial Narrow" }, { "2002", "2002 Bold" },
     { "friz", "Friz Quadrata" }, { "nimrod", "Nimrod" }, { "morpheus", "Morpheus" },
   },
+}
+ns.LISTS.debuffFont = ns.LISTS.rangeTextFont
+ns.LISTS.glowStyle = { { "pulse", "Pulsing border" }, { "sparks", "Marching sparks" }, { "static", "Static border" } }
+-- An ability's own glow type: the Appearance one, or one of the above.
+ns.GLOW_TYPES = { { "default", "Appearance setting" } }
+for _, o in ipairs(ns.LISTS.glowStyle) do ns.GLOW_TYPES[#ns.GLOW_TYPES + 1] = o end
+ns.LISTS.glowSpeed = { { "slow", "Slow" }, { "medium", "Medium" }, { "fast", "Fast" } }
+ns.LISTS.trinketBorder = {
+  { "none", "None" }, { "thin", "Thin line" }, { "panel", "Dark panel" }, { "tooltip", "Tooltip" }, { "gold", "Gold" },
+}
+ns.LISTS.mountSlot = { { 13, "Trinket 1" }, { 14, "Trinket 2" } }
+ns.LISTS.cdLook = { { "normal", "Normal" }, { "grey", "Greyed out" }, { "faded", "Faded" }, { "hidden", "Hidden" } }
+ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }
+
+-- Spell IDs of every rank, shared by the files that watch these auras.
+ns.RANKS = {
+  sunder = { 7386, 7405, 8380, 11596, 11597 }, -- Sunder Armor
+  demo = { 1160, 6190, 11554, 11555, 11556 }, -- Demoralizing Shout
+  shout = { 6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578 }, -- Battle Shout
 }
 
 local db = {}
@@ -108,8 +151,43 @@ function ns.Default(key)
 end
 
 --------------------------------------------------------------------------------
+-- Aura containers
+-- Shared by the Battle Shout timer and the debuff tracker. Blizzard's aura
+-- containers (Blizzard_AuraContainer) watch a unit's auras themselves, in and
+-- out of combat, and draw what the addon hands them, so Lua never reads the
+-- auras. Spell ID filters only work on helpful auras of friendly units and
+-- harmful auras of enemies.
+--------------------------------------------------------------------------------
+
+-- New aura container at the top left of parent, watching unit's auras that
+-- match filter ("HELPFUL" or "HARMFUL") and whose spell ID is in ids (a
+-- list), from any caster, with room for one w x h frame. init(frame), if
+-- given, sets up that frame once when the game creates it. Returns the
+-- container.
+function ns.AuraContainer(parent, unit, filter, ids, w, h, init)
+  local set = {}
+  for _, id in ipairs(ids) do set[id] = true end
+  local c = CreateFrame("AuraContainer", nil, parent, "CustomAuraContainerTemplate")
+  c:SetPoint("TOPLEFT")
+  c:AddAuraGroup("aura", filter, {
+    candidateFilters = { includeSpellIDs = set },
+    maxFrameCount = 1,
+    layout = { elementWidth = w, elementHeight = h },
+    initializeFrame = function(frame)
+      frame:SetSize(w, h)
+      frame:SetMouseClickEnabled(false)
+      frame:EnableMouseMotion(false)
+      if init then init(frame) end
+    end,
+  })
+  c:SetUnit(unit)
+  return c
+end
+
+--------------------------------------------------------------------------------
 -- Edit Mode helpers
--- Shared by the rage bar, the range display and the cooldown bar. LibEditMode registers a frame
+-- Shared by the rage bar, the range display, the debuff tracker and the
+-- cooldown bar. LibEditMode registers a frame
 -- with Blizzard's Edit Mode: it draws the selection highlight, handles
 -- dragging, arrow-key nudges and "Reset To Default Position", shows the
 -- settings panel when the frame is selected, and reports the active Edit Mode
@@ -178,12 +256,17 @@ end
 -- One event frame for the addon. Each feature file adds its handlers with
 -- ns.On when it loads; they are registered on PLAYER_LOGIN, for warriors and
 -- druids only. ns.isWarrior tells the other files which class loaded.
--- UNIT_ events are registered for the player only.
--- Events: ADDON_LOADED (settings), PLAYER_LOGIN (build frames, register events)
+-- UNIT_ events are registered for the player only, unless a handler names
+-- the units (at most two, as RegisterUnitEvent allows).
+-- Events: ADDON_LOADED (settings; other addons' go to the handlers),
+--   PLAYER_LOGIN (build frames, register events)
 --------------------------------------------------------------------------------
-local handlers = {}
+local handlers, units = {}, {}
 
-function ns.On(event, fn)
+-- Adds fn as a handler for event; for a UNIT_ event, unit1 and unit2 (if
+-- given) replace "player" as the units it is registered for.
+function ns.On(event, fn, unit1, unit2)
+  if unit1 then units[event] = { unit1, unit2 } end
   handlers[event] = handlers[event] or {}
   table.insert(handlers[event], fn)
 end
@@ -192,9 +275,8 @@ local ev = CreateFrame("Frame")
 ev:RegisterEvent("ADDON_LOADED")
 ev:RegisterEvent("PLAYER_LOGIN")
 ev:SetScript("OnEvent", function(self, event, ...)
-  if event == "ADDON_LOADED" then
-    if ... ~= addonName then return end
-    self:UnregisterEvent(event)
+  if event == "ADDON_LOADED" and ... == addonName then
+    self:UnregisterEvent(event) -- registered again at login if a feature waits for another addon
     ns.LoadDB(WUDB)
   elseif event == "PLAYER_LOGIN" then
     self:UnregisterEvent(event)
@@ -205,19 +287,26 @@ ev:SetScript("OnEvent", function(self, event, ...)
     if ns.isWarrior then
       ns.BuildRange()
       ns.BuildShoutTimer()
+      ns.BuildDebuffs()
+      ns.BuildAlerts()
+      ns.BuildCooldownLook()
       ns.BuildCooldownBar()
+      ns.BuildCustomBar()
+      ns.BuildTrinkets()
+      ns.BuildTrinketAuto()
+      ns.BuildCombatText()
     end
     ns.BuildOptions()
     ns.BuildMinimap()
     for name in pairs(handlers) do
       if name:find("^UNIT_") then
-        self:RegisterUnitEvent(name, "player")
+        self:RegisterUnitEvent(name, unpack(units[name] or { "player" }))
       else
         self:RegisterEvent(name)
       end
     end
     ns.built = true
-  else
+  elseif handlers[event] then
     for _, fn in ipairs(handlers[event]) do fn(...) end
   end
 end)
