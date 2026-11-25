@@ -16,7 +16,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
---   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, sunderAlertOff,
+--   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, debuffFont,
+--   debuffTextColor, sunderAlertOff,
 --   demoAlertOff, shoutAlertOff, sunderAlertSec, demoAlertSec, shoutAlertSec,
 --   alertVoice, alertVolume, rangeOff,
 --   rangeOocOff, rangeFriendlyOff,
@@ -683,6 +684,10 @@ function ns.BuildOptions()
     OnOff("Show debuff tracker", "debuffOff", ns.RefreshDebuffs)
     OnOff("Track Sunder Armor", "sunderOff", ns.RefreshDebuffs, TrackerOff)
     OnOff("Track Demoralizing Shout", "demoOff", ns.RefreshDebuffs, TrackerOff)
+
+    Heading("Countdown")
+    Choice("Font", "debuffFont", ns.RefreshDebuffs, TrackerOff)
+    ColorSwatch("Color", "debuffTextColor", ns.RefreshDebuffs, TrackerOff, true)
 
     Begin(right)
     Heading("Audio alerts")

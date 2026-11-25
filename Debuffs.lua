@@ -16,8 +16,8 @@ local db, LEM = ns.db, ns.LibEditMode
 -- (SetApplicationCount, which the game only shows from 2 up) and countdown
 -- (SetDurationText). Lua never reads the debuffs. Containers don't follow
 -- target changes on their own, so a target change asks them to refresh. A
--- frame the game set up is never touched again: a new icon size builds new
--- containers. The icons have no mouse input and never cast anything.
+-- frame the game set up is never touched again: a new icon size, countdown
+-- font or countdown color builds new containers. The icons have no mouse input and never cast anything.
 -- Shown while the player has a target they can attack; always in Edit Mode
 -- (faded when the tracker is off) so it can be placed. Moved and set up in
 -- Edit Mode as "WU Debuffs" (icon size, only show in combat); switches on the
@@ -25,7 +25,7 @@ local db, LEM = ns.db, ns.LibEditMode
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_TARGET_CHANGED, PLAYER_REGEN_DISABLED,
 --   PLAYER_REGEN_ENABLED
 -- SavedVariables: debuffOff, sunderOff, demoOff, debuffLayouts, debuffSize,
---   debuffCombatOnly
+--   debuffCombatOnly, debuffFont, debuffTextColor
 --------------------------------------------------------------------------------
 
 -- Each slot: its on/off setting and the spell IDs it watches (every rank).
@@ -42,13 +42,13 @@ local SLOTS = {
 local GAP = 4 -- pixels between icons
 local FONT = "Fonts\\FRIZQT__.TTF"
 local DEFAULT_POS = { point = "CENTER", x = 0, y = -260 }
-local holder, PlacePosition, builtSize
+local holder, PlacePosition, builtLook
 
 -- Builds each slot's container at the current icon size, retiring the old
--- ones: the debuff's icon, the time left in its middle and its stack count
--- in the bottom right corner.
+-- ones: the debuff's icon, the time left in its middle (in the chosen font
+-- and color) and its stack count in the bottom right corner.
 local function BuildContainers()
-  local size = db.debuffSize
+  local size, color = db.debuffSize, db.debuffTextColor
   for _, s in ipairs(SLOTS) do
     if s.container then
       s.container:SetEnabled(false)
@@ -63,19 +63,24 @@ local function BuildContainers()
       count:SetPoint("BOTTOMRIGHT", -1, 2)
       frame:SetApplicationCount(count, {})
       local time = frame:CreateFontString(nil, "OVERLAY")
-      time:SetFont(FONT, math.floor(size * 0.4), "OUTLINE")
+      time:SetFont(ns.FONTS[db.debuffFont], math.floor(size * 0.4), "OUTLINE")
+      time:SetTextColor(color.r, color.g, color.b)
       time:SetPoint("CENTER")
       frame:SetDurationText(time, {})
     end)
   end
-  builtSize = size
 end
 
 -- Lays out the slots that are on, sizes the tracker to fit them and shows or
 -- hides it. It always shows in Edit Mode.
 local function Update()
   if not holder then return end -- not built (druids)
-  if db.debuffSize ~= builtSize then BuildContainers() end
+  local c = db.debuffTextColor
+  local look = table.concat({ db.debuffSize, db.debuffFont, c.r, c.g, c.b }, ",")
+  if look ~= builtLook then
+    builtLook = look
+    BuildContainers()
+  end
   local size, n = db.debuffSize, 0
   for _, s in ipairs(SLOTS) do
     local on = not db[s.key]
