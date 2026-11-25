@@ -45,7 +45,7 @@ local DEFAULT_POS = { point = "CENTER", x = 0, y = -260 }
 local holder, PlacePosition, builtLook
 
 -- Builds each slot's container at the current icon size, retiring the old
--- ones: the debuff's icon, the time left in its middle (in the chosen font
+-- ones: the debuff's icon, the time left along its top (in the chosen font
 -- and color) and its stack count in the bottom right corner.
 local function BuildContainers()
   local size, color = db.debuffSize, db.debuffTextColor
@@ -65,7 +65,7 @@ local function BuildContainers()
       local time = frame:CreateFontString(nil, "OVERLAY")
       time:SetFont(ns.FONTS[db.debuffFont], math.floor(size * 0.4), "OUTLINE")
       time:SetTextColor(color.r, color.g, color.b)
-      time:SetPoint("CENTER")
+      time:SetPoint("TOP", 0, -2)
       frame:SetDurationText(time, {})
     end)
   end
