@@ -131,6 +131,22 @@ Set it up on the **Debuffs** sub-tab under **CDM** on the options page (`/wu`):
 | Track Sunder Armor | (default on) |
 | Track Demoralizing Shout | (default on) |
 
+## Audio alerts (warriors only)
+
+In combat, WU says the name out loud when **Sunder Armor** or **Demoralizing Shout** is about to fall off your target, or when your **Battle Shout** is about to run out. Battle Shout also alerts when you enter combat without it.
+
+- The game hides auras from addons in combat, so WU never reads them then. Like Warcry, it times them from your own casts: casting Sunder, Demoralizing Shout or Battle Shout restarts that timer. Out of combat it reads the real auras, which also picks up another player's Sunder or Battle Shout and the real durations.
+- So in combat it can't see another warrior's Sunder or Battle Shout, or a Sunder that was dodged or parried. Sunder is timed per target; Demoralizing Shout once, as it hits everything around you.
+- Sunder and Demoralizing Shout only alert while you target an enemy.
+
+| Setting | Where | Notes |
+| --- | --- | --- |
+| Sunder Armor alert, Demoralizing Shout alert | CDM > Debuffs | (default on) |
+| Battle Shout alert | CDM > Battle Shout | (default on) |
+| Seconds left | Next to each alert | When it plays, 0 to 10 (default 5); 0 plays when it runs out |
+| Voice | CDM > Debuffs | Five choices: your installed Windows text-to-speech voices first, then the Raid Warning, Ready Check and Alarm Clock sounds. **Test** plays it |
+| Volume | CDM > Debuffs | High, Medium, Low (default High) |
+
 ## Cooldown bar (warriors only)
 
 A row of icons for the stance you're in, each with the cooldown swipe and the time left. Switching stance swaps the bar. Abilities you haven't learned are left off.
@@ -163,7 +179,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands and a Discord link to copy
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer on **Battle Shout** and the debuff tracker on **Debuffs**
+- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer and its alert on **Battle Shout**, and the debuff tracker, debuff alerts and alert voice on **Debuffs**
 
 ## Slash commands
 
@@ -190,6 +206,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 | `Range.lua` | Range display: range checks, zones, nameplate, focus and mouseover, Edit Mode positions and the `/wu range` commands |
 | `ShoutTimer.lua` | Battle Shout timer on the player frame |
 | `Debuffs.lua` | Sunder Armor and Demoralizing Shout tracker on the target and its Edit Mode settings |
+| `Alerts.lua` | Audio alerts for Sunder Armor, Demoralizing Shout and Battle Shout |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
 | `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |

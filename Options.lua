@@ -15,7 +15,9 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line.
 -- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
---   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, rangeOff,
+--   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, sunderAlertOff,
+--   demoAlertOff, shoutAlertOff, sunderAlertSec, demoAlertSec, shoutAlertSec,
+--   alertVoice, alertVolume, rangeOff,
 --   rangeOocOff, rangeFriendlyOff,
 --   rangeLook, rangeTextFont, rangeSize, rangeWidth, rangeHeight, rangeScale,
 --   rangeUnitOff, rangeOpacity, rangePlace, rangePlateY, rangePlateScale,
@@ -263,17 +265,18 @@ function ns.BuildOptions()
     plus:SetPoint("LEFT", value, "RIGHT", 2, 0)
   end
 
-  -- Dropdown for db[key], one of the ns.LISTS[key] choices (see Core.lua): the
-  -- label, then Blizzard's dropdown button showing the current choice. Like the
+  -- Dropdown for db[key], one of the ns.LISTS[key] choices (see Core.lua), or
+  -- of the { key, name } list getList returns when the menu opens: the label,
+  -- then Blizzard's dropdown button showing the current choice. Like the
   -- stepper, the control itself is an empty checkbox-sized box so the label
   -- lines up. apply runs after a pick.
-  local function Choice(label, key, apply, disabled)
+  local function Choice(label, key, apply, disabled, getList)
     local ch = CreateFrame("Frame", nil, page)
     ch:SetSize(26, 26)
     local dd = CreateFrame("DropdownButton", nil, page, "WowStyle1DropdownTemplate")
     dd:SetWidth(150)
     dd:SetupMenu(function(_, root)
-      for _, o in ipairs(ns.LISTS[key]) do
+      for _, o in ipairs(getList and getList() or ns.LISTS[key]) do
         root:CreateRadio(o[2], function() return db[key] == o[1] end, function()
           db[key] = o[1]
           apply()
@@ -612,9 +615,13 @@ function ns.BuildOptions()
       end
     end
 
+    -- Audio alert settings are read when an alert plays (see Alerts.lua), so
+    -- changing one needs nothing else applied.
+    local function Nothing() end
+
     -- Battle Shout sub-tab: what the player frame timer shows and its
-    -- switches (see ShoutTimer.lua). The rest is greyed out while the whole
-    -- timer is off.
+    -- switches (see ShoutTimer.lua), then its audio alert. The rest of the
+    -- timer is greyed out while the whole timer is off.
     Begin(sub.shout)
     local function TimerOff() return db.shoutOff end
 
@@ -636,9 +643,17 @@ function ns.BuildOptions()
       function() return db.shoutOff or db.shoutWarnOff end)
     ColorSwatch("Bar color", "shoutColor", ns.RefreshShout, TimerOff)
 
-    -- Debuffs sub-tab: what the debuff tracker shows and its switches (see
-    -- Debuffs.lua). The debuff switches are greyed out while it is off.
-    Begin(sub.debuffs)
+    Heading("Audio alert")
+    Text("Says " .. Key("Battle Shout") .. " in combat when it is about to run out, or when you enter combat"
+      .. " without it. Voice and volume are on the " .. Key("Debuffs") .. " tab.")
+    OnOff("Battle Shout alert", "shoutAlertOff", Nothing)
+    Stepper("Seconds left when it plays", "shoutAlertSec", 0, 10, 1, Nothing, function() return db.shoutAlertOff end)
+
+    -- Debuffs sub-tab: the debuff tracker (see Debuffs.lua) on the left, its
+    -- debuff switches greyed out while it is off; the audio alerts (see
+    -- Alerts.lua) and the voice they all use on the right.
+    local left, right = Columns(sub.debuffs)
+    Begin(left)
     local function TrackerOff() return db.debuffOff end
 
     Heading("On your target")
@@ -655,6 +670,25 @@ function ns.BuildOptions()
     OnOff("Show debuff tracker", "debuffOff", ns.RefreshDebuffs)
     OnOff("Track Sunder Armor", "sunderOff", ns.RefreshDebuffs, TrackerOff)
     OnOff("Track Demoralizing Shout", "demoOff", ns.RefreshDebuffs, TrackerOff)
+
+    Begin(right)
+    Heading("Audio alerts")
+    Bullets({
+      "In combat, says the debuff's name when it is about to fall off your target.",
+      "Timed from your own casts: another warrior's Sunder or a dodged one isn't seen until combat ends.",
+    })
+    OnOff("Sunder Armor alert", "sunderAlertOff", Nothing)
+    Stepper("Seconds left", "sunderAlertSec", 0, 10, 1, Nothing, function() return db.sunderAlertOff end)
+    OnOff("Demoralizing Shout alert", "demoAlertOff", Nothing)
+    Stepper("Seconds left", "demoAlertSec", 0, 10, 1, Nothing, function() return db.demoAlertOff end)
+    Heading("Voice")
+    Choice("Voice", "alertVoice", Nothing, nil, ns.AlertVoices)
+    Choice("Volume", "alertVolume", Nothing)
+    local test = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+    test:SetSize(80, 22)
+    test:SetText("Test")
+    test:SetScript("OnClick", function() ns.PlayAlert("Sunder") end)
+    Place(test, 8, 4)
 
     ShowSub(list[1][1])
   end

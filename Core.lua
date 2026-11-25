@@ -2,8 +2,8 @@
   WU - Warrior Utilities (WoW Forever)
   Rage bar with up to three marks, a range display (distance to the target,
   adapted from Good Range), a Battle Shout timer on the player frame, a
-  tracker for Sunder Armor and Demoralizing Shout on the target and a
-  cooldown bar for each stance. Loads on warriors and
+  tracker for Sunder Armor and Demoralizing Shout on the target with audio
+  alerts and a cooldown bar for each stance. Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
@@ -16,7 +16,7 @@
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
-  ShoutTimer, Debuffs, CooldownBar, Minimap, Options.
+  ShoutTimer, Debuffs, Alerts, CooldownBar, Minimap, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -55,6 +55,9 @@ local defaults = {
   debuffOff = false, sunderOff = false, demoOff = false,
   debuffLayouts = {}, -- debuff tracker position per Edit Mode layout name
   debuffSize = 36, debuffCombatOnly = false, -- debuff icon size in pixels
+  sunderAlertOff = false, demoAlertOff = false, shoutAlertOff = false, -- audio alerts
+  sunderAlertSec = 5, demoAlertSec = 5, shoutAlertSec = 5, -- seconds left when each alert plays
+  alertVoice = "tts1", alertVolume = "high", -- see ns.AlertVoices in Alerts.lua
   cdLayouts = {}, -- cooldown bar position per Edit Mode layout name
   cdSize = 36, -- cooldown icon size in pixels
   cdCombatOnly = false,
@@ -77,11 +80,19 @@ ns.LISTS = {
   rangeLook = {
     { "tape", "Tape" }, { "label", "Label + Number" }, { "badge", "Label Only" }, { "number", "Number Only" },
   },
+  alertVolume = { { "high", "High" }, { "medium", "Medium" }, { "low", "Low" } },
   rangePlace = { { "screen", "Screen" }, { "plate", "Nameplate" }, { "both", "Screen and Nameplate" } },
   rangeTextFont = {
     { "changa", "Changa Bold" }, { "skurri", "Skurri" }, { "arial", "Arial Narrow" }, { "2002", "2002 Bold" },
     { "friz", "Friz Quadrata" }, { "nimrod", "Nimrod" }, { "morpheus", "Morpheus" },
   },
+}
+
+-- Spell IDs of every rank, shared by the files that watch these auras.
+ns.RANKS = {
+  sunder = { 7386, 7405, 8380, 11596, 11597 }, -- Sunder Armor
+  demo = { 1160, 6190, 11554, 11555, 11556 }, -- Demoralizing Shout
+  shout = { 6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578 }, -- Battle Shout
 }
 
 local db = {}
@@ -245,6 +256,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
       ns.BuildRange()
       ns.BuildShoutTimer()
       ns.BuildDebuffs()
+      ns.BuildAlerts()
       ns.BuildCooldownBar()
     end
     ns.BuildOptions()

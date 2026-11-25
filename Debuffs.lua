@@ -30,13 +30,14 @@ local db, LEM = ns.db, ns.LibEditMode
 
 -- Each slot: its on/off setting and the spell IDs it watches (every rank).
 -- The first ID's icon is the dimmed "missing" icon.
+local demo = CopyTable(ns.RANKS.demo)
+for _, id in ipairs({
+  99, 1735, 9490, 9747, 9898, -- Demoralizing Roar
+  702, 1108, 6205, 7646, 11707, 11708, -- Curse of Weakness
+}) do demo[#demo + 1] = id end
 local SLOTS = {
-  { key = "sunderOff", spells = { 7386, 7405, 8380, 11596, 11597 } }, -- Sunder Armor
-  { key = "demoOff", spells = {
-    1160, 6190, 11554, 11555, 11556, -- Demoralizing Shout
-    99, 1735, 9490, 9747, 9898, -- Demoralizing Roar
-    702, 1108, 6205, 7646, 11707, 11708, -- Curse of Weakness
-  } },
+  { key = "sunderOff", spells = ns.RANKS.sunder },
+  { key = "demoOff", spells = demo },
 }
 local GAP = 4 -- pixels between icons
 local FONT = "Fonts\\FRIZQT__.TTF"
@@ -73,6 +74,7 @@ end
 -- Lays out the slots that are on, sizes the tracker to fit them and shows or
 -- hides it. It always shows in Edit Mode.
 local function Update()
+  if not holder then return end -- not built (druids)
   if db.debuffSize ~= builtSize then BuildContainers() end
   local size, n = db.debuffSize, 0
   for _, s in ipairs(SLOTS) do
@@ -97,6 +99,7 @@ ns.On("PLAYER_ENTERING_WORLD", Update)
 ns.On("PLAYER_REGEN_DISABLED", Update)
 ns.On("PLAYER_REGEN_ENABLED", Update)
 ns.On("PLAYER_TARGET_CHANGED", function()
+  if not holder then return end
   Update()
   for _, s in ipairs(SLOTS) do s.container:UpdateAllAuras() end
 end)

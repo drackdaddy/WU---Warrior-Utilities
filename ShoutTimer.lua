@@ -33,7 +33,7 @@ local db = ns.db
 -- SavedVariables: shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
 --   shoutWarnSize, shoutColor
 --------------------------------------------------------------------------------
-local RANKS = { 6673, 5242, 6192, 11549, 11550, 11551, 25289, 27578 }
+local RANKS = ns.RANKS.shout
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local FONT = "Fonts\\FRIZQT__.TTF"
 local ZONE = 400 -- width of the area the flash and warning can show in
