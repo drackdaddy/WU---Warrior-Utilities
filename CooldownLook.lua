@@ -139,11 +139,16 @@ function ns.SetIconGlow(f, on, style)
 end
 
 -- Fetches icon f's cooldown and hands it to the swipe; a spell's duration
--- object is kept for the alphas.
+-- object is kept for the alphas. An item icon gets the plain look, as a
+-- reused icon may still have a spell's alphas.
 function ns.UpdateIconCooldown(f)
   if f.item then
     local start, duration = C_Item.GetItemCooldown(f.item)
     f.cd:SetCooldown(start, duration)
+    f.body:SetAlpha(1)
+    f.cdGrey:SetAlpha(0)
+    f.unusable:SetAlpha(0)
+    f.ready:SetAlpha(0)
     return
   end
   f.dur = C_Spell.GetSpellCooldownDuration(f.spell)

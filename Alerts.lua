@@ -15,7 +15,9 @@ local db = ns.db
 --      back secret values; both count as hidden and nothing is read from
 --      them. When the target's list is hidden, the same mob's nameplate is
 --      tried. A readable list sets the clock from the aura itself, from any
---      caster, and learns its real duration.
+--      caster, and learns its real duration. A list that comes back hidden
+--      in combat isn't asked again that fight (for the target, until it
+--      changes).
 --   2. While the list is hidden, the player's own casts
 --      (UNIT_SPELLCAST_SUCCEEDED, spell ID checked with issecretvalue)
 --      restart the clock for the aura's full duration.
@@ -56,6 +58,10 @@ local GRACE = 1 -- seconds a fresh cast's aura may take to show in the list
 local MISS_WINDOW = 0.4 -- seconds between a cast and a miss that belong together
 local MISSES = { DODGE = true, PARRY = true, MISS = true }
 local ticker, lastMissAt, lastCast = nil, 0, nil
+-- [unit] = true once that unit's list (and for the target, its nameplate's)
+-- came back hidden this fight: it stays hidden, so it isn't asked again
+-- until combat ends or, for the target, the target changes.
+local hidden = {}
 
 -- Returns the five voice choices, { key, name, tts = voiceID } or
 -- { key, name, sound = soundKitID }: the installed text-to-speech voices
@@ -129,11 +135,13 @@ local function Read(item)
   if not UnitExists(item.unit) then return end
   local c = Clock(item)
   if not c then return end
+  if hidden[item.unit] then return end
   local state, a = Scan(item.unit, item)
   if state == "hidden" and item.unit == "target" then
     local plate = TargetPlate()
     if plate then state, a = Scan(plate, item) end
   end
+  if state == "hidden" and UnitAffectingCombat("player") then hidden[item.unit] = true end
   if state == "found" then
     local expires, duration = a.expirationTime, a.duration
     if issecretvalue(expires) or issecretvalue(duration) or expires == 0 then return end
@@ -192,11 +200,13 @@ ns.On("PLAYER_REGEN_ENABLED", function()
   if not ticker then return end
   ticker:Hide()
   wipe(ITEMS[1].byTarget)
+  wipe(hidden)
   ReadAll()
 end)
 ns.On("PLAYER_TARGET_CHANGED", function()
   if not ticker then return end
   ITEMS[2].seen = nil -- Demoralizing Shout's one clock: seen is per target
+  hidden.target = nil
   Read(ITEMS[1])
   Read(ITEMS[2])
 end)

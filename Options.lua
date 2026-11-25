@@ -497,11 +497,11 @@ function ns.BuildOptions()
   if ns.isWarrior then
     Heading("Cooldown bar")
     Bullets({
-      "Set up each stance's bar, the " .. Key("Battle Shout") .. " timer and the " .. Key("Debuffs")
-        .. " tracker on the " .. Key("CDM") .. " tab above.",
+      "Set up each stance's bar, the " .. Key("Battle Shout") .. " timer, the " .. Key("Debuffs")
+        .. " tracker and the " .. Key("Custom") .. " bar on the " .. Key("CDM") .. " tab above.",
       "In " .. Key("Edit Mode") .. ", click " .. Key("WU Cooldown Bar") .. " to move it, set its icon size"
         .. " or turn on " .. Key("Only Show in Combat") .. ".",
-      "Move the debuff tracker the same way (" .. Key("WU Debuffs") .. ").",
+      "Move the debuff tracker (" .. Key("WU Debuffs") .. ") and the custom bar (" .. Key("WU Custom Bar") .. ") the same way.",
     })
   end
 
@@ -833,11 +833,10 @@ function ns.BuildOptions()
     -- row i shows whichever entry is i-th, and rows past the end hide (the
     -- first one says the list is empty instead).
     left, right = Columns(sub.custom)
-    local function CustomOff() return db.customOff end
     Begin(left)
     Heading("Custom cooldowns")
     Bullets({
-      "Tracks the cooldowns you add here, in the order added.",
+      "Tracks the cooldowns you add here, in the order you set.",
       "Type a " .. Key("spell ID") .. " or an " .. Key("item ID") .. " (for trinkets) and press " .. Key("Add") .. ".",
       "An ID that is both counts as an item you carry, then a spell you know.",
       "Find IDs on Wowhead: the number in the page's address.",
@@ -847,6 +846,7 @@ function ns.BuildOptions()
     OnOff("Show custom bar", "customOff", ns.RefreshCustom)
 
     Heading("Add")
+    local picked = 1 -- the selected entry on the right; a new entry is selected
     local box = CreateFrame("EditBox", nil, page, "InputBoxTemplate")
     box:SetSize(90, 20)
     box:SetAutoFocus(false)
@@ -879,6 +879,7 @@ function ns.BuildOptions()
       else
         if kind == "item" then C_Item.RequestLoadItemDataByID(id) end
         table.insert(db.customList, { kind = kind, id = id })
+        picked = #db.customList
         box:SetText("")
         status:SetText("Added " .. kind .. " " .. id .. ".")
         ns.RefreshCustom()
@@ -893,7 +894,6 @@ function ns.BuildOptions()
     Text(Key("Click") .. " an icon to set it up below. " .. Key("Drag") .. " it onto another to move it"
       .. " (top left is leftmost on the bar).")
     -- The selected entry, or nil while the list is empty.
-    local picked = 1
     local function Entry()
       picked = math.max(1, math.min(picked, #db.customList))
       return db.customList[picked]
