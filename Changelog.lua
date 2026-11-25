@@ -21,6 +21,8 @@ ns.CHANGELOG = {
       "Each ability can have its own glow type.",
       "Trinket tab, adapted from Forever Trinket Menu by sk0lu (MIT): a trinket bar (click or a key to use, cooldowns), a list of the trinkets in your bags to swap in, picks made in combat put on when it ends, a trinket rotation per slot and your riding trinket while mounted.",
       "Usable gear bar (off by default) for other on-use gear: engineering helms, cloaks, rings and weapons, with the same swap list.",
+      "Border around the trinket and gear bars: none, thin line, dark panel, tooltip or gold.",
+      "Right-click the minimap icon to unlock the trinket bars and drag them (out of combat), and again to lock them.",
       "This change log, from the Change Log button on the options page.",
     },
     changed = {

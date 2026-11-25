@@ -22,12 +22,15 @@ local db, LEM = ns.db, ns.LibEditMode
 -- combat only (a change in combat waits for it to end), and "only show in
 -- combat" uses a state driver. Cooldowns go straight from the game to the
 -- Cooldown widget, so they are never read. Each bar is moved and sized in
--- Edit Mode ("WU Trinket Bar", "WU Gear Bar").
+-- Edit Mode ("WU Trinket Bar", "WU Gear Bar"), or dragged while unlocked
+-- (right-click the minimap icon; out of combat only, as moving the bars moves
+-- secure buttons). A border style frames both bars.
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_ENABLED, PLAYER_EQUIPMENT_CHANGED,
 --   BAG_UPDATE_DELAYED, BAG_UPDATE_COOLDOWN, UPDATE_BINDINGS,
 --   GET_ITEM_INFO_RECEIVED
 -- SavedVariables: trinketOff, trinketMenuOff, trinketLayouts, trinketSize,
---   trinketCombatOnly, gearOff, gearLayouts, gearSize, gearCombatOnly
+--   trinketCombatOnly, gearOff, gearLayouts, gearSize, gearCombatOnly,
+--   trinketBorder
 --------------------------------------------------------------------------------
 local GEAR_SLOTS = { 1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 16, 17, 18 } -- character sheet order
 local EQUIP_LOC_SLOTS = { -- slots each kind of item goes in
@@ -41,9 +44,18 @@ local EQUIP_LOC_SLOTS = { -- slots each kind of item goes in
 local GAP = 4 -- pixels between buttons
 local GOLD = { 1, 0.82, 0.2 }
 local WHITE = "Interface\\Buttons\\WHITE8X8"
+-- Border styles (see ns.LISTS.trinketBorder in Core.lua): pixels around the
+-- buttons, the backdrop, and its edge and background colors.
+local BORDERS = {
+  thin = { pad = 2, edge = WHITE, size = 1, color = { 0, 0, 0, 1 } },
+  panel = { pad = 4, edge = WHITE, size = 1, color = { 0.3, 0.3, 0.3, 1 }, bg = { 0, 0, 0, 0.6 } },
+  tooltip = { pad = 6, edge = "Interface\\Tooltips\\UI-Tooltip-Border", size = 16, inset = 4,
+    color = { 0.6, 0.6, 0.6, 1 }, bg = { 0, 0, 0, 0.8 } },
+  gold = { pad = 3, edge = WHITE, size = 2, color = { GOLD[1], GOLD[2], GOLD[3], 1 } },
+}
 local queued = {} -- [slot] = item ID waiting for combat to end
-local bars = {} -- trinket and gear: holder, settings prefix, buttons by slot, Place
-local menu, layoutWaiting
+local bars = {} -- trinket and gear: holder, settings prefix, buttons by slot, Place, border, mover
+local menu, layoutWaiting, unlocked
 
 --------------------------------------------------------------------------------
 -- Items and swapping, shared with TrinketAuto.lua
@@ -318,6 +330,14 @@ local function LayoutAll()
 end
 
 ns.On("PLAYER_ENTERING_WORLD", function() if menu then LayoutAll() end end)
+ns.On("PLAYER_REGEN_DISABLED", function()
+  if not unlocked then return end
+  unlocked = nil
+  for _, bar in ipairs(bars) do
+    bar.holder:StopMovingOrSizing()
+    bar.mover:Hide()
+  end
+end)
 ns.On("PLAYER_REGEN_ENABLED", function()
   if not menu then return end
   Flush()
@@ -334,8 +354,38 @@ ns.On("UPDATE_BINDINGS", function() if menu then Refresh() end end)
 
 -- Applies every trinket and gear bar setting; used when built, after a
 -- change on the options page and after /wu reset.
+-- Frames bar in the chosen border style, or none.
+local function Border(bar)
+  local b = BORDERS[db.trinketBorder]
+  bar.border:SetShown(b ~= nil)
+  if not b then return end
+  bar.border:SetPoint("TOPLEFT", -b.pad, b.pad)
+  bar.border:SetPoint("BOTTOMRIGHT", b.pad, -b.pad)
+  local inset = b.inset or 0
+  bar.border:SetBackdrop({ bgFile = WHITE, edgeFile = b.edge, edgeSize = b.size,
+    insets = { left = inset, right = inset, top = inset, bottom = inset } })
+  bar.border:SetBackdropBorderColor(unpack(b.color))
+  bar.border:SetBackdropColor(unpack(b.bg or { 0, 0, 0, 0 }))
+end
+
+-- Lets the bars be dragged (unlocked) or not, out of combat only: moving them
+-- moves secure buttons. While unlocked a cover over each bar takes the mouse,
+-- so a click moves it instead of using an item. A dropped bar's spot is
+-- saved for the active Edit Mode layout, as if moved there. Used by the
+-- minimap icon's right-click; combat starting locks them.
+function ns.ToggleTrinketLock()
+  if InCombatLockdown() then
+    print("WU - Warrior Utilities: the trinket bars can't be moved in combat.")
+    return
+  end
+  unlocked = not unlocked
+  for _, bar in ipairs(bars) do bar.mover:SetShown(unlocked) end
+  print("WU - Warrior Utilities: trinket bars " .. (unlocked and "unlocked: drag them to move them." or "locked."))
+end
+
 -- Moving the bars moves secure buttons, so in combat it waits.
 function ns.RefreshTrinkets()
+  for _, bar in ipairs(bars) do Border(bar) end
   if InCombatLockdown() then
     layoutWaiting = true
     return
@@ -364,6 +414,28 @@ function ns.BuildTrinkets()
     local bar = { key = info.key, buttons = {} }
     bar.holder = CreateFrame("Frame", nil, UIParent)
     bar.holder:SetClampedToScreen(true)
+    bar.holder:SetMovable(true)
+    bar.border = CreateFrame("Frame", nil, bar.holder, "BackdropTemplate")
+    bar.border:SetFrameLevel(math.max(bar.holder:GetFrameLevel() - 1, 0))
+    bar.mover = CreateFrame("Frame", nil, bar.holder)
+    bar.mover:SetAllPoints()
+    bar.mover:SetFrameLevel(bar.holder:GetFrameLevel() + 20)
+    bar.mover:EnableMouse(true)
+    bar.mover:RegisterForDrag("LeftButton")
+    bar.mover:Hide()
+    local shade = bar.mover:CreateTexture(nil, "OVERLAY")
+    shade:SetAllPoints()
+    shade:SetColorTexture(0.2, 0.6, 1, 0.35)
+    local holder, key = bar.holder, info.key
+    bar.mover:SetScript("OnDragStart", function() holder:StartMoving() end)
+    bar.mover:SetScript("OnDragStop", function()
+      holder:StopMovingOrSizing()
+      local layout = LEM:GetActiveLayoutName()
+      local x, y = holder:GetCenter()
+      local cx, cy = UIParent:GetCenter()
+      if layout then db[key .. "Layouts"][layout] = { point = "CENTER", x = x - cx, y = y - cy } end
+      bar.Place()
+    end)
     local function Apply() LayoutAll() end
     bar.Place = ns.AddEditModeFrame(bar.holder, info.key .. "Layouts", { point = "CENTER", x = 0, y = info.y },
       info.name, {

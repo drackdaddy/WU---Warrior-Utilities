@@ -210,12 +210,14 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 - **Rotation**: **Alt+click** a trinket in the swap list to add it to that slot's list (or take it off). With **Rotate Trinket 1/2** on, when the trinket you wear is on cooldown, the first ready one on the list goes on (out of combat). One with 30 seconds or less left counts as ready, as putting a trinket on starts a 30 second cooldown anyway. A ready trinket stays on until you use it, and one without a "Use:" effect is left alone. Drag icons on the Trinket tab to change the order; **Remove selected** takes one off.
 - **Mount**: with **Riding trinket while mounted** on, Carrot on a Stick or Riding Crop goes in the chosen slot when you mount, and the trinket it replaced goes back when you get off.
 - The buttons only use an item when you click them; nothing is ever used or cast for you. In Edit Mode, **WU Trinket Bar** and **WU Gear Bar** each have **Icon Size** and **Only Show in Combat**.
+- **Moving**: in Edit Mode, or **right-click the minimap icon** to unlock the bars (they turn blue) and drag them; right-click again to lock. Out of combat only; combat starting locks them. The spot is saved for your current Edit Mode layout.
 
 | Setting | Notes |
 | --- | --- |
 | Show trinket bar | (default on) |
 | Show the list on hover | The swap list (default on) |
 | Show usable gear bar | (default off) |
+| Bar border | Around both bars: None, Thin line, Dark panel, Tooltip, Gold (default None) |
 | Riding trinket while mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
 | Rotate Trinket 1, Rotate Trinket 2 | (default off) |
 
@@ -225,7 +227,7 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 
 **Change Log** at the top right shows what changed in each version (new, changed, removed, fixed); pick a version from the **Version** dropdown or show all. The same list is in `CHANGELOG.md`.
 
-The minimap icon opens the options when clicked; drag it to move it around the minimap's edge. **Show minimap icon** on the General tab hides it (default on).
+The minimap icon opens the options when clicked; on warriors, right-clicking it unlocks or locks the trinket bars for dragging. Drag the icon to move it around the minimap's edge. **Show minimap icon** on the General tab hides it (default on).
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs

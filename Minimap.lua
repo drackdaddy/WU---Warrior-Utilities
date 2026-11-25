@@ -4,7 +4,8 @@ local db = ns.db
 --------------------------------------------------------------------------------
 -- Minimap icon
 -- A round button on the minimap's edge with the addon's icon. Clicking it
--- opens the options page (the same as /wu); dragging it moves it around the
+-- opens the options page (the same as /wu); right-clicking it unlocks or
+-- locks the trinket bars for dragging (warriors); dragging it moves it around the
 -- edge, and the spot is saved as an angle. Built from plain textures with the
 -- game's own minimap button art, so it needs no library. Shown on warriors
 -- and druids (whoever gets the options page); hidden with "Show minimap icon"
@@ -63,7 +64,14 @@ function ns.BuildMinimap()
   border:SetSize(50, 50)
   border:SetPoint("TOPLEFT")
 
-  button:SetScript("OnClick", ns.OpenOptions)
+  button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  button:SetScript("OnClick", function(_, mouse)
+    if mouse == "RightButton" then
+      if ns.isWarrior then ns.ToggleTrinketLock() end
+    else
+      ns.OpenOptions()
+    end
+  end)
   button:SetScript("OnDragStart", function(self)
     self:SetScript("OnUpdate", FollowCursor)
   end)
@@ -74,6 +82,7 @@ function ns.BuildMinimap()
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:SetText("WU - Warrior Utilities", 1, 1, 1)
     GameTooltip:AddLine("Click to open the options.")
+    if ns.isWarrior then GameTooltip:AddLine("Right-click to lock or unlock moving the trinket bars.") end
     GameTooltip:AddLine("Drag to move this icon.")
     GameTooltip:Show()
   end)

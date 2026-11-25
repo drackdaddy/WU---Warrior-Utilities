@@ -32,7 +32,7 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow,
 --   customOff, customList, glowStyle, glowColor, glowSpeed, glowSize,
 --   glowOocOff, cdLook, trinketOff, trinketMenuOff, gearOff, trinketQueue,
---   rotate13Off, rotate14Off, mountSwapOff, mountSlot
+--   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder
 --------------------------------------------------------------------------------
 local category
 
@@ -1033,11 +1033,12 @@ function ns.BuildOptions()
       Key("Alt+click") .. " a trinket in that list to add it to the slot's rotation.",
       "The gear bar does the same for your other on-use gear (helm, cloak, rings, weapons).",
       "Move each bar and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Trinket Bar") .. ", "
-        .. Key("WU Gear Bar") .. ").",
+        .. Key("WU Gear Bar") .. "), or " .. Key("right-click") .. " the minimap icon to unlock them and drag.",
     })
     OnOff("Show trinket bar", "trinketOff", ns.RefreshTrinkets)
     OnOff("Show the list on hover", "trinketMenuOff", ns.RefreshTrinkets)
     OnOff("Show usable gear bar", "gearOff", ns.RefreshTrinkets)
+    Choice("Bar border", "trinketBorder", ns.RefreshTrinkets)
 
     Heading("Mount")
     OnOff("Riding trinket while mounted", "mountSwapOff", ns.RefreshTrinkets)

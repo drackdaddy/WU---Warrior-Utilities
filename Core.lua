@@ -76,6 +76,7 @@ local defaults = {
   glowStyle = "pulse", glowSpeed = "medium", glowSize = 2, glowOocOff = false, -- cooldown icon look
   glowColor = { r = 1, g = 0.82, b = 0.2, a = 1 }, cdLook = "normal",
   trinketOff = false, trinketMenuOff = false, trinketLayouts = {}, trinketSize = 36, trinketCombatOnly = false,
+  trinketBorder = "none", -- border around the trinket and gear bars
   gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, -- usable gear bar, off by default
   trinketQueue = { [13] = {}, [14] = {} }, rotate13Off = true, rotate14Off = true, -- rotation (item IDs by slot)
   mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket the riding one replaced
@@ -106,6 +107,9 @@ ns.LISTS.glowStyle = { { "pulse", "Pulsing border" }, { "sparks", "Marching spar
 ns.GLOW_TYPES = { { "default", "Appearance setting" } }
 for _, o in ipairs(ns.LISTS.glowStyle) do ns.GLOW_TYPES[#ns.GLOW_TYPES + 1] = o end
 ns.LISTS.glowSpeed = { { "slow", "Slow" }, { "medium", "Medium" }, { "fast", "Fast" } }
+ns.LISTS.trinketBorder = {
+  { "none", "None" }, { "thin", "Thin line" }, { "panel", "Dark panel" }, { "tooltip", "Tooltip" }, { "gold", "Gold" },
+}
 ns.LISTS.mountSlot = { { 13, "Trinket 1" }, { 14, "Trinket 2" } }
 ns.LISTS.cdLook = { { "normal", "Normal" }, { "grey", "Greyed out" }, { "faded", "Faded" }, { "hidden", "Hidden" } }
 ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }
