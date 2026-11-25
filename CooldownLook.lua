@@ -72,7 +72,7 @@ local function Style(f)
 end
 
 -- Returns a new cooldown icon on parent: the icon art, a greyed copy for
--- "on cooldown" and one for "not enough rage", the cooldown swipe with its
+-- "on cooldown" and one for "can't be used now", the cooldown swipe with its
 -- countdown, and the glow (ready layer, usable layer, then the style). A bar
 -- sets f.spell (or f.item) and the texture, and calls ns.SetIconGlow. Plain
 -- frames with no mouse input.
@@ -95,7 +95,7 @@ function ns.NewCooldownIcon(parent)
     return layer
   end
   f.cdGrey = Grey(0.75, 0.75, 0.75)
-  f.noRage = Grey(0.55, 0.55, 0.55)
+  f.unusable = Grey(0.55, 0.55, 0.55)
   f.cd = CreateFrame("Cooldown", nil, f.body, "CooldownFrameTemplate")
   f.cd:SetAllPoints()
   f.cd:SetHideCountdownNumbers(false)
@@ -150,11 +150,13 @@ function ns.UpdateIconCooldown(f)
   if f.dur then f.cd:SetCooldownFromDurationObject(f.dur) else f.cd:Clear() end
 end
 
--- Sets spell icon f's alphas from its cooldown and whether it can be used now.
--- These answers may be secret, so they only go to the alpha setters.
+-- Sets spell icon f's alphas from its cooldown and whether it can be used now
+-- (enough rage, and any trigger it needs, like Victory Rush's kill). The icon
+-- greys out while it can't be. These answers may be secret, so they only go
+-- to the alpha setters.
 local function Draw(f)
-  local usable, noRage = C_Spell.IsSpellUsable(f.spell)
-  f.noRage:SetAlphaFromBoolean(noRage, 1, 0)
+  local usable = C_Spell.IsSpellUsable(f.spell)
+  f.unusable:SetAlphaFromBoolean(usable, 0, 1)
   f.usable:SetAlphaFromBoolean(usable, 1, 0)
   if f.dur then
     f.ready:SetAlpha(f.dur:EvaluateRemainingDuration(readyCurve))

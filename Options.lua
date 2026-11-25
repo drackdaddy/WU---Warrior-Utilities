@@ -973,7 +973,7 @@ function ns.BuildOptions()
     Heading("While on cooldown")
     Choice("Icon", "cdLook", Look)
     Bullets({
-      "An icon still greys out while you don't have the rage for it.",
+      "An icon still greys out while you can't use it (no rage, or its trigger hasn't happened).",
       Key("Hidden") .. " icons keep their place on the bar.",
       "This is for every cooldown bar: each stance's and the custom bar.",
       "Items on the custom bar only show their cooldown.",

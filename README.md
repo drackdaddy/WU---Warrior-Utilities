@@ -170,7 +170,7 @@ Set the bars up on the **Stances** sub-tab under **CDM** on the options page (`/
 | Abilities | One icon per ability, in bar order (top left is leftmost); off icons show faded and a gold tick marks the ones that glow. **Click** an icon to select it, then set it up below the icons: **Show on bar**, **Glow when ready** and **Glow type** (the Appearance setting, or its own: Pulsing border, Marching sparks, Static border). **Drag** an icon onto another to move it |
 
 - The glow only shows when you could cast the ability: it's off cooldown, you have the rage for it, and any trigger it needs has happened (Victory Rush after a kill, Overpower after a dodge, Revenge after a block, dodge or parry). It stays on during the global cooldown, so it doesn't blink after every ability.
-- An icon greys out while you don't have enough rage for it. The game answers that itself, so it works in combat too.
+- An icon greys out while you can't use it: not enough rage, or a trigger it needs hasn't happened (Victory Rush, Overpower, Revenge). The game answers that itself, so it works in combat too.
 - The game draws the swipe and glow from the cooldown itself, so it works in combat without the addon reading cooldown times.
 - In Edit Mode, click **WU Cooldown Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
 - The icons only display cooldowns; clicking them does nothing.
