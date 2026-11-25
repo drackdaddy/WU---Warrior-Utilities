@@ -3,7 +3,7 @@
   Rage bar with up to three marks, a range display (distance to the target,
   adapted from Good Range), a Battle Shout timer on the player frame, a
   tracker for Sunder Armor and Demoralizing Shout on the target with audio
-  alerts and a cooldown bar for each stance. Loads on warriors and
+  alerts, a cooldown bar for each stance and a custom cooldown bar. Loads on warriors and
   druids; druids get the rage bar only (shown while in a form that uses rage),
   not the warrior features.
 
@@ -16,7 +16,7 @@
 
   Files (TOC load order): Libs\LibEditMode (embedded on the namespace as
   ns.LibEditMode, no LibStub), Core, RageBar, RangeEstimator, RangeTape, Range,
-  ShoutTimer, Debuffs, Alerts, CooldownBar, Minimap, Options.
+  ShoutTimer, Debuffs, Alerts, CooldownBar, CustomBar, Minimap, Options.
   Code and state shared between files live on the addon namespace (ns); code
   used by one file stays local to it.
 ]]
@@ -68,6 +68,8 @@ local defaults = {
   cdHide = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: left off that stance's bar
   cdOrder = { battle = {}, defensive = {}, berserker = {} }, -- spell IDs in bar order; empty = default order
   cdNoGlow = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: that ability never glows
+  customOff = false, customList = {}, -- custom bar entries in bar order: { kind = "spell" or "item", id }
+  customLayouts = {}, customSize = 36, customCombatOnly = false, -- custom bar position, icon size
 }
 
 -- Choice lists: saved value and display name. Used by validation and dropdowns.
@@ -266,6 +268,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
       ns.BuildDebuffs()
       ns.BuildAlerts()
       ns.BuildCooldownBar()
+      ns.BuildCustomBar()
     end
     ns.BuildOptions()
     ns.BuildMinimap()

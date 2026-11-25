@@ -9,7 +9,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- only, a Range tab (the range display,
 -- in three sub-tabs) and a CDM tab with one sub-tab per stance (that stance's
 -- cooldown bar), a Battle Shout sub-tab (the player frame timer's switches)
--- and a Debuffs sub-tab (the debuff tracker's switches), shown in Esc > Options >
+-- a Debuffs sub-tab (the debuff tracker's switches) and a Custom sub-tab (the
+-- custom cooldown bar), shown in Esc > Options >
 -- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
 -- as a canvas layout category: it parents, sizes, shows and
 -- hides the frame, and Escape closes the panel. All rage bar settings are in
@@ -27,7 +28,8 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   rangeZone2, rangeZone3, rangeColorPrimary, rangeColorSecondary,
 --   rangeColorDead, rangeColorFar,
 --   battleCdOff, defensiveCdOff, berserkerCdOff, battleAlertOff,
---   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow
+--   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow,
+--   customOff, customList
 --------------------------------------------------------------------------------
 local category
 
@@ -550,7 +552,8 @@ function ns.BuildOptions()
     for _, s in ipairs(ns.STANCES) do list[#list + 1] = { s.key, (s.name:gsub(" Stance", "")) } end
     list[#list + 1] = { "shout", "Battle Shout" }
     list[#list + 1] = { "debuffs", "Debuffs" }
-    local sub, ShowSub = Tabs(pages.cdm, list, 0, 0, 104, -36, 0, 0)
+    list[#list + 1] = { "custom", "Custom" }
+    local sub, ShowSub = Tabs(pages.cdm, list, 0, 0, 94, -36, 0, 0)
     for _, s in ipairs(ns.STANCES) do
       local barKey, alertKey = s.key .. "CdOff", s.key .. "AlertOff"
       local function BarOff() return db[barKey] end
@@ -701,6 +704,104 @@ function ns.BuildOptions()
     Stepper("Seconds left", "sunderAlertSec", 0, 10, 1, Nothing, function() return db.sunderAlertOff end)
     OnOff("Demoralizing Shout alert", "demoAlertOff", Nothing)
     Stepper("Seconds left", "demoAlertSec", 0, 10, 1, Nothing, function() return db.demoAlertOff end)
+    -- Custom sub-tab: the custom bar (see CustomBar.lua). On the left the bar
+    -- switch and a box to add a spell or item by ID; on the right one row per
+    -- entry, in bar order, with Up, Down and Remove. Like the stance rows,
+    -- row i shows whichever entry is i-th, and rows past the end hide (the
+    -- first one says the list is empty instead).
+    left, right = Columns(sub.custom)
+    local function CustomOff() return db.customOff end
+    Begin(left)
+    Heading("Custom cooldowns")
+    Bullets({
+      "Tracks the cooldowns you add here, in the order added.",
+      "Add a spell by its " .. Key("spell ID") .. ", or an item such as a trinket by its " .. Key("item ID") .. ".",
+      "Find IDs on Wowhead: the number in the page's address.",
+      "Move it and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Custom Bar") .. ").",
+    })
+    Heading("Settings")
+    OnOff("Show custom bar", "customOff", ns.RefreshCustom)
+
+    Heading("Add")
+    local box = CreateFrame("EditBox", nil, page, "InputBoxTemplate")
+    box:SetSize(90, 20)
+    box:SetAutoFocus(false)
+    box:SetNumeric(true)
+    Place(box, 10, 10)
+    local status = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    status:SetJustifyH("LEFT")
+    -- Adds the ID in the box as kind ("spell" or "item") if the game knows it.
+    local function AddButton(text, kind, x)
+      local b = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+      b:SetSize(80, 22)
+      b:SetText(text)
+      b:SetPoint("LEFT", box, "RIGHT", x, 0)
+      b:SetScript("OnClick", function()
+        local id = tonumber(box:GetText())
+        local exists = id and (kind == "item" and C_Item.DoesItemExistByID(id) or kind == "spell" and C_Spell.DoesSpellExist(id))
+        if #db.customList >= ns.CUSTOM_MAX then
+          status:SetText("The bar holds " .. ns.CUSTOM_MAX .. " at most.")
+        elseif not exists then
+          status:SetText("No " .. kind .. " with that ID.")
+        else
+          if kind == "item" then C_Item.RequestLoadItemDataByID(id) end
+          table.insert(db.customList, { kind = kind, id = id })
+          box:SetText("")
+          status:SetText("")
+          ns.RefreshCustom()
+          RefreshControls()
+        end
+      end)
+      return b
+    end
+    AddButton("Add spell", "spell", 8)
+    AddButton("Add item", "item", 92)
+    status:SetPoint("TOPLEFT", box, "BOTTOMLEFT", -6, -6)
+    status:SetPoint("RIGHT", page, "RIGHT", -4, 0)
+
+    Begin(right)
+    Heading("Tracked")
+    -- Button on row i that moves its entry by dir, or removes it when dir is nil.
+    local function RowButton(row, text, i, dir)
+      local b = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+      b:SetSize(text == "Remove" and 64 or 40, 20)
+      b:SetText(text)
+      b:SetScript("OnClick", function()
+        local l = db.customList
+        if dir then l[i], l[i + dir] = l[i + dir], l[i] else table.remove(l, i) end
+        ns.RefreshCustom()
+        RefreshControls()
+      end)
+      return b
+    end
+    for i = 1, ns.CUSTOM_MAX do
+      local row = CreateFrame("Frame", nil, page)
+      row:SetSize(26, 26)
+      local up, down, remove = RowButton(row, "Up", i, -1), RowButton(row, "Down", i, 1), RowButton(row, "Remove", i)
+      function row:Draw()
+        local e = db.customList[i]
+        self:SetShown(e ~= nil or i == 1)
+        up:SetShown(e ~= nil)
+        down:SetShown(e ~= nil)
+        remove:SetShown(e ~= nil)
+        if not e then
+          self.label:SetText("Nothing added yet.")
+          return
+        end
+        local name, tex = ns.CustomInfo(e)
+        self.label:SetText("|T" .. (tex or 134400) .. ":16|t  " .. (name or (e.kind == "item" and "Item " or "Spell ") .. e.id))
+        up:SetEnabled(i > 1)
+        down:SetEnabled(i < #db.customList)
+      end
+      function row:SetEnabled() end -- the rows work while the bar is off
+      AddControl(row, "", -4)
+      row.label:SetWidth(150)
+      row.label:SetJustifyH("LEFT")
+      row.label:SetWordWrap(false)
+      up:SetPoint("LEFT", row, "LEFT", 182, 0)
+      down:SetPoint("LEFT", up, "RIGHT", 2, 0)
+      remove:SetPoint("LEFT", down, "RIGHT", 2, 0)
+    end
     ShowSub(list[1][1])
   end
 
@@ -737,6 +838,7 @@ SlashCmdList.WU = function(msg)
       ns.RefreshShout()
       ns.RefreshDebuffs()
       ns.RefreshCooldowns()
+      ns.RefreshCustom()
     end
     print("WU - Warrior Utilities reset")
   elseif a then

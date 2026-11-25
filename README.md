@@ -175,6 +175,16 @@ Each stance has its own sub-tab under the **CDM** tab of the options page (`/wu`
 - In Edit Mode, click **WU Cooldown Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
 - The icons only display cooldowns; clicking them does nothing.
 
+## Custom bar (warriors only)
+
+A bar for any cooldowns you want to watch, such as trinkets. Set it up on the **Custom** sub-tab under **CDM** (`/wu`):
+
+- Type an ID and press **Add spell** (a spell ID) or **Add item** (an item ID, for trinkets and other usable items). You can find IDs on Wowhead: it's the number in the page's address.
+- Up to 12 entries. **Up** and **Down** change where each sits on the bar (top of the list is leftmost); **Remove** takes it off.
+- **Show custom bar** turns it on or off (default on).
+- Each icon shows the game's cooldown swipe and countdown, so it works in combat without the addon reading cooldown times. The icons only display cooldowns; clicking them does nothing.
+- In Edit Mode, click **WU Custom Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.
+
 ## Options
 
 **Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
@@ -183,7 +193,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 
 - **General** — how to use the addon, the minimap icon switch, the slash commands, a Discord link to copy and the audio alert voice and volume (warriors)
 - **Range** (warriors only) — the range display settings, in Display, Nameplate & Labels and Zones sub-tabs
-- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer and its alert on **Battle Shout**, and the debuff tracker and debuff alerts on **Debuffs**
+- **CDM** (warriors only) — each stance's cooldown bar on **Battle**, **Defensive** and **Berserker** sub-tabs, the Battle Shout timer and its alert on **Battle Shout**, the debuff tracker and debuff alerts on **Debuffs**, and the custom bar on **Custom**
 
 ## Slash commands
 
@@ -212,6 +222,7 @@ The minimap icon opens the options when clicked; drag it to move it around the m
 | `Debuffs.lua` | Sunder Armor and Demoralizing Shout tracker on the target and its Edit Mode settings |
 | `Alerts.lua` | Audio alerts for Sunder Armor, Demoralizing Shout and Battle Shout |
 | `CooldownBar.lua` | Cooldown bar for each stance and its Edit Mode settings |
+| `CustomBar.lua` | Custom cooldown bar for spells and items picked by ID, and its Edit Mode settings |
 | `Minimap.lua` | Minimap icon that opens the options |
 | `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
 
