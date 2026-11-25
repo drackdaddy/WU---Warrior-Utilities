@@ -7,7 +7,8 @@ local db = ns.db
 -- look they share, set on the Appearance tab under CDM:
 --   glow     when an ability is ready: a pulsing border, marching sparks or a
 --            static border, in a chosen color, speed and thickness, and
---            optionally only in combat
+--            optionally only in combat. An icon can have its own glow type,
+--            set per ability on the Stances and Custom tabs.
 --   on cooldown  normal, greyed out, faded or hidden
 -- In combat cooldown times and "usable" answers can be secret, so Lua never
 -- reads them. The game hands back a duration object for each spell's
@@ -51,29 +52,30 @@ local function ShowGlow(f)
   f.glow:SetShown(f.glowOn and (f.preview or inCombat or not db.glowOocOff))
 end
 
--- Applies the Appearance settings to icon f: glow color, thickness and style.
+-- Applies the Appearance settings to icon f: glow color, thickness and style
+-- (its own glow type, or the Appearance one).
 local function Style(f)
-  local c, size = db.glowColor, db.glowSize
+  local c, size, style = db.glowColor, db.glowSize, f.glowStyle or db.glowStyle
   f.border:SetBackdrop({ edgeFile = WHITE, edgeSize = size })
   f.border:SetPoint("TOPLEFT", -size, size)
   f.border:SetPoint("BOTTOMRIGHT", size, -size)
-  f.border:SetBackdropBorderColor(c.r, c.g, c.b, db.glowStyle == "sparks" and 0.35 or 1)
+  f.border:SetBackdropBorderColor(c.r, c.g, c.b, style == "sparks" and 0.35 or 1)
   f.shine:SetColorTexture(c.r, c.g, c.b, 0.25)
-  f.shine:SetShown(db.glowStyle ~= "sparks")
+  f.shine:SetShown(style ~= "sparks")
   for _, s in ipairs(f.sparks) do
     s:SetColorTexture(math.min(1, c.r + 0.3), math.min(1, c.g + 0.3), math.min(1, c.b + 0.3), 1)
-    s:SetShown(db.glowStyle == "sparks")
+    s:SetShown(style == "sparks")
   end
   f.fade:SetDuration(PULSE[db.glowSpeed])
-  if db.glowStyle == "pulse" then f.pulse:Play() else f.pulse:Stop() end
+  if style == "pulse" then f.pulse:Play() else f.pulse:Stop() end
   ShowGlow(f)
 end
 
 -- Returns a new cooldown icon on parent: the icon art, a greyed copy for
 -- "on cooldown" and one for "not enough rage", the cooldown swipe with its
 -- countdown, and the glow (ready layer, usable layer, then the style). A bar
--- sets f.spell (or f.item), f.glowOn and the texture, then calls
--- ns.SetIconGlow. Plain frames with no mouse input.
+-- sets f.spell (or f.item) and the texture, and calls ns.SetIconGlow. Plain
+-- frames with no mouse input.
 function ns.NewCooldownIcon(parent)
   local f = CreateFrame("Frame", nil, parent)
   f.body = CreateFrame("Frame", nil, f)
@@ -124,10 +126,16 @@ function ns.NewCooldownIcon(parent)
   return f
 end
 
--- Turns icon f's glow on or off (its bar's and its own glow switches).
-function ns.SetIconGlow(f, on)
+-- Turns icon f's glow on or off (its bar's and its own glow switches) and
+-- sets its own glow type (nil = the Appearance one).
+function ns.SetIconGlow(f, on, style)
   f.glowOn = on
-  ShowGlow(f)
+  if style ~= f.glowStyle then
+    f.glowStyle = style
+    Style(f)
+  else
+    ShowGlow(f)
+  end
 end
 
 -- Fetches icon f's cooldown and hands it to the swipe; a spell's duration
@@ -218,7 +226,6 @@ function ns.BuildCooldownLook()
   local elapsed = 0
   ticker = CreateFrame("Frame")
   ticker:SetScript("OnUpdate", function(_, dt)
-    local sparks = db.glowStyle == "sparks"
     local t = GetTime()
     elapsed = elapsed + dt
     local redraw = elapsed >= INTERVAL
@@ -226,7 +233,9 @@ function ns.BuildCooldownLook()
     for _, f in ipairs(icons) do
       if f:IsVisible() then
         if redraw and f.spell and not f.preview then Draw(f) end
-        if sparks and f.glow:IsShown() then MoveSparks(f, t, LAP[db.glowSpeed]) end
+        if (f.glowStyle or db.glowStyle) == "sparks" and f.glow:IsShown() then
+          MoveSparks(f, t, LAP[db.glowSpeed])
+        end
       end
     end
   end)

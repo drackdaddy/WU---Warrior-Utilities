@@ -69,7 +69,8 @@ local defaults = {
   cdHide = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: left off that stance's bar
   cdOrder = { battle = {}, defensive = {}, berserker = {} }, -- spell IDs in bar order; empty = default order
   cdNoGlow = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = true: that ability never glows
-  customOff = false, customList = {}, -- custom bar entries in bar order: { kind = "spell" or "item", id }
+  cdGlowStyle = { battle = {}, defensive = {}, berserker = {} }, -- [spell ID] = that ability's own glow type
+  customOff = false, customList = {}, -- custom bar entries in bar order (see CustomBar.lua)
   customLayouts = {}, customSize = 36, customCombatOnly = false, -- custom bar position, icon size
   glowStyle = "pulse", glowSpeed = "medium", glowSize = 2, glowOocOff = false, -- cooldown icon look
   glowColor = { r = 1, g = 0.82, b = 0.2, a = 1 }, cdLook = "normal",
@@ -96,6 +97,9 @@ ns.LISTS = {
 }
 ns.LISTS.debuffFont = ns.LISTS.rangeTextFont
 ns.LISTS.glowStyle = { { "pulse", "Pulsing border" }, { "sparks", "Marching sparks" }, { "static", "Static border" } }
+-- An ability's own glow type: the Appearance one, or one of the above.
+ns.GLOW_TYPES = { { "default", "Appearance setting" } }
+for _, o in ipairs(ns.LISTS.glowStyle) do ns.GLOW_TYPES[#ns.GLOW_TYPES + 1] = o end
 ns.LISTS.glowSpeed = { { "slow", "Slow" }, { "medium", "Medium" }, { "fast", "Fast" } }
 ns.LISTS.cdLook = { { "normal", "Normal" }, { "grey", "Greyed out" }, { "faded", "Faded" }, { "hidden", "Hidden" } }
 ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }

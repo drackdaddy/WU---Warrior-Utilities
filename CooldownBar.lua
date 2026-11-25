@@ -6,8 +6,9 @@ local db, LEM = ns.db, ns.LibEditMode
 -- A row of ability icons for the stance the player is in, each with
 -- Blizzard's cooldown swipe and countdown. Each stance has its own list, set
 -- up on the Stances tab under CDM on the options page: the bar on or off, a
--- "ready" glow on or off for the whole bar and for each ability, each ability
--- on or off, and the order they show in. Abilities the player hasn't learned
+-- "ready" glow on or off for the whole bar and for each ability, each
+-- ability's own glow type, each ability on or off, and the order they show
+-- in. Abilities the player hasn't learned
 -- are left out. The icons, their glow and how they look on cooldown or short
 -- of rage come from CooldownLook.lua, which never reads cooldown times. The
 -- icons are plain frames with no mouse input: they only show cooldowns and
@@ -20,7 +21,7 @@ local db, LEM = ns.db, ns.LibEditMode
 --   UPDATE_SHAPESHIFT_FORM, SPELLS_CHANGED, SPELL_UPDATE_COOLDOWN
 -- SavedVariables: cdLayouts, cdSize, cdCombatOnly, battleCdOff, defensiveCdOff,
 --   berserkerCdOff, battleAlertOff, defensiveAlertOff, berserkerAlertOff,
---   cdHide, cdOrder, cdNoGlow
+--   cdHide, cdOrder, cdNoGlow, cdGlowStyle
 --------------------------------------------------------------------------------
 
 -- Each stance: saved-settings key, stance spell ID, name and its abilities
@@ -117,7 +118,7 @@ local function Update()
         icons[count] = icons[count] or ns.NewCooldownIcon(holder)
         local f, tex = icons[count], C_Spell.GetSpellTexture(id)
         f.spell = id
-        ns.SetIconGlow(f, glow and not noGlow[id])
+        ns.SetIconGlow(f, glow and not noGlow[id], db.cdGlowStyle[s.key][id])
         f.tex:SetTexture(tex)
         f.cdGrey.tex:SetTexture(tex)
         f.noRage.tex:SetTexture(tex)

@@ -275,21 +275,20 @@ function ns.BuildOptions()
     plus:SetPoint("LEFT", value, "RIGHT", 2, 0)
   end
 
-  -- Dropdown for db[key], one of the ns.LISTS[key] choices (see Core.lua), or
-  -- of the { key, name } list getList returns when the menu opens: the label,
-  -- then Blizzard's dropdown button showing the current choice. Like the
-  -- stepper, the control itself is an empty checkbox-sized box so the label
-  -- lines up. apply runs after a pick.
-  local function Choice(label, key, apply, disabled, getList)
+  -- Dropdown: the label, then Blizzard's dropdown button showing the current
+  -- choice, one of the { value, name } pairs getList() returns when the menu
+  -- opens. get() returns the current value and set(value) stores a pick. Like
+  -- the stepper, the control itself is an empty checkbox-sized box so the
+  -- label lines up.
+  local function Pick(label, getList, get, set, disabled)
     local ch = CreateFrame("Frame", nil, page)
     ch:SetSize(26, 26)
     local dd = CreateFrame("DropdownButton", nil, page, "WowStyle1DropdownTemplate")
     dd:SetWidth(150)
     dd:SetupMenu(function(_, root)
-      for _, o in ipairs(getList and getList() or ns.LISTS[key]) do
-        root:CreateRadio(o[2], function() return db[key] == o[1] end, function()
-          db[key] = o[1]
-          apply()
+      for _, o in ipairs(getList()) do
+        root:CreateRadio(o[2], function() return get() == o[1] end, function()
+          set(o[1])
           RefreshControls()
         end)
       end
@@ -301,13 +300,35 @@ function ns.BuildOptions()
     dd:SetPoint("LEFT", ch, "LEFT", 130, 0)
   end
 
+  -- Dropdown for db[key], one of the ns.LISTS[key] choices (see Core.lua), or
+  -- of the list getList returns. apply runs after a pick.
+  local function Choice(label, key, apply, disabled, getList)
+    Pick(label, getList or function() return ns.LISTS[key] end, function() return db[key] end,
+      function(v)
+        db[key] = v
+        apply()
+      end, disabled)
+  end
+
+  -- Checkbox drawn from get(); set(checked) runs after a click.
+  local function Check(label, get, set, disabled)
+    local cb = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
+    cb:SetSize(26, 26)
+    function cb:Draw() self:SetChecked(get()) end
+    cb:SetScript("OnClick", function(self)
+      set(self:GetChecked())
+      RefreshControls()
+    end)
+    AddControl(cb, label, -4, disabled)
+  end
+
   -- Grid of clickable icon slots, perRow to a row and at most max, one per
   -- entry of the list spec.list() returns, in order. spec.look(e) returns the
   -- entry's texture, name, whether it is left off the bar (drawn faded) and
-  -- whether it glows (a gold tick in the corner). Left-click runs
-  -- spec.click(i) if given, right-click opens a menu spec.menu(root, i) fills,
-  -- and dragging a slot onto another runs spec.move(from, to). spec.hint is
-  -- the tooltip's last line; spec.empty is shown while the list is empty.
+  -- whether it glows (a gold tick in the corner). Clicking a slot selects it
+  -- (spec.select(i); spec.selected() says which is, outlined in gold), and
+  -- dragging a slot onto another runs spec.move(from, to). spec.empty is
+  -- shown while the list is empty.
   local SLOT, SLOT_GAP = 36, 6
   local function SlotGrid(max, perRow, spec)
     local grid = CreateFrame("Frame", nil, page)
@@ -328,6 +349,7 @@ function ns.BuildOptions()
           b.icon:SetDesaturated(off)
           b.icon:SetAlpha(off and 0.35 or 1)
           b.tick:SetShown(glow)
+          b.sel:SetShown(i == spec.selected())
         end
       end
     end
@@ -348,15 +370,15 @@ function ns.BuildOptions()
       b.tick:SetPoint("TOPRIGHT", 4, 4)
       b.tick:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
       b.tick:SetVertexColor(1, 0.82, 0.2)
-      b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+      b.sel = CreateFrame("Frame", nil, b, "BackdropTemplate")
+      b.sel:SetPoint("TOPLEFT", -3, 3)
+      b.sel:SetPoint("BOTTOMRIGHT", 3, -3)
+      b.sel:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
+      b.sel:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
       b:RegisterForDrag("LeftButton")
-      b:SetScript("OnClick", function(self, button)
-        if button == "RightButton" then
-          MenuUtil.CreateContextMenu(self, function(_, root) spec.menu(root, i) end)
-        elseif spec.click then
-          spec.click(i)
-          RefreshControls()
-        end
+      b:SetScript("OnClick", function()
+        spec.select(i)
+        RefreshControls()
       end)
       b:SetScript("OnDragStart", function(self)
         from = i
@@ -377,7 +399,7 @@ function ns.BuildOptions()
         local _, name = spec.look(spec.list()[i])
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(name or "?", 1, 1, 1)
-        GameTooltip:AddLine(spec.hint, 0.8, 0.8, 0.8, true)
+        GameTooltip:AddLine("Click: select. Drag: move.", 0.8, 0.8, 0.8, true)
         GameTooltip:Show()
       end)
       b:SetScript("OnLeave", GameTooltip_Hide)
@@ -647,11 +669,12 @@ function ns.BuildOptions()
 
     -- Stances sub-tab: one stance at a time, picked from the dropdown at the
     -- top (see CooldownBar.lua). On the left the stance's bar and glow
-    -- switches; on the right its abilities as icon slots in bar order:
-    -- left-click puts one on or off the bar, right-click has its options and
-    -- dragging moves it. Everything is greyed out while that bar is off, and
-    -- the glow ticks while the stance's glow is off.
-    local stance = ns.STANCES[1]
+    -- switches; on the right its abilities as icon slots in bar order (click
+    -- to select, drag to move) and the selected ability's own settings: on
+    -- the bar, glow when ready and its glow type. Everything is greyed out
+    -- while that bar is off, and the glow settings while the stance's glow is
+    -- off.
+    local stance, selected = ns.STANCES[1], 1
     local function BarKey() return stance.key .. "CdOff" end
     local function GlowKey() return stance.key .. "AlertOff" end
     local function BarOff() return db[BarKey()] end
@@ -666,7 +689,7 @@ function ns.BuildOptions()
     dd:SetupMenu(function(_, root)
       for _, s in ipairs(ns.STANCES) do
         root:CreateRadio(s.name, function() return stance == s end, function()
-          stance = s
+          stance, selected = s, 1
           RefreshControls()
         end)
       end
@@ -679,7 +702,7 @@ function ns.BuildOptions()
       "Each stance has its own bar, shown while you are in it.",
       "Each icon shows its cooldown and the time left.",
       "Abilities you haven't learned are left off.",
-      "Change how the icons look on the " .. Key("Appearance") .. " tab.",
+      "Change how the icons look on the " .. Key("Appearance") .. " tab; an ability can have its own glow type.",
       "Move it and set its size in " .. Key("Edit Mode") .. " (" .. Key("WU Cooldown Bar") .. ").",
     })
     Heading("Settings")
@@ -688,47 +711,49 @@ function ns.BuildOptions()
 
     Begin(right)
     Heading("Abilities")
-    Text(Key("Click") .. " an icon to put it on or off the bar. " .. Key("Right-click") .. " for its options. "
-      .. Key("Drag") .. " it onto another to move it (top left is leftmost on the bar).")
-    -- The stance's ability on slot i.
-    local function Ability(i) return ns.CooldownOrder(stance)[i] end
-    -- Saves the stance's order with slot from moved to slot to.
-    local function MoveAbility(from, to)
-      local order = ns.CooldownOrder(stance)
-      Move(order, from, to)
-      db.cdOrder[stance.key] = order
-      ns.RefreshCooldowns()
-    end
-    local function ToggleShown(i)
-      local hide = db.cdHide[stance.key]
-      hide[Ability(i)] = not hide[Ability(i)] or nil
-      ns.RefreshCooldowns()
-    end
+    Text(Key("Click") .. " an icon to set it up below. " .. Key("Drag") .. " it onto another to move it"
+      .. " (top left is leftmost on the bar).")
+    -- The stance's ability on the selected slot.
+    local function Ability() return ns.CooldownOrder(stance)[selected] end
     SlotGrid(10, 6, {
       list = function() return ns.CooldownOrder(stance) end,
       look = function(id)
         return C_Spell.GetSpellTexture(id), C_Spell.GetSpellName(id), db.cdHide[stance.key][id],
           not db[GlowKey()] and not db.cdNoGlow[stance.key][id]
       end,
-      click = ToggleShown,
-      move = MoveAbility,
-      menu = function(root, i)
-        root:CreateTitle(C_Spell.GetSpellName(Ability(i)))
-        root:CreateCheckbox("Show on bar", function() return not db.cdHide[stance.key][Ability(i)] end, function()
-          ToggleShown(i)
-          RefreshControls()
-        end)
-        root:CreateCheckbox("Glow when ready", function() return not db.cdNoGlow[stance.key][Ability(i)] end, function()
-          local noGlow = db.cdNoGlow[stance.key]
-          noGlow[Ability(i)] = not noGlow[Ability(i)] or nil
-          ns.RefreshCooldowns()
-          RefreshControls()
-        end)
-        if i > 1 then root:CreateButton("Move left", function() MoveAbility(i, i - 1) RefreshControls() end) end
-        if i < #stance.spells then root:CreateButton("Move right", function() MoveAbility(i, i + 1) RefreshControls() end) end
+      selected = function() return selected end,
+      select = function(i) selected = i end,
+      move = function(from, to)
+        local order = ns.CooldownOrder(stance)
+        Move(order, from, to)
+        db.cdOrder[stance.key] = order
+        if selected == from then selected = to end
+        ns.RefreshCooldowns()
       end,
-      hint = "Click: on or off the bar. Right-click: options. Drag: move.",
     }).disabled = BarOff
+
+    -- The selected ability's own settings.
+    local name = CreateFrame("Frame", nil, page)
+    name:SetSize(26, 26)
+    function name:Draw()
+      self.label:SetText("|T" .. C_Spell.GetSpellTexture(Ability()) .. ":18|t  " .. Key(C_Spell.GetSpellName(Ability())))
+    end
+    function name:SetEnabled() end
+    AddControl(name, "", -4)
+    local function NoGlow() return BarOff() or db[GlowKey()] or db.cdNoGlow[stance.key][Ability()] end
+    Check("Show on bar", function() return not db.cdHide[stance.key][Ability()] end, function(on)
+      db.cdHide[stance.key][Ability()] = not on or nil
+      ns.RefreshCooldowns()
+    end, BarOff)
+    Check("Glow when ready", function() return not db.cdNoGlow[stance.key][Ability()] end, function(on)
+      db.cdNoGlow[stance.key][Ability()] = not on or nil
+      ns.RefreshCooldowns()
+    end, function() return BarOff() or db[GlowKey()] end)
+    Pick("Glow type", function() return ns.GLOW_TYPES end,
+      function() return db.cdGlowStyle[stance.key][Ability()] or "default" end, function(v)
+        db.cdGlowStyle[stance.key][Ability()] = v ~= "default" and v or nil
+        ns.RefreshCooldowns()
+      end, NoGlow)
 
     -- Battle Shout sub-tab: what the player frame timer shows and its
     -- switches (see ShoutTimer.lua), then its audio alert. The rest of the
@@ -861,39 +886,72 @@ function ns.BuildOptions()
 
     Begin(right)
     Heading("Tracked")
-    Text(Key("Right-click") .. " an icon for its options. " .. Key("Drag") .. " it onto another to move it"
+    Text(Key("Click") .. " an icon to set it up below. " .. Key("Drag") .. " it onto another to move it"
       .. " (top left is leftmost on the bar).")
+    -- The selected entry, or nil while the list is empty.
+    local picked = 1
+    local function Entry()
+      picked = math.max(1, math.min(picked, #db.customList))
+      return db.customList[picked]
+    end
     SlotGrid(ns.CUSTOM_MAX, 6, {
       list = function() return db.customList end,
       look = function(e)
         local name, tex = ns.CustomInfo(e)
-        return tex or 134400, name or (e.kind == "item" and "Item " or "Spell ") .. e.id, false,
+        return tex or 134400, name or (e.kind == "item" and "Item " or "Spell ") .. e.id, e.off,
           e.kind == "spell" and not e.noGlow
       end,
+      selected = function() return picked end,
+      select = function(i) picked = i end,
       move = function(from, to)
         Move(db.customList, from, to)
+        if picked == from then picked = to end
         ns.RefreshCustom()
       end,
-      menu = function(root, i)
-        local e = db.customList[i]
-        local name = ns.CustomInfo(e)
-        root:CreateTitle((name or "") .. " (" .. e.kind .. " " .. e.id .. ")")
-        if e.kind == "spell" then
-          root:CreateCheckbox("Glow when ready", function() return not e.noGlow end, function()
-            e.noGlow = not e.noGlow or nil
-            ns.RefreshCustom()
-            RefreshControls()
-          end)
-        end
-        root:CreateButton("Remove", function()
-          table.remove(db.customList, i)
-          ns.RefreshCustom()
-          RefreshControls()
-        end)
-      end,
-      hint = "Right-click: options. Drag: move.",
       empty = "Nothing added yet.",
     })
+
+    -- The selected entry's own settings. Items can't glow (see
+    -- CooldownLook.lua), so their glow settings stay greyed out.
+    local info = CreateFrame("Frame", nil, page)
+    info:SetSize(26, 26)
+    function info:Draw()
+      local e = Entry()
+      if not e then
+        self.label:SetText("")
+        return
+      end
+      local name, tex = ns.CustomInfo(e)
+      self.label:SetText("|T" .. (tex or 134400) .. ":18|t  " .. Key(name or "") .. " (" .. e.kind .. " " .. e.id .. ")")
+    end
+    function info:SetEnabled() end
+    AddControl(info, "", -4)
+    local function None() return not Entry() end
+    local function NotSpell() return not Entry() or Entry().kind ~= "spell" end
+    Check("Show on bar", function() return Entry() and not Entry().off end, function(on)
+      Entry().off = not on or nil
+      ns.RefreshCustom()
+    end, None)
+    Check("Glow when ready", function() return Entry() and Entry().kind == "spell" and not Entry().noGlow end,
+      function(on)
+        Entry().noGlow = not on or nil
+        ns.RefreshCustom()
+      end, NotSpell)
+    Pick("Glow type", function() return ns.GLOW_TYPES end,
+      function() return Entry() and Entry().glowStyle or "default" end, function(v)
+        Entry().glowStyle = v ~= "default" and v or nil
+        ns.RefreshCustom()
+      end, function() return NotSpell() or Entry().noGlow end)
+    local remove = CreateFrame("Button", nil, page, "UIPanelButtonTemplate")
+    remove:SetSize(80, 22)
+    remove:SetText("Remove")
+    remove:SetScript("OnClick", function()
+      if not Entry() then return end
+      table.remove(db.customList, picked)
+      ns.RefreshCustom()
+      RefreshControls()
+    end)
+    Place(remove, 8, 4)
 
     -- Appearance sub-tab: the look every cooldown bar's icons share (see
     -- CooldownLook.lua): the ready glow on the left, the on-cooldown look and

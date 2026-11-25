@@ -167,7 +167,7 @@ Set the bars up on the **Stances** sub-tab under **CDM** on the options page (`/
 | --- | --- |
 | Show cooldown bar | Turns that stance's bar on or off (default on) |
 | Glow when ready | Turns the ready glow off for that whole bar (default on) |
-| Abilities | One icon per ability, in bar order (top left is leftmost). **Click** an icon to put it on or off the bar (off icons show faded). **Right-click** for its options: show on bar, glow when ready, move left or right. **Drag** an icon onto another to move it. A gold tick marks the ones that glow |
+| Abilities | One icon per ability, in bar order (top left is leftmost); off icons show faded and a gold tick marks the ones that glow. **Click** an icon to select it, then set it up below the icons: **Show on bar**, **Glow when ready** and **Glow type** (the Appearance setting, or its own: Pulsing border, Marching sparks, Static border). **Drag** an icon onto another to move it |
 
 - The glow only shows when you could cast the ability: it's off cooldown, you have the rage for it, and any trigger it needs has happened (Victory Rush after a kill, Overpower after a dodge, Revenge after a block, dodge or parry). It stays on during the global cooldown, so it doesn't blink after every ability.
 - An icon greys out while you don't have enough rage for it. The game answers that itself, so it works in combat too.
@@ -181,7 +181,7 @@ The **Appearance** sub-tab under **CDM** sets how the icons on every cooldown ba
 
 | Setting | Notes |
 | --- | --- |
-| Glow | Pulsing border, Marching sparks (bright dashes running around the edge) or Static border (default Pulsing border) |
+| Glow | Pulsing border, Marching sparks (bright dashes running around the edge) or Static border (default Pulsing border). An ability can have its own on the Stances and Custom tabs |
 | Glow color | **Default** puts back gold |
 | Speed | Slow, Medium, Fast (default Medium); not for the static border |
 | Thickness | 1 to 4 (default 2) |
@@ -195,7 +195,7 @@ The **Appearance** sub-tab under **CDM** sets how the icons on every cooldown ba
 A bar for any cooldowns you want to watch, such as trinkets. Set it up on the **Custom** sub-tab under **CDM** (`/wu`):
 
 - Type a spell ID or an item ID (for trinkets and other usable items) and press **Add**. A number can be both a spell and an item, so WU picks, in order: an item you have equipped or in your bags, a spell you know, any item, any spell. The row shows which it picked. You can find IDs on Wowhead: it's the number in the page's address.
-- Up to 12 entries, shown as icons in bar order (top left is leftmost). **Right-click** an icon for its options (glow when ready for spells, remove); **drag** it onto another to move it. The bar's icons use the look set on the **Appearance** sub-tab.
+- Up to 12 entries, shown as icons in bar order (top left is leftmost). **Click** an icon to select it, then set it up below the icons: **Show on bar**, **Glow when ready** and **Glow type** (spells only; items can't glow), or **Remove** it. **Drag** an icon onto another to move it. The bar's icons use the look set on the **Appearance** sub-tab.
 - **Show custom bar** turns it on or off (default on).
 - Each icon shows the game's cooldown swipe and countdown, so it works in combat without the addon reading cooldown times. The icons only display cooldowns; clicking them does nothing.
 - In Edit Mode, click **WU Custom Bar** to move it, set **Icon Size** (24 to 64, default 36) and turn on **Only Show in Combat** (default off). Its position is per Edit Mode layout.

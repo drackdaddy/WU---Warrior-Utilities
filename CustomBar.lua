@@ -16,7 +16,8 @@ local db, LEM = ns.db, ns.LibEditMode
 -- be placed.
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED,
 --   SPELL_UPDATE_COOLDOWN, BAG_UPDATE_COOLDOWN, ITEM_DATA_LOAD_RESULT
--- SavedVariables: customOff, customList (entries: kind, id, noGlow),
+-- SavedVariables: customOff, customList (entries: kind ("spell" or "item"),
+--   id, off (left off the bar), noGlow, glowStyle (its own glow type)),
 --   customLayouts, customSize, customCombatOnly
 --------------------------------------------------------------------------------
 local GAP = 4 -- pixels between icons
@@ -45,21 +46,23 @@ local function Update()
   if not holder then return end -- not built (druids)
   count = 0
   for _, e in ipairs(db.customList) do
-    local _, tex = ns.CustomInfo(e)
-    tex = tex or 134400 -- question mark until an item's data loads
-    count = count + 1
-    icons[count] = icons[count] or ns.NewCooldownIcon(holder)
-    local f = icons[count]
-    f.spell = e.kind == "spell" and e.id or nil
-    f.item = e.kind == "item" and e.id or nil
-    ns.SetIconGlow(f, f.spell ~= nil and not e.noGlow)
-    f.tex:SetTexture(tex)
-    f.cdGrey.tex:SetTexture(tex)
-    f.noRage.tex:SetTexture(tex)
-    f:SetSize(db.customSize, db.customSize)
-    f:ClearAllPoints()
-    f:SetPoint("LEFT", (count - 1) * (db.customSize + GAP), 0)
-    f:Show()
+    if not e.off then
+      local _, tex = ns.CustomInfo(e)
+      tex = tex or 134400 -- question mark until an item's data loads
+      count = count + 1
+      icons[count] = icons[count] or ns.NewCooldownIcon(holder)
+      local f = icons[count]
+      f.spell = e.kind == "spell" and e.id or nil
+      f.item = e.kind == "item" and e.id or nil
+      ns.SetIconGlow(f, f.spell ~= nil and not e.noGlow, e.glowStyle)
+      f.tex:SetTexture(tex)
+      f.cdGrey.tex:SetTexture(tex)
+      f.noRage.tex:SetTexture(tex)
+      f:SetSize(db.customSize, db.customSize)
+      f:ClearAllPoints()
+      f:SetPoint("LEFT", (count - 1) * (db.customSize + GAP), 0)
+      f:Show()
+    end
   end
   for i = count + 1, #icons do icons[i]:Hide() end
 
