@@ -675,7 +675,8 @@ function ns.BuildOptions()
     Heading("Audio alerts")
     Bullets({
       "In combat, says the debuff's name when it is about to fall off your target.",
-      "Timed from your own casts: another warrior's Sunder or a dodged one isn't seen until combat ends.",
+      "Read from the target (or its nameplate) when the game allows; otherwise timed from your casts.",
+      "A Sunder that is dodged, parried or misses is taken back when you're solo.",
     })
     OnOff("Sunder Armor alert", "sunderAlertOff", Nothing)
     Stepper("Seconds left", "sunderAlertSec", 0, 10, 1, Nothing, function() return db.sunderAlertOff end)

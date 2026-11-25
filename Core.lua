@@ -228,12 +228,16 @@ end
 -- One event frame for the addon. Each feature file adds its handlers with
 -- ns.On when it loads; they are registered on PLAYER_LOGIN, for warriors and
 -- druids only. ns.isWarrior tells the other files which class loaded.
--- UNIT_ events are registered for the player only.
+-- UNIT_ events are registered for the player only, unless a handler names
+-- the units (at most two, as RegisterUnitEvent allows).
 -- Events: ADDON_LOADED (settings), PLAYER_LOGIN (build frames, register events)
 --------------------------------------------------------------------------------
-local handlers = {}
+local handlers, units = {}, {}
 
-function ns.On(event, fn)
+-- Adds fn as a handler for event; for a UNIT_ event, unit1 and unit2 (if
+-- given) replace "player" as the units it is registered for.
+function ns.On(event, fn, unit1, unit2)
+  if unit1 then units[event] = { unit1, unit2 } end
   handlers[event] = handlers[event] or {}
   table.insert(handlers[event], fn)
 end
@@ -263,7 +267,7 @@ ev:SetScript("OnEvent", function(self, event, ...)
     ns.BuildMinimap()
     for name in pairs(handlers) do
       if name:find("^UNIT_") then
-        self:RegisterUnitEvent(name, "player")
+        self:RegisterUnitEvent(name, unpack(units[name] or { "player" }))
       else
         self:RegisterEvent(name)
       end

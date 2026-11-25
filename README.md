@@ -135,8 +135,9 @@ Set it up on the **Debuffs** sub-tab under **CDM** on the options page (`/wu`):
 
 In combat, WU says the name out loud when **Sunder Armor** or **Demoralizing Shout** is about to fall off your target, or when your **Battle Shout** is about to run out. Battle Shout also alerts when you enter combat without it.
 
-- The game hides auras from addons in combat, so WU never reads them then. Like Warcry, it times them from your own casts: casting Sunder, Demoralizing Shout or Battle Shout restarts that timer. Out of combat it reads the real auras, which also picks up another player's Sunder or Battle Shout and the real durations.
-- So in combat it can't see another warrior's Sunder or Battle Shout, or a Sunder that was dodged or parried. Sunder is timed per target; Demoralizing Shout once, as it hits everything around you.
+- Each aura is tracked the way Ultimate Warrior does it. WU reads the target's debuffs (or your buffs) whenever the game allows, from any caster; when the target's list is hidden in combat it tries the same mob's nameplate. Anything the game hides is skipped, never read.
+- While the list is hidden, your own casts time it: casting Sunder, Demoralizing Shout or Battle Shout restarts that timer. A Sunder that is dodged, parried or misses is taken back when you're solo (in a group the dodge could be someone else's attack).
+- An empty list only ends a timer early once WU has seen that debuff on the target and you're solo; in groups and instances the game can return an empty list for a mob that has the debuff. Sunder is timed per target; Demoralizing Shout once, as it hits everything around you.
 - Sunder and Demoralizing Shout only alert while you target an enemy.
 
 | Setting | Where | Notes |
