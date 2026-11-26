@@ -1066,7 +1066,8 @@ function ns.BuildOptions()
     Choice("Bar border", "trinketBorder", ns.RefreshTrinkets)
 
     Heading("Mount")
-    OnOff("Carrot or Riding Crop when mounted", "mountSwapOff", ns.RefreshTrinkets)
+    Text("Carrot on a Stick or Riding Crop, or The Desert Rose in Tanaris and Silithus.")
+    OnOff("Riding trinket when mounted", "mountSwapOff", ns.RefreshTrinkets)
     Choice("Put it in", "mountSlot", ns.RefreshTrinkets, function() return db.mountSwapOff end)
 
     Begin(right)

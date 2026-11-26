@@ -12,10 +12,13 @@ local db = ns.db
 --                a trinket on starts a 30 second cooldown anyway. A ready
 --                trinket stays on until used, and one without a "Use:" effect
 --                (put on by hand) is left alone.
---   mount swap   on mounting, your riding trinket (Carrot on a Stick or
---                Riding Crop) goes in the chosen trinket slot; on getting off,
---                the one it replaced goes back. While mounted the rotation
---                leaves that trinket in the bags so it is there to go back.
+--   mount swap   on mounting, your riding trinket goes in the chosen trinket
+--                slot: The Desert Rose in sandy zones, otherwise Carrot on a
+--                Stick or Riding Crop. Riding into or out of a sandy zone
+--                swaps between them (or back to your own trinket when you
+--                have no riding trinket for that zone). On getting off, the
+--                one it replaced goes back. While mounted the rotation leaves
+--                that trinket in the bags so it is there to go back.
 -- The game won't change gear in combat, so both only swap out of combat, and
 -- they only put items on: nothing ever uses an item or casts for the player.
 -- Swaps that come due in combat wait for it to end (see ns.Equip). Mounting
@@ -26,6 +29,10 @@ local db = ns.db
 --   mountSlot, mountPrev
 --------------------------------------------------------------------------------
 local RIDING = { 11122, 25653 } -- Carrot on a Stick, Riding Crop
+local DESERT_ROSE = 274648 -- mount speed in sandy zones only
+-- Sandy zones by UiMapID: Tanaris, Silithus. Each zone is listed under both
+-- its Mainline and its Classic map ID, as which one Forever uses is unconfirmed.
+local SANDY = { [71] = true, [1446] = true, [81] = true, [1451] = true }
 local READY = 30 -- seconds left that count as ready
 local INTERVAL = 0.5 -- seconds between checks
 local ticker, mounted
@@ -62,41 +69,63 @@ local function Rotate(slot)
   end
 end
 
--- The riding trinket in the bags or worn, or nil.
-local function RidingTrinket()
-  for _, id in ipairs(RIDING) do
-    if ns.FindInBags(id) or GetInventoryItemID("player", 13) == id or GetInventoryItemID("player", 14) == id then
-      return id
-    end
+-- True when item id is one of the riding trinkets.
+local function IsRiding(id)
+  return id == DESERT_ROSE or tContains(RIDING, id)
+end
+
+-- True when item id is in the bags or worn as a trinket.
+local function Owned(id)
+  return ns.FindInBags(id) or GetInventoryItemID("player", 13) == id or GetInventoryItemID("player", 14) == id
+end
+
+-- True when the player is in a sandy zone, or in a subzone, cave or building
+-- map inside one (the map's parents are checked).
+local function InSand()
+  local map = C_Map.GetBestMapForUnit("player")
+  while map and map > 0 do
+    if SANDY[map] then return true end
+    local info = C_Map.GetMapInfo(map)
+    map = info and info.parentMapID
   end
 end
 
--- On mounting, the riding trinket goes on (what it replaced is saved in
--- mountPrev). Off the mount, the saved trinket is put back on every check
--- until it is worn: the game can refuse a swap while items are still moving
--- or in combat, so one try isn't enough. It gives up if the riding trinket is
--- no longer in the slot or the saved one is gone from the bags.
+-- The riding trinket to wear here: The Desert Rose in sandy zones, else
+-- Carrot on a Stick or Riding Crop. Nil when none is owned for this zone.
+local function RidingTrinket()
+  if InSand() and Owned(DESERT_ROSE) then return DESERT_ROSE end
+  for _, id in ipairs(RIDING) do
+    if Owned(id) then return id end
+  end
+end
+
+-- On mounting, the riding trinket for the zone goes on (what it replaced is
+-- saved in mountPrev). While mounted, crossing into or out of a sandy zone
+-- swaps to the right riding trinket, or back to the saved one when there is
+-- none for the zone; a trinket put on by hand is left alone. Off the mount,
+-- the saved trinket is put back on every check until it is worn: the game can
+-- refuse a swap while items are still moving or in combat, so one try isn't
+-- enough. It gives up if a riding trinket is no longer in the slot or the
+-- saved one is gone from the bags.
 local function CheckMount()
   local now = IsMounted()
   local changed = now ~= mounted
   mounted = now
   if db.mountSwapOff then return end
   local slot = db.mountSlot
+  local worn = GetInventoryItemID("player", slot)
   if now then
-    if not changed then return end
-    local riding = RidingTrinket()
-    local worn = GetInventoryItemID("player", slot)
-    if riding and worn ~= riding then
-      db.mountPrev = worn or 0
-      ns.Equip(riding, slot)
+    if changed and not IsRiding(worn) then db.mountPrev = worn or 0 end
+    local want = RidingTrinket() or db.mountPrev
+    if want ~= 0 and worn ~= want and (IsRiding(worn) or (worn or 0) == db.mountPrev) then
+      ns.Equip(want, slot)
     end
     return
   end
   local prev = db.mountPrev
   if prev == 0 then return end
-  local worn = GetInventoryItemID("player", slot)
   local other = slot == 13 and 14 or 13
-  if worn == prev or not tContains(RIDING, worn)
+  if worn == prev or not IsRiding(worn)
     or not (ns.FindInBags(prev) or GetInventoryItemID("player", other) == prev) then
     db.mountPrev = 0
   else

@@ -4,6 +4,12 @@ Changes in each version of WU - Warrior Utilities, newest first. The same list i
 
 ## 3.11.1 (2026-11-25)
 
+### Added
+- The Desert Rose as a riding trinket: it goes on when you mount in a sandy zone (Tanaris and Silithus), with Carrot on a Stick or Riding Crop elsewhere, and swaps as you ride in or out.
+
+### Changed
+- The mount option is now "Riding trinket when mounted".
+
 ### Fixed
 - Getting off your mount didn't always put back the trinket the riding trinket replaced. It now keeps trying until the trinket is back, and the trinket rotation no longer takes that trinket while you ride.
 
