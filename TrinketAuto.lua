@@ -35,8 +35,7 @@ local DESERT_ROSE = 274648 -- mount speed in sandy zones only
 local SANDY = { [71] = true, [1446] = true, [81] = true, [1451] = true }
 local READY = 30 -- seconds left that count as ready
 local INTERVAL = 0.5 -- seconds between checks
-local RETRY = 3 -- seconds between tries at a mount swap; the game refuses one
-                -- while you loot, cast or are dead, and says so each time
+local RETRY = 3 -- seconds between tries at a mount swap the game refused
 local ticker, mounted, nextTry
 
 -- Adds item id to slot's rotation, or takes it off. Used by the swap list.
@@ -93,12 +92,15 @@ local function InSand()
   end
 end
 
--- Starts a mount swap of item id into slot, at most once every RETRY seconds
--- and not while dead, so a swap the game refuses doesn't fill the screen with
--- errors while it waits to be tried again.
+-- Starts a mount swap of item id into slot. The game refuses gear swaps while
+-- you cast or channel (mining, crafting, both of which also take you off the
+-- mount), loot or are dead, so it waits for those to end and then goes at
+-- once. Any other refusal is tried again at most once every RETRY seconds, so
+-- it doesn't fill the screen with errors.
 local function Swap(id, slot)
   local now = GetTime()
-  if UnitIsDeadOrGhost("player") or (nextTry and now < nextTry) then return end
+  if UnitIsDeadOrGhost("player") or UnitCastingInfo("player") or UnitChannelInfo("player")
+    or GetNumLootItems() > 0 or (nextTry and now < nextTry) then return end
   nextTry = now + RETRY
   ns.Equip(id, slot)
 end
