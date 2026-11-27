@@ -30,7 +30,7 @@ local db, LEM = ns.db, ns.LibEditMode
 --   BAG_UPDATE_DELAYED, BAG_UPDATE_COOLDOWN, UPDATE_BINDINGS,
 --   GET_ITEM_INFO_RECEIVED
 -- SavedVariables: trinketOff, trinketMenuOff, trinketTipOff, trinketLayouts, trinketSize,
---   trinketCombatOnly, gearOff, gearLayouts, gearSize, gearCombatOnly,
+--   trinketCombatOnly, trinketVertical, gearOff, gearLayouts, gearSize, gearCombatOnly, gearVertical,
 --   trinketBorder
 --------------------------------------------------------------------------------
 local GEAR_SLOTS = { 1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 16, 17, 18 } -- character sheet order
@@ -216,8 +216,13 @@ local function ShowMenu(b)
   for i = #list + 1, #menu.items do menu.items[i]:Hide() end
   local cols, rows = math.min(#list, MENU_COLS), math.ceil(#list / MENU_COLS)
   menu:SetSize(8 + cols * size + (cols - 1) * GAP, 8 + rows * size + (rows - 1) * GAP)
+  -- Above the slot on a row, beside it on a column, so it never covers the bar.
   menu:ClearAllPoints()
-  menu:SetPoint("BOTTOMLEFT", b, "TOPLEFT", -4, 2)
+  if db[b.bar.key .. "Vertical"] then
+    menu:SetPoint("TOPLEFT", b, "TOPRIGHT", 2, 4)
+  else
+    menu:SetPoint("BOTTOMLEFT", b, "TOPLEFT", -4, 2)
+  end
   menu.slot, menu.owner = b.slot, b
   menu:Show()
 end
@@ -235,7 +240,7 @@ local function SlotButton(bar, slot)
   b:RegisterForClicks("AnyUp", "AnyDown")
   b:SetAttribute("*type1", "macro")
   b:SetAttribute("*macrotext1", "/use " .. slot)
-  b.slot = slot
+  b.slot, b.bar = slot, bar
   b.icon = b:CreateTexture(nil, "ARTWORK")
   b.icon:SetAllPoints()
   b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -292,7 +297,8 @@ local function BarSlots(bar)
   return slots
 end
 
--- Lays out bar's buttons and sets when it shows. Secure frames can't change
+-- Lays out bar's buttons in a row, or a column when the bar is set to
+-- Vertical in Edit Mode, and sets when it shows. Secure frames can't change
 -- in combat, so then it waits for combat to end. In Edit Mode it always
 -- shows (faded when off) so it can be placed.
 local function Layout(bar)
@@ -300,17 +306,26 @@ local function Layout(bar)
     layoutWaiting = true
     return
   end
-  local size, slots = db[bar.key .. "Size"], BarSlots(bar)
+  local size, slots, vertical = db[bar.key .. "Size"], BarSlots(bar), db[bar.key .. "Vertical"]
   for _, b in pairs(bar.buttons) do b:Hide() end
   for i, slot in ipairs(slots) do
     local b = bar.buttons[slot] or SlotButton(bar, slot)
     b:SetSize(size, size)
     b:ClearAllPoints()
-    b:SetPoint("LEFT", (i - 1) * (size + GAP), 0)
+    if vertical then
+      b:SetPoint("TOP", 0, -(i - 1) * (size + GAP))
+    else
+      b:SetPoint("LEFT", (i - 1) * (size + GAP), 0)
+    end
     b:Show()
   end
   local n = math.max(#slots, 1)
-  bar.holder:SetSize(n * size + (n - 1) * GAP, size)
+  local long = n * size + (n - 1) * GAP
+  if vertical then
+    bar.holder:SetSize(size, long)
+  else
+    bar.holder:SetSize(long, size)
+  end
   local off, edit = db[bar.key .. "Off"], LEM:IsInEditMode()
   UnregisterStateDriver(bar.holder, "visibility")
   if edit or not off and not db[bar.key .. "CombatOnly"] then
@@ -456,6 +471,7 @@ function ns.BuildTrinkets()
       info.name, {
         Option(T.Slider, "Icon Size", info.key .. "Size", Apply, nil, { minValue = 24, maxValue = 64, valueStep = 2 }),
         Option(T.Checkbox, "Only Show in Combat", info.key .. "CombatOnly", Apply),
+        Option(T.Checkbox, "Vertical", info.key .. "Vertical", Apply),
       }, Apply)
     bars[#bars + 1] = bar
   end

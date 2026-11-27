@@ -77,9 +77,9 @@ local defaults = {
   customLayouts = {}, customSize = 36, customCombatOnly = false, -- custom bar position, icon size
   glowStyle = "pulse", glowSpeed = "medium", glowSize = 2, glowOocOff = false, -- cooldown icon look
   glowColor = { r = 1, g = 0.82, b = 0.2, a = 1 }, cdLook = "normal",
-  trinketOff = false, trinketMenuOff = false, trinketTipOff = false, trinketLayouts = {}, trinketSize = 36, trinketCombatOnly = false,
+  trinketOff = false, trinketMenuOff = false, trinketTipOff = false, trinketLayouts = {}, trinketSize = 36, trinketCombatOnly = false, trinketVertical = false,
   trinketBorder = "none", -- border around the trinket and gear bars
-  gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, -- usable gear bar, off by default
+  gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, gearVertical = false, -- usable gear bar, off by default
   trinketQueue = { [13] = {}, [14] = {} }, rotate13Off = true, rotate14Off = true, -- rotation (item IDs by slot)
   mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket that belongs in the mount slot
   ctRaised = false, ctX = 0, ctY = 0, -- self text: above other UI, offset in Blizzard's reference units

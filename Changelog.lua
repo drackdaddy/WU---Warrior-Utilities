@@ -12,6 +12,7 @@ local _, ns = ...
 ns.CHANGELOG = {
   { version = "3.11.1", date = "2026-11-25",
     added = {
+      "Vertical in Edit Mode for WU Trinket Bar and WU Gear Bar: shows the bar as a column instead of a row, with the swap list opening beside the slot.",
       "Show tooltips on the Trinket tab turns off the item tooltips on the trinket and gear bars and the swap list.",
       "The options window has a new look: a sidebar on the left lists every tab with its sub-tabs under it, and it comes in four themes, Standard (the game's own menu look), Arms (leather and bronze), Fury (blackened steel and blood red) and Protection (cold iron and blue), picked under Options window > Colors on the General tab.",
       "The trinket rotation now works in combat too: when your trinket goes on cooldown in a fight, the next one on the list is queued and shown on the slot (gold border and icon), and goes on when combat ends.",
