@@ -114,7 +114,7 @@ ns.LISTS.trinketBorder = {
   { "none", "None" }, { "thin", "Thin line" }, { "panel", "Dark panel" }, { "tooltip", "Tooltip" }, { "gold", "Gold" },
 }
 ns.LISTS.mountSlot = { { 13, "Trinket 1" }, { 14, "Trinket 2" } }
-ns.LISTS.optTheme = { { "arms", "Arms" }, { "fury", "Fury" }, { "prot", "Protection" } }
+ns.LISTS.optTheme = { { "std", "Standard" }, { "arms", "Arms" }, { "fury", "Fury" }, { "prot", "Protection" } }
 ns.LISTS.cdLook = { { "normal", "Normal" }, { "grey", "Greyed out" }, { "faded", "Faded" }, { "hidden", "Hidden" } }
 ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }
 

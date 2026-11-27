@@ -232,7 +232,7 @@ Adapted from [SCT Mover](https://github.com/dbspringer/sct-mover) by KidMoxie (M
 
 ## Options
 
-`/wu` or the minimap icon opens the options in their own window, in or out of combat; type `/wu` or click the icon again, press **Esc** or click the **X** to close it. Drag the window to move it. The sidebar on the left picks a tab, with its sub-tabs listed under it. **Colors** under **Options window** on the General tab sets the window's theme: Arms, Fury (default) or Protection.
+`/wu` or the minimap icon opens the options in their own window, in or out of combat; type `/wu` or click the icon again, press **Esc** or click the **X** to close it. Drag the window to move it. The sidebar on the left picks a tab, with its sub-tabs listed under it. **Colors** under **Options window** on the General tab sets the window's theme: Standard (the game's own menu look: dialog frame, gold headings, white text), Arms, Fury (default) or Protection.
 
 **Change Log** at the top right shows what changed in each version (new, changed, removed, fixed); pick a version from the **Version** dropdown or show all. The same list is in `CHANGELOG.md`.
 

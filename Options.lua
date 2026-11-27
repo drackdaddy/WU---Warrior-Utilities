@@ -14,8 +14,9 @@ local db = ns.db
 -- closed with /wu or the minimap icon, so it opens in combat too (Blizzard's
 -- Settings panel won't). Drag it to move it; Escape or the X closes it. A
 -- sidebar on the left picks the tab, with each tab's sub-tabs listed under it.
--- The window's colors are one of three themes, picked on the General tab
--- (Window colors): Arms, Fury or Protection. It is
+-- The window's colors are one of four themes, picked on the General tab
+-- (Options window > Colors): Standard (the game's own menu look), Arms, Fury
+-- or Protection. It is
 -- a plain frame, and settings that would change secure frames in combat wait
 -- for combat to end where they are applied (see Trinkets.lua). All rage bar
 -- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
@@ -40,13 +41,20 @@ local db = ns.db
 --   ctX, ctY
 --------------------------------------------------------------------------------
 local WIDTH, HEIGHT, NAV_W, HEAD_H = 840, 640, 150, 40
-local INSET = 4 -- pixels inside the rounded edge where the header and sidebar start
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 -- Window colors per theme (db.optTheme, see ns.LISTS.optTheme in Core.lua),
 -- as RRGGBB: window, header and sidebar backgrounds, the border and rule
 -- lines, the selected sidebar row, body text, muted text and the accent
--- (headings, bullets, the selected row's bar).
+-- (headings, bullets, the selected row's bar). The window's edge and
+-- background textures, and how far inside the edge the header and sidebar
+-- start (inset), are the rounded tooltip border on a flat color unless a
+-- theme sets its own: Standard uses the game's dialog box frame, as its
+-- menus do, with gold headings and white text.
 local THEMES = {
+  std = { panel = "ffffff", header = "141414", nav = "0a0a0a", border = "5a4a2a", active = "3a3118",
+    text = "ffffff", muted = "a0a0a0", accent = "ffd100",
+    edge = "Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize = 32, inset = 11,
+    bg = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark" },
   arms = { panel = "16120f", header = "1d1814", nav = "100d0b", border = "3a3028", active = "262019",
     text = "e4dbd0", muted = "ada093", accent = "d08a2e" },
   fury = { panel = "121010", header = "1a1616", nav = "0d0b0b", border = "362a2a", active = "241c1c",
@@ -73,7 +81,7 @@ local function Paint(fn)
   fn(Theme())
 end
 
--- Recolors the whole window from the current theme. Used by Window colors
+-- Recolors the whole window from the current theme. Used by Colors
 -- and when the window opens (after /wu reset).
 local function Repaint()
   local t = Theme()
@@ -101,12 +109,15 @@ function ns.BuildOptions()
   opt:SetToplevel(true)
   opt:SetClampedToScreen(true)
   -- The tooltip border gives the window rounded corners; it is tinted with
-  -- the theme's muted color at half strength for a soft edge.
-  opt:SetBackdrop({ bgFile = WHITE, edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 16,
-    insets = { left = INSET, right = INSET, top = INSET, bottom = INSET } })
+  -- the theme's muted color at half strength for a soft edge. A theme with
+  -- its own frame (Standard) shows its textures in their own colors.
   Paint(function(t)
+    local inset = t.inset or 4
+    opt:SetBackdrop({ bgFile = t.bg or WHITE, tile = t.bg ~= nil, tileSize = 32,
+      edgeFile = t.edge or "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = t.edgeSize or 16,
+      insets = { left = inset, right = inset, top = inset, bottom = inset } })
     opt:SetBackdropColor(RGB(t.panel))
-    opt:SetBackdropBorderColor(RGB(t.muted, 0.5))
+    if t.edge then opt:SetBackdropBorderColor(1, 1, 1) else opt:SetBackdropBorderColor(RGB(t.muted, 0.5)) end
   end)
   opt:EnableMouse(true)
   opt:SetMovable(true)
@@ -123,9 +134,6 @@ function ns.BuildOptions()
   -- the accent color, the name and the version (read from the TOC so it is
   -- only ever set in one place).
   local head = opt:CreateTexture(nil, "BACKGROUND", nil, 1)
-  head:SetPoint("TOPLEFT", INSET, -INSET)
-  head:SetPoint("TOPRIGHT", -INSET, -INSET)
-  head:SetHeight(HEAD_H - INSET)
   local headLine = opt:CreateTexture(nil, "BORDER")
   headLine:SetPoint("TOPLEFT", head, "BOTTOMLEFT")
   headLine:SetPoint("TOPRIGHT", head, "BOTTOMRIGHT")
@@ -156,6 +164,11 @@ function ns.BuildOptions()
   version:SetPoint("LEFT", subtitle, "RIGHT", 10, 0)
   version:SetText("v" .. C_AddOns.GetAddOnMetadata(addonName, "Version"))
   Paint(function(t)
+    local inset = t.inset or 4
+    head:ClearAllPoints()
+    head:SetPoint("TOPLEFT", inset, -inset)
+    head:SetPoint("TOPRIGHT", -inset, -inset)
+    head:SetHeight(HEAD_H - inset)
     head:SetColorTexture(RGB(t.header))
     headLine:SetColorTexture(RGB(t.border))
     mark:SetColorTexture(RGB(t.accent))
@@ -1347,23 +1360,29 @@ function ns.BuildOptions()
   -- label turns white. Clicking a tab shows its first sub-tab.
   ------------------------------------------------------------------------------
   local nav = opt:CreateTexture(nil, "BACKGROUND", nil, 1)
-  nav:SetPoint("TOPLEFT", INSET, -HEAD_H)
-  nav:SetPoint("BOTTOMLEFT", INSET, INSET)
-  nav:SetWidth(NAV_W - INSET)
   local navLine = opt:CreateTexture(nil, "BORDER")
   navLine:SetPoint("TOPLEFT", nav, "TOPRIGHT")
   navLine:SetPoint("BOTTOMLEFT", nav, "BOTTOMRIGHT")
   navLine:SetWidth(1)
   Paint(function(t)
+    local inset = t.inset or 4
+    nav:ClearAllPoints()
+    nav:SetPoint("TOPLEFT", inset, -HEAD_H)
+    nav:SetPoint("BOTTOMLEFT", inset, inset)
+    nav:SetWidth(NAV_W - inset)
     nav:SetColorTexture(RGB(t.nav))
     navLine:SetColorTexture(RGB(t.border))
   end)
 
   local rows, tab, subTab = {}, nil, nil
 
-  -- Colors every row for the tab and sub-tab shown.
+  -- Places and colors every row for the theme and the tab and sub-tab shown.
   local function DrawNav(t)
+    local inset = t.inset or 4
     for _, r in ipairs(rows) do
+      r:ClearAllPoints()
+      r:SetPoint("TOPLEFT", inset, r.top)
+      r:SetWidth(NAV_W - inset)
       local on = r.tab == tab and r.sub == subTab
       r.bg:SetShown(on)
       r.bar:SetShown(on)
@@ -1391,8 +1410,8 @@ function ns.BuildOptions()
   -- with subKey one of its sub-tabs (smaller and further in).
   local function Row(key, subKey, name)
     local r = CreateFrame("Button", nil, opt)
-    r:SetSize(NAV_W - INSET, subKey and 22 or 28)
-    r:SetPoint("TOPLEFT", INSET, -HEAD_H - 8 - (rows.y or 0))
+    r:SetHeight(subKey and 22 or 28)
+    r.top = -HEAD_H - 8 - (rows.y or 0) -- placed by DrawNav, as the inset depends on the theme
     rows.y = (rows.y or 0) + r:GetHeight()
     r.tab, r.sub = key, subKey
     r.bg = r:CreateTexture(nil, "BACKGROUND", nil, 2)
