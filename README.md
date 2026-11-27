@@ -231,7 +231,7 @@ Adapted from [SCT Mover](https://github.com/dbspringer/sct-mover) by KidMoxie (M
 
 ## Options
 
-**Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
+`/wu` or the minimap icon opens the options in their own window, in or out of combat; type `/wu` or click the icon again, press **Esc** or click the **X** to close it. Drag the window to move it.
 
 **Change Log** at the top right shows what changed in each version (new, changed, removed, fixed); pick a version from the **Version** dropdown or show all. The same list is in `CHANGELOG.md`.
 
@@ -278,7 +278,7 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 | `Bindings.xml` | Key bindings for Use Trinket 1 and 2 |
 | `CombatText.lua` | Moving the game's target and self combat text (from SCT Mover) |
 | `Minimap.lua` | Minimap icon that opens the options |
-| `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
+| `Options.lua` | Options window (including the CDM sub-tabs), slash commands |
 
 ## Glow
 

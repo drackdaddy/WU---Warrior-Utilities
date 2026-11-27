@@ -19,6 +19,10 @@ ns.CHANGELOG = {
     },
     changed = {
       "The mount option is now \"Riding trinket when mounted\".",
+      "The options are now their own window instead of a page in Esc > Options > AddOns, so /wu and the minimap icon open them in combat too. Drag it to move it; /wu, the icon, Esc or the X close it.",
+    },
+    removed = {
+      "The WU page in Esc > Options > AddOns (now its own window).",
     },
     fixed = {
       "After a swap back failed once, the riding trinket could stay on for good, as the addon forgot which trinket it had replaced. It now always remembers the trinket you wear in that slot off the mount.",

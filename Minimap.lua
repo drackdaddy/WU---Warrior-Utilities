@@ -4,7 +4,7 @@ local db = ns.db
 --------------------------------------------------------------------------------
 -- Minimap icon
 -- A round button on the minimap's edge with the addon's icon. Clicking it
--- opens the options page (the same as /wu); right-clicking it unlocks or
+-- opens or closes the options window (the same as /wu); right-clicking it unlocks or
 -- locks the trinket bars for dragging (warriors); dragging it moves it around the
 -- edge, and the spot is saved as an angle. Built from plain textures with the
 -- game's own minimap button art, so it needs no library. Shown on warriors
@@ -70,7 +70,7 @@ function ns.BuildMinimap()
     if mouse == "RightButton" then
       if ns.isWarrior then ns.ToggleTrinketLock() end
     else
-      ns.OpenOptions()
+      ns.ToggleOptions()
     end
   end)
   button:SetScript("OnDragStart", function(self)

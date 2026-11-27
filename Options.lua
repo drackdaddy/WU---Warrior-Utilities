@@ -11,11 +11,12 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- timer), Debuffs (the debuff tracker), Custom (the custom cooldown bar) and
 -- Appearance (the look the cooldown bars share) sub-tabs, and a Trinket tab
 -- (the trinket and gear bars, rotation and mount swap) and a Combat Text tab
--- (moving the game's combat text), shown in Esc > Options >
--- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
--- as a canvas layout category: it parents, sizes, shows and
--- hides the frame, and Escape closes the panel. All rage bar settings are in
--- Edit Mode (see RageBar.lua), so the page only explains them.
+-- (moving the game's combat text). The page is its own window, opened and
+-- closed with /wu or the minimap icon, so it opens in combat too (Blizzard's
+-- Settings panel won't). Drag it to move it; Escape or the X closes it. It is
+-- a plain frame, and settings that would change secure frames in combat wait
+-- for combat to end where they are applied (see Trinkets.lua). All rage bar
+-- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line, and a
 -- Change Log button at the top right (see Changelog.lua).
 -- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
@@ -36,16 +37,42 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder, ctRaised,
 --   ctX, ctY
 --------------------------------------------------------------------------------
-local category
+local WIDTH, HEIGHT = 700, 640
+local opt
 
--- Opens the Settings panel on this addon's page (only built on warriors and
--- druids). Used by /wu and the minimap icon.
-function ns.OpenOptions()
-  if category then Settings.OpenToCategory(category:GetID()) end
+-- Shows the options window, or hides it when shown is false (only built on
+-- warriors and druids). Used by the combat text Move mode.
+function ns.ShowOptions(shown)
+  if opt then opt:SetShown(shown ~= false) end
+end
+
+-- Opens the options window, or closes it if open. Used by /wu and the minimap
+-- icon.
+function ns.ToggleOptions()
+  if opt then opt:SetShown(not opt:IsShown()) end
 end
 
 function ns.BuildOptions()
-  local opt = CreateFrame("Frame")
+  -- Named so Escape can close it (UISpecialFrames holds frame names).
+  opt = CreateFrame("Frame", "WUOptionsFrame", UIParent, "BackdropTemplate")
+  opt:SetSize(WIDTH, HEIGHT)
+  opt:SetPoint("CENTER")
+  opt:SetFrameStrata("HIGH") -- below the color picker and other dialogs it opens
+  opt:SetToplevel(true)
+  opt:SetClampedToScreen(true)
+  opt:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } })
+  opt:SetBackdropColor(0.06, 0.06, 0.06, 0.95)
+  opt:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+  opt:EnableMouse(true)
+  opt:SetMovable(true)
+  opt:RegisterForDrag("LeftButton")
+  opt:SetScript("OnDragStart", opt.StartMoving)
+  opt:SetScript("OnDragStop", opt.StopMovingOrSizing)
+  opt:Hide()
+  tinsert(UISpecialFrames, "WUOptionsFrame")
+  local close = CreateFrame("Button", nil, opt, "UIPanelCloseButton")
+  close:SetPoint("TOPRIGHT", -4, -4)
 
   -- Header
   local title = opt:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -502,7 +529,7 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- General tab, in two columns so it fits the Settings panel: the rage bar on
+  -- General tab, in two columns so it fits the window: the rage bar on
   -- the left; the range display (warriors), slash commands and Discord link on
   -- the right. The link is a read-only edit box because addons can't open URLs
   -- or write to the clipboard; clicking it selects the text for Ctrl+C.
@@ -1184,7 +1211,7 @@ function ns.BuildOptions()
   local logButton = CreateFrame("Button", nil, opt, "UIPanelButtonTemplate")
   logButton:SetSize(100, 22)
   logButton:SetText("Change Log")
-  logButton:SetPoint("TOPRIGHT", -18, -14)
+  logButton:SetPoint("TOPRIGHT", -40, -14)
   logButton:SetScript("OnClick", function() ShowTab("changelog") end)
 
   local shown = "all" -- the version picked in the dropdown
@@ -1243,14 +1270,11 @@ function ns.BuildOptions()
   end)
 
   ShowTab("general")
-
-  category = Settings.RegisterCanvasLayoutCategory(opt, "WU - Warrior Utilities")
-  Settings.RegisterAddOnCategory(category)
 end
 
 --------------------------------------------------------------------------------
 -- Slash commands: /wu (or /wuutil)
---   /wu            open options
+--   /wu            open or close options
 --   /wu 30 60 [90] set marks (the third is optional; 0 = off)
 --   /wu reset
 --   /wu range list | stats | clear   range debug output (warriors, see Range.lua)
@@ -1262,7 +1286,7 @@ SlashCmdList.WU = function(msg)
   msg = strtrim(msg:lower())
   local a, b, c = msg:match("^(%d+)%s+(%d+)%s*(%d*)$")
   if msg == "" then
-    ns.OpenOptions()
+    ns.ToggleOptions()
   elseif ns.isWarrior and msg:match("^range") then
     ns.RangeCommand(strtrim(msg:sub(6)))
   elseif msg == "reset" then
