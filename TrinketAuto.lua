@@ -123,9 +123,11 @@ end
 -- crossing into or out of a sandy zone swaps to the right riding trinket, or
 -- back to mountPrev when there is none for the zone; a trinket put on by hand
 -- is left alone. Off the mount, while a riding trinket is in the slot,
--- mountPrev is put back, tried again until it takes (see Swap). Getting off
--- in combat queues it once instead, so a pick made by hand in that fight
--- isn't overwritten; it is tried again after combat if the queued swap fails.
+-- mountPrev is put back, tried again until it takes (see Swap). In combat it
+-- is queued instead, whenever nothing else waits for the slot: Charging off
+-- the mount leaves it a moment before combat starts, so the first try can be
+-- refused before the queue is used. A pick made by hand in the fight is never
+-- overwritten, and it is tried again after combat if the queued swap fails.
 local function CheckMount()
   local now = IsMounted()
   local changed = now ~= mounted
@@ -144,7 +146,7 @@ local function CheckMount()
   elseif prev ~= 0 and IsRiding(worn) then
     if not UnitAffectingCombat("player") then
       Swap(prev, slot)
-    elseif changed then
+    elseif not ns.IsQueued(slot) then
       ns.Equip(prev, slot)
     end
   end
