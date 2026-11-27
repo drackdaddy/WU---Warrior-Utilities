@@ -208,7 +208,7 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 - **Swap list**: hover a slot to see the items in your bags that fit it (for a trinket, also the one in the other slot); click one to put it on. In combat the game won't change gear, so the pick waits (gold border, with a small icon of the incoming item in the bottom left corner) and goes on when combat ends.
 - **Usable gear bar** (off by default): the same for your other gear with a "Use:" effect, worn or in your bags (engineering helms, cloaks, rings, weapons).
 - **Rotation**: **Alt+click** a trinket in the swap list to add it to that slot's list (or take it off). With **Rotate Trinket 1/2** on, when the trinket you wear is on cooldown, the first ready one on the list goes on; in combat it is queued, shown on the slot, and goes on when combat ends. One with 30 seconds or less left counts as ready, as putting a trinket on starts a 30 second cooldown anyway. A ready trinket stays on until you use it, and one without a "Use:" effect is left alone. Drag icons on the Trinket tab to change the order; **Remove selected** takes one off.
-- **Mount**: with **Riding trinket when mounted** on, your riding trinket goes in the chosen slot when you mount: The Desert Rose in sandy zones (Tanaris and Silithus), otherwise Carrot on a Stick or Riding Crop. Riding into or out of a sandy zone swaps between them, and the trinket it replaced goes back when you get off. Getting off in combat queues the swap back, shown on the slot like a pick made in combat.
+- **Mount**: with **Mount Trinket** on, your riding trinket goes in the chosen slot when you mount: The Desert Rose in sandy zones (Tanaris and Silithus), otherwise Carrot on a Stick or Riding Crop. Riding into or out of a sandy zone swaps between them, and the trinket it replaced goes back when you get off. Getting off in combat queues the swap back, shown on the slot like a pick made in combat. Flight paths don't count: nothing is swapped while you fly.
 - The buttons only use an item when you click them; nothing is ever used or cast for you. In Edit Mode, **WU Trinket Bar** and **WU Gear Bar** each have **Icon Size**, **Only Show in Combat** and **Vertical** (a column instead of a row; the swap list then opens beside the slot).
 - **Moving**: in Edit Mode, or **right-click the minimap icon** to unlock the bars (they turn blue) and drag them; right-click again to lock. Out of combat only; combat starting locks them. The spot is saved for your current Edit Mode layout.
 
@@ -219,7 +219,7 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 | Show tooltips | Item tooltips on the trinket and gear bars and the swap list (default on) |
 | Show usable gear bar | (default off) |
 | Bar border | Around both bars: None, Thin line, Dark panel, Tooltip, Gold (default None) |
-| Riding trinket when mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
+| Mount Trinket | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
 | Rotate Trinket 1, Rotate Trinket 2 | (default off) |
 
 ## Combat text (warriors only)
@@ -232,7 +232,7 @@ Adapted from [SCT Mover](https://github.com/dbspringer/sct-mover) by KidMoxie (M
 
 ## Options
 
-`/wu` or the minimap icon opens the options in their own window, in or out of combat; type `/wu` or click the icon again, press **Esc** or click the **X** to close it. Drag the window to move it. The sidebar on the left picks a tab, with its sub-tabs listed under it. **Colors** under **Options window** on the General tab sets the window's theme: Standard (the game's own menu look: dialog frame, gold headings, white text), Arms, Fury (default) or Protection.
+`/wu` or the minimap icon opens the options in their own window, in or out of combat; type `/wu` or click the icon again, press **Esc** or click the **X** to close it. Drag the window to move it. The sidebar on the left picks a tab, with its sub-tabs listed under it. **Colors** under **Options window** on the General tab sets the window's theme: Standard (default; the game's own menu look: dialog frame, gold headings, white text), Arms, Fury or Protection.
 
 **Change Log** at the top right shows what changed in each version (new, changed, removed, fixed); pick a version from the **Version** dropdown or show all. The same list is in `CHANGELOG.md`.
 
@@ -254,8 +254,6 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 | `/wu range stats` | Warriors: the estimate's measured error at each step crossing, against the middle of the step |
 | `/wu range clear` | Warriors: clears those stats |
 | `/wu reset` | Reset all settings (including the Battle Shout timer, debuff tracker and cooldown bar settings) and bar, range display, debuff tracker and cooldown bar positions in every layout to default |
-
-`/wuutil` is an alias.
 
 ## Files
 

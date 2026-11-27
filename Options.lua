@@ -15,8 +15,8 @@ local db = ns.db
 -- Settings panel won't). Drag it to move it; Escape or the X closes it. A
 -- sidebar on the left picks the tab, with each tab's sub-tabs listed under it.
 -- The window's colors are one of four themes, picked on the General tab
--- (Options window > Colors): Standard (the game's own menu look), Arms, Fury
--- or Protection. It is
+-- (Options window > Colors): Standard (the game's own menu look, default),
+-- Arms, Fury or Protection. It is
 -- a plain frame, and settings that would change secure frames in combat wait
 -- for combat to end where they are applied (see Trinkets.lua). All rage bar
 -- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
@@ -660,7 +660,6 @@ function ns.BuildOptions()
   Command("/wu 30 60 90", "Set the marks (0 = off)")
   Command("/wu reset", "Reset all settings")
   if ns.isWarrior then Command("/wu range", "Range debug commands") end
-  Command("/wuutil", "Same as /wu")
 
   Heading("Bugs, features and questions")
   Text("Join the WU Discord:")
@@ -1175,7 +1174,7 @@ function ns.BuildOptions()
 
     Heading("Mount")
     Text("Carrot on a Stick or Riding Crop, or The Desert Rose in Tanaris and Silithus.")
-    OnOff("Riding trinket when mounted", "mountSwapOff", ns.RefreshTrinkets)
+    OnOff("Mount Trinket", "mountSwapOff", ns.RefreshTrinkets)
     Choice("Put it in", "mountSlot", ns.RefreshTrinkets, function() return db.mountSwapOff end)
 
     Begin(right)
@@ -1446,14 +1445,14 @@ function ns.BuildOptions()
 end
 
 --------------------------------------------------------------------------------
--- Slash commands: /wu (or /wuutil)
+-- Slash commands: /wu
 --   /wu            open or close options
 --   /wu 30 60 [90] set marks (the third is optional; 0 = off)
 --   /wu reset
 --   /wu range list | stats | clear   range debug output (warriors, see Range.lua)
--- SLASH_WU1, SLASH_WU2 and SlashCmdList.WU are globals the game requires.
+-- SLASH_WU1 and SlashCmdList.WU are globals the game requires.
 --------------------------------------------------------------------------------
-SLASH_WU1, SLASH_WU2 = "/wu", "/wuutil"
+SLASH_WU1 = "/wu"
 SlashCmdList.WU = function(msg)
   if not ns.built then return end -- not a warrior or druid
   msg = strtrim(msg:lower())

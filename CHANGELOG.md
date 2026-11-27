@@ -2,6 +2,18 @@
 
 Changes in each version of WU - Warrior Utilities, newest first. The same list is in game: **Change Log** at the top right of the options page (`/wu`).
 
+## 3.12.1 (2026-11-27)
+
+### Changed
+- The options window now uses the Standard theme by default (new installs and after /wu reset; pick it under Options window > Colors to switch now).
+- The mount option is now "Mount Trinket".
+
+### Removed
+- The /wuutil command (use /wu).
+
+### Fixed
+- Taking a flight path put on your riding trinket. Flight paths no longer count as mounting.
+
 ## 3.12.0 (2026-11-27)
 
 ### Added

@@ -19,6 +19,8 @@ local db = ns.db
 --                have no riding trinket for that zone). On getting off, the
 --                one it replaced goes back. Until it is back, the rotation
 --                leaves that trinket in the bags so it is there to go back.
+--                A flight path doesn't count as mounting: nothing is swapped
+--                while you fly one.
 -- The game won't change gear in combat, and both only put items on: nothing
 -- ever uses an item or casts for the player. In combat both queue their swap
 -- instead (see ns.Equip): the slot shows it waiting and it goes on when combat
@@ -135,7 +137,10 @@ end
 -- the mount leaves it a moment before combat starts, so the first try can be
 -- refused before the queue is used. A pick made by hand in the fight is never
 -- overwritten, and it is tried again after combat if the queued swap fails.
+-- On a flight path IsMounted() is true, so the check waits until you land,
+-- leaving the mounted state as it was before the flight.
 local function CheckMount()
+  if UnitOnTaxi("player") then return end
   local now = IsMounted()
   local changed = now ~= mounted
   mounted = now
