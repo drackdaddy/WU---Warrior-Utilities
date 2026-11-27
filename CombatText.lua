@@ -147,7 +147,7 @@ function ns.MoveSelfText()
     marker:SetClampRectInsets(0, 0, 0, -(4 + done:GetHeight())) -- keeps Done on screen
     done:SetScript("OnClick", function()
       StopMoving()
-      ns.OpenOptions()
+      ns.ShowOptions()
     end)
     -- Sample text rising and fading like Blizzard's (225 reference units in
     -- 1.9 seconds).
@@ -171,7 +171,7 @@ function ns.MoveSelfText()
     fade:SetDuration(1.9 * 0.3)
     marker.holder = holder
   end
-  HideUIPanel(SettingsPanel)
+  ns.ShowOptions(false)
   PlaceMarker()
   local _, sy = Scales()
   sample.rise:SetOffset(0, 225 * sy)

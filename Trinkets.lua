@@ -15,7 +15,8 @@ local db, LEM = ns.db, ns.LibEditMode
 --                Click one to put it on; Alt+click a trinket to add it to or
 --                take it off that slot's rotation (see TrinketAuto.lua).
 --   combat queue the game won't change gear in combat, so a pick made then
---                waits (gold border) and goes on when combat ends.
+--                waits (gold border, with a small icon of the waiting item in
+--                the bottom left corner) and goes on when combat ends.
 -- The slot buttons are secure action buttons ("/use <slot>"): one click uses
 -- the item once, and nothing ever uses one by itself. Secure buttons can't be
 -- shown, hidden, moved or changed in combat, so the bars are laid out out of
@@ -28,8 +29,8 @@ local db, LEM = ns.db, ns.LibEditMode
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_ENABLED, PLAYER_EQUIPMENT_CHANGED,
 --   BAG_UPDATE_DELAYED, BAG_UPDATE_COOLDOWN, UPDATE_BINDINGS,
 --   GET_ITEM_INFO_RECEIVED
--- SavedVariables: trinketOff, trinketMenuOff, trinketLayouts, trinketSize,
---   trinketCombatOnly, gearOff, gearLayouts, gearSize, gearCombatOnly,
+-- SavedVariables: trinketOff, trinketMenuOff, trinketTipOff, trinketLayouts, trinketSize,
+--   trinketCombatOnly, trinketVertical, gearOff, gearLayouts, gearSize, gearCombatOnly, gearVertical,
 --   trinketBorder
 --------------------------------------------------------------------------------
 local GEAR_SLOTS = { 1, 2, 3, 15, 5, 9, 10, 6, 7, 8, 11, 12, 16, 17, 18 } -- character sheet order
@@ -148,6 +149,11 @@ local function Choices(slot)
   return list
 end
 
+-- The item whose swap into slot waits for combat to end, or nil.
+function ns.QueuedItem(slot)
+  return queued[slot]
+end
+
 -- Equips whatever is waiting for combat to end; used when it ends.
 local function Flush()
   for slot, id in pairs(queued) do ns.Equip(id, slot) end
@@ -187,7 +193,8 @@ local function ShowMenu(b)
         end
       end)
       m:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        if db.trinketTipOff then return end
+        GameTooltip_SetDefaultAnchor(GameTooltip, self) -- the game's usual spot, clear of the list
         GameTooltip:SetItemByID(self.id)
         if menu.slot == 13 or menu.slot == 14 then
           GameTooltip:AddLine("Alt+click: add to or take off this slot's rotation.", 0.8, 0.8, 0.8, true)
@@ -209,8 +216,13 @@ local function ShowMenu(b)
   for i = #list + 1, #menu.items do menu.items[i]:Hide() end
   local cols, rows = math.min(#list, MENU_COLS), math.ceil(#list / MENU_COLS)
   menu:SetSize(8 + cols * size + (cols - 1) * GAP, 8 + rows * size + (rows - 1) * GAP)
+  -- Above the slot on a row, beside it on a column, so it never covers the bar.
   menu:ClearAllPoints()
-  menu:SetPoint("BOTTOMLEFT", b, "TOPLEFT", -4, 2)
+  if db[b.bar.key .. "Vertical"] then
+    menu:SetPoint("TOPLEFT", b, "TOPRIGHT", 2, 4)
+  else
+    menu:SetPoint("BOTTOMLEFT", b, "TOPLEFT", -4, 2)
+  end
   menu.slot, menu.owner = b.slot, b
   menu:Show()
 end
@@ -220,14 +232,15 @@ end
 --------------------------------------------------------------------------------
 
 -- Secure button that uses the item in slot on a left click or its key, with
--- its icon, cooldown, key and a gold border while a swap waits for combat.
+-- its icon, cooldown, key and, while a swap waits for combat, a gold border
+-- with the waiting item's icon in the bottom left corner.
 -- Hovering it opens the swap list. Named, so a key can be bound to it.
 local function SlotButton(bar, slot)
   local b = CreateFrame("Button", "WUSlot" .. slot, bar.holder, "SecureActionButtonTemplate")
   b:RegisterForClicks("AnyUp", "AnyDown")
   b:SetAttribute("*type1", "macro")
   b:SetAttribute("*macrotext1", "/use " .. slot)
-  b.slot = slot
+  b.slot, b.bar = slot, bar
   b.icon = b:CreateTexture(nil, "ARTWORK")
   b.icon:SetAllPoints()
   b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -242,11 +255,17 @@ local function SlotButton(bar, slot)
   b.queued:SetBackdrop({ edgeFile = WHITE, edgeSize = 2 })
   b.queued:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
   b.queued:SetFrameLevel(b.cd:GetFrameLevel() + 2)
+  b.queued.icon = b.queued:CreateTexture(nil, "OVERLAY")
+  b.queued.icon:SetPoint("BOTTOMLEFT", 3, 3)
+  b.queued.icon:SetPoint("TOPRIGHT", b, "CENTER")
+  b.queued.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
   b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
   b:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetInventoryItem("player", self.slot)
-    GameTooltip:Show()
+    if not db.trinketTipOff then
+      GameTooltip_SetDefaultAnchor(GameTooltip, self) -- the game's usual spot, clear of the swap list
+      GameTooltip:SetInventoryItem("player", self.slot)
+      GameTooltip:Show()
+    end
     ShowMenu(self)
   end)
   b:SetScript("OnLeave", GameTooltip_Hide)
@@ -278,7 +297,8 @@ local function BarSlots(bar)
   return slots
 end
 
--- Lays out bar's buttons and sets when it shows. Secure frames can't change
+-- Lays out bar's buttons in a row, or a column when the bar is set to
+-- Vertical in Edit Mode, and sets when it shows. Secure frames can't change
 -- in combat, so then it waits for combat to end. In Edit Mode it always
 -- shows (faded when off) so it can be placed.
 local function Layout(bar)
@@ -286,17 +306,26 @@ local function Layout(bar)
     layoutWaiting = true
     return
   end
-  local size, slots = db[bar.key .. "Size"], BarSlots(bar)
+  local size, slots, vertical = db[bar.key .. "Size"], BarSlots(bar), db[bar.key .. "Vertical"]
   for _, b in pairs(bar.buttons) do b:Hide() end
   for i, slot in ipairs(slots) do
     local b = bar.buttons[slot] or SlotButton(bar, slot)
     b:SetSize(size, size)
     b:ClearAllPoints()
-    b:SetPoint("LEFT", (i - 1) * (size + GAP), 0)
+    if vertical then
+      b:SetPoint("TOP", 0, -(i - 1) * (size + GAP))
+    else
+      b:SetPoint("LEFT", (i - 1) * (size + GAP), 0)
+    end
     b:Show()
   end
   local n = math.max(#slots, 1)
-  bar.holder:SetSize(n * size + (n - 1) * GAP, size)
+  local long = n * size + (n - 1) * GAP
+  if vertical then
+    bar.holder:SetSize(size, long)
+  else
+    bar.holder:SetSize(long, size)
+  end
   local off, edit = db[bar.key .. "Off"], LEM:IsInEditMode()
   UnregisterStateDriver(bar.holder, "visibility")
   if edit or not off and not db[bar.key .. "CombatOnly"] then
@@ -310,7 +339,7 @@ local function Layout(bar)
 end
 
 -- Redraws every shown button: icon (empty slots greyed), cooldown, bound key
--- and whether a swap waits. Doesn't touch secure attributes or layout.
+-- and the item whose swap waits, if any. Doesn't touch secure attributes or layout.
 Refresh = function()
   for _, bar in ipairs(bars) do
     for slot, b in pairs(bar.buttons) do
@@ -320,6 +349,7 @@ Refresh = function()
       b.cd:SetCooldown(start, duration)
       b.key:SetText(GetBindingText(GetBindingKey("CLICK WUSlot" .. slot .. ":LeftButton") or "", true))
       b.queued:SetShown(queued[slot] ~= nil)
+      if queued[slot] then b.queued.icon:SetTexture(C_Item.GetItemIconByID(queued[slot])) end
     end
   end
 end
@@ -441,6 +471,7 @@ function ns.BuildTrinkets()
       info.name, {
         Option(T.Slider, "Icon Size", info.key .. "Size", Apply, nil, { minValue = 24, maxValue = 64, valueStep = 2 }),
         Option(T.Checkbox, "Only Show in Combat", info.key .. "CombatOnly", Apply),
+        Option(T.Checkbox, "Vertical", info.key .. "Vertical", Apply),
       }, Apply)
     bars[#bars + 1] = bar
   end

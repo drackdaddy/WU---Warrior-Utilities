@@ -35,6 +35,7 @@ local LEM = ns.LibEditMode
 --------------------------------------------------------------------------------
 local defaults = {
   minimapOff = false, minimapAngle = 225, -- minimap icon; angle in degrees, counterclockwise from the right
+  optTheme = "fury", -- options window colors (see Options.lua)
   barOff = false, marksOff = false, mark1 = 30, mark2 = 60, mark3 = 0, hideTicks = false, -- mark 0 = off
   layouts = {}, -- rage bar position per Edit Mode layout name: { point, x, y }
   combatOnly = false, scale = 100,
@@ -76,11 +77,11 @@ local defaults = {
   customLayouts = {}, customSize = 36, customCombatOnly = false, -- custom bar position, icon size
   glowStyle = "pulse", glowSpeed = "medium", glowSize = 2, glowOocOff = false, -- cooldown icon look
   glowColor = { r = 1, g = 0.82, b = 0.2, a = 1 }, cdLook = "normal",
-  trinketOff = false, trinketMenuOff = false, trinketLayouts = {}, trinketSize = 36, trinketCombatOnly = false,
+  trinketOff = false, trinketMenuOff = false, trinketTipOff = false, trinketLayouts = {}, trinketSize = 36, trinketCombatOnly = false, trinketVertical = false,
   trinketBorder = "none", -- border around the trinket and gear bars
-  gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, -- usable gear bar, off by default
+  gearOff = true, gearLayouts = {}, gearSize = 32, gearCombatOnly = false, gearVertical = false, -- usable gear bar, off by default
   trinketQueue = { [13] = {}, [14] = {} }, rotate13Off = true, rotate14Off = true, -- rotation (item IDs by slot)
-  mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket the riding one replaced
+  mountSwapOff = true, mountSlot = 14, mountPrev = 0, -- mount swap; mountPrev: trinket that belongs in the mount slot
   ctRaised = false, ctX = 0, ctY = 0, -- self text: above other UI, offset in Blizzard's reference units
 }
 
@@ -113,6 +114,7 @@ ns.LISTS.trinketBorder = {
   { "none", "None" }, { "thin", "Thin line" }, { "panel", "Dark panel" }, { "tooltip", "Tooltip" }, { "gold", "Gold" },
 }
 ns.LISTS.mountSlot = { { 13, "Trinket 1" }, { 14, "Trinket 2" } }
+ns.LISTS.optTheme = { { "std", "Standard" }, { "arms", "Arms" }, { "fury", "Fury" }, { "prot", "Protection" } }
 ns.LISTS.cdLook = { { "normal", "Normal" }, { "grey", "Greyed out" }, { "faded", "Faded" }, { "hidden", "Hidden" } }
 ns.LISTS.debuffTextPos = { { "middle", "Middle" }, { "above", "Above the icon" }, { "below", "Below the icon" } }
 

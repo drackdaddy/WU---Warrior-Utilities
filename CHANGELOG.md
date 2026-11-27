@@ -2,6 +2,31 @@
 
 Changes in each version of WU - Warrior Utilities, newest first. The same list is in game: **Change Log** at the top right of the options page (`/wu`).
 
+## 3.11.1 (2026-11-25)
+
+### Added
+- Vertical in Edit Mode for WU Trinket Bar and WU Gear Bar: shows the bar as a column instead of a row, with the swap list opening beside the slot.
+- Show tooltips on the Trinket tab turns off the item tooltips on the trinket and gear bars and the swap list.
+- The options window has a new look: a sidebar on the left lists every tab with its sub-tabs under it, and it comes in four themes, Standard (the game's own menu look), Arms (leather and bronze), Fury (blackened steel and blood red) and Protection (cold iron and blue), picked under Options window > Colors on the General tab.
+- The trinket rotation now works in combat too: when your trinket goes on cooldown in a fight, the next one on the list is queued and shown on the slot (gold border and icon), and goes on when combat ends.
+- Getting off your mount in combat now queues the swap back like a pick made in combat: the slot shows the gold border and your trinket's icon, and it goes on when combat ends.
+- A swap waiting for combat to end now shows a small icon of the incoming item in the bottom left corner of the slot, along with the gold border.
+- The Desert Rose as a riding trinket: it goes on when you mount in a sandy zone (Tanaris and Silithus), with Carrot on a Stick or Riding Crop elsewhere, and swaps as you ride in or out.
+
+### Changed
+- The mount option is now "Riding trinket when mounted".
+- The options are now their own window instead of a page in Esc > Options > AddOns, so /wu and the minimap icon open them in combat too. Drag it to move it; /wu, the icon, Esc or the X close it.
+
+### Removed
+- The WU page in Esc > Options > AddOns (now its own window).
+
+### Fixed
+- After a swap back failed once, the riding trinket could stay on for good, as the addon forgot which trinket it had replaced. It now always remembers the trinket you wear in that slot off the mount.
+- Mining, crafting or any other cast that took you off your mount made the swap back fail. It now waits until the cast and any loot window are done, then swaps at once.
+- Getting off your mount in combat could fill the screen with "You can't do that right now" (the swap back was tried twice a second while you looted or swung) and sometimes left the riding trinket in the other slot, as the rotation took your own trinket first. The swap back now tries every 3 seconds, and the rotation leaves your trinket alone until it is back on.
+- The trinket and gear bar tooltips, and the swap list's, now show in the game's usual tooltip spot instead of over the swap list.
+- Getting off your mount didn't always put back the trinket the riding trinket replaced. It now keeps trying until the trinket is back, and the trinket rotation no longer takes that trinket while you ride.
+
 ## 3.11.0 (2026-11-25)
 
 ### Added

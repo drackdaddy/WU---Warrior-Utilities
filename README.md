@@ -205,20 +205,21 @@ A bar for any cooldowns you want to watch, such as trinkets. Set it up on the **
 Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/forever-trinket-menu) by sk0lu (MIT). Set it up on the **Trinket** tab of the options page (`/wu`).
 
 - **Trinket bar**: your two trinkets. Click one, or its key (**Esc > Key Bindings > WU - Warrior Utilities**: Use Trinket 1 and 2), to use it. Each shows its cooldown and key.
-- **Swap list**: hover a slot to see the items in your bags that fit it (for a trinket, also the one in the other slot); click one to put it on. In combat the game won't change gear, so the pick waits (gold border) and goes on when combat ends.
+- **Swap list**: hover a slot to see the items in your bags that fit it (for a trinket, also the one in the other slot); click one to put it on. In combat the game won't change gear, so the pick waits (gold border, with a small icon of the incoming item in the bottom left corner) and goes on when combat ends.
 - **Usable gear bar** (off by default): the same for your other gear with a "Use:" effect, worn or in your bags (engineering helms, cloaks, rings, weapons).
-- **Rotation**: **Alt+click** a trinket in the swap list to add it to that slot's list (or take it off). With **Rotate Trinket 1/2** on, when the trinket you wear is on cooldown, the first ready one on the list goes on (out of combat). One with 30 seconds or less left counts as ready, as putting a trinket on starts a 30 second cooldown anyway. A ready trinket stays on until you use it, and one without a "Use:" effect is left alone. Drag icons on the Trinket tab to change the order; **Remove selected** takes one off.
-- **Mount**: with **Carrot or Riding Crop when mounted** on, Carrot on a Stick or Riding Crop goes in the chosen slot when you mount, and the trinket it replaced goes back when you get off.
-- The buttons only use an item when you click them; nothing is ever used or cast for you. In Edit Mode, **WU Trinket Bar** and **WU Gear Bar** each have **Icon Size** and **Only Show in Combat**.
+- **Rotation**: **Alt+click** a trinket in the swap list to add it to that slot's list (or take it off). With **Rotate Trinket 1/2** on, when the trinket you wear is on cooldown, the first ready one on the list goes on; in combat it is queued, shown on the slot, and goes on when combat ends. One with 30 seconds or less left counts as ready, as putting a trinket on starts a 30 second cooldown anyway. A ready trinket stays on until you use it, and one without a "Use:" effect is left alone. Drag icons on the Trinket tab to change the order; **Remove selected** takes one off.
+- **Mount**: with **Riding trinket when mounted** on, your riding trinket goes in the chosen slot when you mount: The Desert Rose in sandy zones (Tanaris and Silithus), otherwise Carrot on a Stick or Riding Crop. Riding into or out of a sandy zone swaps between them, and the trinket it replaced goes back when you get off. Getting off in combat queues the swap back, shown on the slot like a pick made in combat.
+- The buttons only use an item when you click them; nothing is ever used or cast for you. In Edit Mode, **WU Trinket Bar** and **WU Gear Bar** each have **Icon Size**, **Only Show in Combat** and **Vertical** (a column instead of a row; the swap list then opens beside the slot).
 - **Moving**: in Edit Mode, or **right-click the minimap icon** to unlock the bars (they turn blue) and drag them; right-click again to lock. Out of combat only; combat starting locks them. The spot is saved for your current Edit Mode layout.
 
 | Setting | Notes |
 | --- | --- |
 | Show trinket bar | (default on) |
 | Show the list on hover | The swap list (default on) |
+| Show tooltips | Item tooltips on the trinket and gear bars and the swap list (default on) |
 | Show usable gear bar | (default off) |
 | Bar border | Around both bars: None, Thin line, Dark panel, Tooltip, Gold (default None) |
-| Carrot or Riding Crop when mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
+| Riding trinket when mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |
 | Rotate Trinket 1, Rotate Trinket 2 | (default off) |
 
 ## Combat text (warriors only)
@@ -231,7 +232,7 @@ Adapted from [SCT Mover](https://github.com/dbspringer/sct-mover) by KidMoxie (M
 
 ## Options
 
-**Esc > Options > AddOns > WU - Warrior Utilities**. `/wu` or the minimap icon opens the same page.
+`/wu` or the minimap icon opens the options in their own window, in or out of combat; type `/wu` or click the icon again, press **Esc** or click the **X** to close it. Drag the window to move it. The sidebar on the left picks a tab, with its sub-tabs listed under it. **Colors** under **Options window** on the General tab sets the window's theme: Standard (the game's own menu look: dialog frame, gold headings, white text), Arms, Fury (default) or Protection.
 
 **Change Log** at the top right shows what changed in each version (new, changed, removed, fixed); pick a version from the **Version** dropdown or show all. The same list is in `CHANGELOG.md`.
 
@@ -278,7 +279,7 @@ The minimap icon opens the options when clicked; on warriors, right-clicking it 
 | `Bindings.xml` | Key bindings for Use Trinket 1 and 2 |
 | `CombatText.lua` | Moving the game's target and self combat text (from SCT Mover) |
 | `Minimap.lua` | Minimap icon that opens the options |
-| `Options.lua` | Options page in Esc > Options > AddOns (including the CDM sub-tabs), slash commands |
+| `Options.lua` | Options window (including the CDM sub-tabs), slash commands |
 
 ## Glow
 

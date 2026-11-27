@@ -1,6 +1,5 @@
 local addonName, ns = ...
 local db = ns.db
-local GOLD = { 0.90, 0.80, 0.50 }
 
 --------------------------------------------------------------------------------
 -- Options page
@@ -11,14 +10,19 @@ local GOLD = { 0.90, 0.80, 0.50 }
 -- timer), Debuffs (the debuff tracker), Custom (the custom cooldown bar) and
 -- Appearance (the look the cooldown bars share) sub-tabs, and a Trinket tab
 -- (the trinket and gear bars, rotation and mount swap) and a Combat Text tab
--- (moving the game's combat text), shown in Esc > Options >
--- AddOns > WU - Warrior Utilities. Blizzard's Settings panel hosts the page
--- as a canvas layout category: it parents, sizes, shows and
--- hides the frame, and Escape closes the panel. All rage bar settings are in
--- Edit Mode (see RageBar.lua), so the page only explains them.
+-- (moving the game's combat text). The page is its own window, opened and
+-- closed with /wu or the minimap icon, so it opens in combat too (Blizzard's
+-- Settings panel won't). Drag it to move it; Escape or the X closes it. A
+-- sidebar on the left picks the tab, with each tab's sub-tabs listed under it.
+-- The window's colors are one of four themes, picked on the General tab
+-- (Options window > Colors): Standard (the game's own menu look), Arms, Fury
+-- or Protection. It is
+-- a plain frame, and settings that would change secure frames in combat wait
+-- for combat to end where they are applied (see Trinkets.lua). All rage bar
+-- settings are in Edit Mode (see RageBar.lua), so the page only explains them.
 -- The header shows the addon version from the TOC's ## Version line, and a
 -- Change Log button at the top right (see Changelog.lua).
--- SavedVariables: minimapOff, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
+-- SavedVariables: minimapOff, optTheme, shoutOff, shoutTextOff, shoutFlashOff, shoutWarnOff,
 --   shoutWarnSize, shoutColor, debuffOff, sunderOff, demoOff, debuffFont,
 --   debuffTextColor, debuffTextPos, sunderAlertOff,
 --   demoAlertOff, shoutAlertOff, sunderAlertSec, demoAlertSec, shoutAlertSec,
@@ -32,75 +36,166 @@ local GOLD = { 0.90, 0.80, 0.50 }
 --   battleCdOff, defensiveCdOff, berserkerCdOff, battleAlertOff,
 --   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow,
 --   customOff, customList, glowStyle, glowColor, glowSpeed, glowSize,
---   glowOocOff, cdLook, trinketOff, trinketMenuOff, gearOff, trinketQueue,
+--   glowOocOff, cdLook, trinketOff, trinketMenuOff, trinketTipOff, gearOff, trinketQueue,
 --   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder, ctRaised,
 --   ctX, ctY
 --------------------------------------------------------------------------------
-local category
+local WIDTH, HEIGHT, NAV_W, HEAD_H = 840, 640, 150, 40
+local WHITE = "Interface\\Buttons\\WHITE8X8"
+-- Window colors per theme (db.optTheme, see ns.LISTS.optTheme in Core.lua),
+-- as RRGGBB: window, header and sidebar backgrounds, the border and rule
+-- lines, the selected sidebar row, body text, muted text and the accent
+-- (headings, bullets, the selected row's bar). The window's edge and
+-- background textures, and how far inside the edge the header and sidebar
+-- start (inset), are the rounded tooltip border on a flat color unless a
+-- theme sets its own: Standard uses the game's dialog box frame, as its
+-- menus do, with gold headings and white text.
+local THEMES = {
+  std = { panel = "ffffff", header = "141414", nav = "0a0a0a", border = "5a4a2a", active = "3a3118",
+    text = "ffffff", muted = "a0a0a0", accent = "ffd100",
+    edge = "Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize = 32, inset = 11,
+    bg = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark" },
+  arms = { panel = "16120f", header = "1d1814", nav = "100d0b", border = "3a3028", active = "262019",
+    text = "e4dbd0", muted = "ada093", accent = "d08a2e" },
+  fury = { panel = "121010", header = "1a1616", nav = "0d0b0b", border = "362a2a", active = "241c1c",
+    text = "e6dcdc", muted = "ab9c9c", accent = "d8382a" },
+  prot = { panel = "10141a", header = "161b23", nav = "0c1015", border = "2a3340", active = "1b2330",
+    text = "dbe2ea", muted = "9eabba", accent = "4a8fe0" },
+}
+local opt
+local paints = {} -- functions that color one part of the window from the theme
 
--- Opens the Settings panel on this addon's page (only built on warriors and
--- druids). Used by /wu and the minimap icon.
-function ns.OpenOptions()
-  if category then Settings.OpenToCategory(category:GetID()) end
+-- The current theme's colors.
+local function Theme()
+  return THEMES[db.optTheme]
+end
+
+-- r, g, b (0 to 1) and alpha a (1 when nil) from an RRGGBB string.
+local function RGB(hex, a)
+  return tonumber(hex:sub(1, 2), 16) / 255, tonumber(hex:sub(3, 4), 16) / 255, tonumber(hex:sub(5, 6), 16) / 255, a or 1
+end
+
+-- Colors part of the window with fn(theme) now, and again on every theme change.
+local function Paint(fn)
+  paints[#paints + 1] = fn
+  fn(Theme())
+end
+
+-- Recolors the whole window from the current theme. Used by Colors
+-- and when the window opens (after /wu reset).
+local function Repaint()
+  local t = Theme()
+  for _, fn in ipairs(paints) do fn(t) end
+end
+
+-- Shows the options window, or hides it when shown is false (only built on
+-- warriors and druids). Used by the combat text Move mode.
+function ns.ShowOptions(shown)
+  if opt then opt:SetShown(shown ~= false) end
+end
+
+-- Opens the options window, or closes it if open. Used by /wu and the minimap
+-- icon.
+function ns.ToggleOptions()
+  if opt then opt:SetShown(not opt:IsShown()) end
 end
 
 function ns.BuildOptions()
-  local opt = CreateFrame("Frame")
+  -- Named so Escape can close it (UISpecialFrames holds frame names).
+  opt = CreateFrame("Frame", "WUOptionsFrame", UIParent, "BackdropTemplate")
+  opt:SetSize(WIDTH, HEIGHT)
+  opt:SetPoint("CENTER")
+  opt:SetFrameStrata("HIGH") -- below the color picker and other dialogs it opens
+  opt:SetToplevel(true)
+  opt:SetClampedToScreen(true)
+  -- The tooltip border gives the window rounded corners; it is tinted with
+  -- the theme's muted color at half strength for a soft edge. A theme with
+  -- its own frame (Standard) shows its textures in their own colors.
+  Paint(function(t)
+    local inset = t.inset or 4
+    opt:SetBackdrop({ bgFile = t.bg or WHITE, tile = t.bg ~= nil, tileSize = 32,
+      edgeFile = t.edge or "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = t.edgeSize or 16,
+      insets = { left = inset, right = inset, top = inset, bottom = inset } })
+    opt:SetBackdropColor(RGB(t.panel))
+    if t.edge then opt:SetBackdropBorderColor(1, 1, 1) else opt:SetBackdropBorderColor(RGB(t.muted, 0.5)) end
+  end)
+  opt:EnableMouse(true)
+  opt:SetMovable(true)
+  opt:RegisterForDrag("LeftButton")
+  opt:SetScript("OnDragStart", opt.StartMoving)
+  opt:SetScript("OnDragStop", opt.StopMovingOrSizing)
+  opt:Hide()
+  opt:SetScript("OnShow", Repaint)
+  tinsert(UISpecialFrames, "WUOptionsFrame")
+  local close = CreateFrame("Button", nil, opt, "UIPanelCloseButton")
+  close:SetPoint("TOPRIGHT", -2, -4)
 
-  -- Header
+  -- Header: a band across the top with the addon's logo in a circle ringed in
+  -- the accent color, the name and the version (read from the TOC so it is
+  -- only ever set in one place).
+  local head = opt:CreateTexture(nil, "BACKGROUND", nil, 1)
+  local headLine = opt:CreateTexture(nil, "BORDER")
+  headLine:SetPoint("TOPLEFT", head, "BOTTOMLEFT")
+  headLine:SetPoint("TOPRIGHT", head, "BOTTOMRIGHT")
+  headLine:SetHeight(1)
+  -- Returns a texture size px across on opt, cut to a circle by a mask.
+  local function Circle(size, layer)
+    local tex = opt:CreateTexture(nil, layer)
+    tex:SetSize(size, size)
+    local mask = opt:CreateMaskTexture()
+    mask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetAllPoints(tex)
+    tex:AddMaskTexture(mask)
+    return tex
+  end
+  local mark = Circle(30, "ARTWORK")
+  mark:SetPoint("LEFT", head, "LEFT", 12, 0)
+  local logo = Circle(26, "OVERLAY")
+  logo:SetPoint("CENTER", mark)
+  logo:SetTexture("Interface\\AddOns\\" .. addonName .. "\\icon")
   local title = opt:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  title:SetPoint("TOPLEFT", 18, -14)
-  title:SetText("WU - Warrior Utilities")
-  title:SetTextColor(unpack(GOLD))
-  -- Read from the TOC so the version is only ever set in one place.
-  local version = opt:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-  version:SetPoint("LEFT", title, "RIGHT", 8, -1)
+  title:SetPoint("LEFT", mark, "RIGHT", 8, 0)
+  title:SetTextColor(1, 1, 1)
+  title:SetText("WU")
+  local subtitle = opt:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+  subtitle:SetPoint("LEFT", title, "RIGHT", 8, 0)
+  subtitle:SetText("Warrior Utilities")
+  local version = opt:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+  version:SetPoint("LEFT", subtitle, "RIGHT", 10, 0)
   version:SetText("v" .. C_AddOns.GetAddOnMetadata(addonName, "Version"))
-  local line = opt:CreateTexture(nil, "ARTWORK")
-  line:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.55)
-  line:SetHeight(1)
-  line:SetPoint("TOPLEFT", 16, -48)
-  line:SetPoint("TOPRIGHT", -16, -48)
+  Paint(function(t)
+    local inset = t.inset or 4
+    head:ClearAllPoints()
+    head:SetPoint("TOPLEFT", inset, -inset)
+    head:SetPoint("TOPRIGHT", -inset, -inset)
+    head:SetHeight(HEAD_H - inset)
+    head:SetColorTexture(RGB(t.header))
+    headLine:SetColorTexture(RGB(t.border))
+    mark:SetColorTexture(RGB(t.accent))
+    subtitle:SetTextColor(RGB(t.muted))
+    version:SetTextColor(RGB(t.muted))
+  end)
 
   ------------------------------------------------------------------------------
   -- Tabs
   ------------------------------------------------------------------------------
-  -- Builds a row of tabs on parent from list ({ key, name } each): buttons w
-  -- px wide from (x, y), each with a page from (x, pageY) to (right, bottom)
-  -- off parent's bottom right. Returns the pages by key and a function that
-  -- shows one of them. A page added to pages afterwards has no tab button
-  -- (the change log); showing it leaves every tab unselected.
-  local function Tabs(parent, list, x, y, w, pageY, right, bottom)
-    local pages, btns = {}, {}
-    local function Show(name)
-      for k, page in pairs(pages) do
-        page:SetShown(k == name)
-        if btns[k] then
-          btns[k].label:SetTextColor(unpack(k == name and GOLD or { 0.72, 0.70, 0.64 }))
-          btns[k].bar:SetShown(k == name)
-        end
-      end
-    end
-    for i, info in ipairs(list) do
-      local b = CreateFrame("Button", nil, parent)
-      b:SetSize(w, 28)
-      b:SetPoint("TOPLEFT", x + (i - 1) * (w + 4), y)
-      b.label = b:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-      b.label:SetPoint("CENTER", 0, 2)
-      b.label:SetText(info[2])
-      b.bar = b:CreateTexture(nil, "ARTWORK")
-      b.bar:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.9)
-      b.bar:SetHeight(2)
-      b.bar:SetPoint("BOTTOMLEFT", 8, 2)
-      b.bar:SetPoint("BOTTOMRIGHT", -8, 2)
-      b:SetScript("OnClick", function() Show(info[1]) end)
-      btns[info[1]] = b
+  -- Builds one page on parent per entry of list ({ key, name } each), from
+  -- (x, y) off parent's top left to (right, bottom) off its bottom right.
+  -- Returns the pages by key and a function that shows one of them. The
+  -- sidebar (built at the end) picks them. A page added to pages afterwards
+  -- has no sidebar row (the change log); showing it leaves every row
+  -- unselected.
+  local function Tabs(parent, list, x, y, right, bottom)
+    local pages = {}
+    for _, info in ipairs(list) do
       local page = CreateFrame("Frame", nil, parent)
-      page:SetPoint("TOPLEFT", x, pageY)
+      page:SetPoint("TOPLEFT", x, y)
       page:SetPoint("BOTTOMRIGHT", right, bottom)
       pages[info[1]] = page
     end
-    return pages, Show
+    return pages, function(name)
+      for k, page in pairs(pages) do page:SetShown(k == name) end
+    end
   end
 
   local TABS = { { "general", "General" } }
@@ -110,7 +205,8 @@ function ns.BuildOptions()
     TABS[4] = { "trinket", "Trinket" }
     TABS[5] = { "combat", "Combat Text" }
   end
-  local pages, ShowTab = Tabs(opt, TABS, 18, -56, 96, -96, -18, 16)
+  local pages, ShowTab = Tabs(opt, TABS, NAV_W + 18, -HEAD_H - 14, -18, 16)
+  local subs = {} -- [tab key] = { list = sub-tabs, show = function }, for the sidebar
 
   ------------------------------------------------------------------------------
   -- Page builders
@@ -152,13 +248,15 @@ function ns.BuildOptions()
   local function Heading(text)
     local fs = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     fs:SetJustifyH("LEFT")
-    fs:SetTextColor(unpack(GOLD))
     fs:SetText(text)
     Place(fs, 18, 0, true)
     local rule = page:CreateTexture(nil, "ARTWORK")
-    rule:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.35)
     rule:SetHeight(1)
     Place(rule, 4, 0, true)
+    Paint(function(t)
+      fs:SetTextColor(RGB(t.accent))
+      rule:SetColorTexture(RGB(t.accent, 0.35))
+    end)
   end
 
   -- Body text wrapped to the page width; returns the font string.
@@ -166,34 +264,39 @@ function ns.BuildOptions()
     local fs = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     fs:SetJustifyH("LEFT")
     fs:SetSpacing(4)
-    fs:SetTextColor(0.90, 0.88, 0.82)
     fs:SetText(text)
     Place(fs, gap or 8, x, true)
+    Paint(function(t) fs:SetTextColor(RGB(t.text)) end)
     return fs
   end
 
-  -- One text block with a gold bullet before each line.
+  -- One text block with an accent-colored bullet before each line.
   local function Bullets(lines)
-    local bullet = "|cffe6cc80\226\128\162|r  "
-    Text(bullet .. table.concat(lines, "\n" .. bullet))
+    local fs = Text("")
+    Paint(function(t)
+      local bullet = "|cff" .. t.accent .. "\226\128\162|r  "
+      fs:SetText(bullet .. table.concat(lines, "\n" .. bullet))
+    end)
   end
 
-  -- One slash command: the command in gold (w px wide, 88 when nil), then its
+  -- One slash command: the command in the accent color (w px wide, 88 when nil), then its
   -- description on one line that ends at the page's right edge.
   local function Command(cmd, desc, w)
     local c = page:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     c:SetWidth(w or 88)
     c:SetJustifyH("LEFT")
-    c:SetTextColor(unpack(GOLD))
     c:SetText(cmd)
     local d = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     d:SetPoint("LEFT", c, "RIGHT", 8, 0)
     d:SetPoint("RIGHT", page, "RIGHT", -4, 0)
     d:SetJustifyH("LEFT")
     d:SetWordWrap(false)
-    d:SetTextColor(0.90, 0.88, 0.82)
     d:SetText(desc)
     Place(c, 6)
+    Paint(function(t)
+      c:SetTextColor(RGB(t.accent))
+      d:SetTextColor(RGB(t.text))
+    end)
   end
 
   -- Setting controls (checkboxes, steppers, dropdowns and color swatches). Each has a label and
@@ -364,7 +467,7 @@ function ns.BuildOptions()
   -- entry of the list spec.list() returns, in order. spec.look(e) returns the
   -- entry's texture, name, whether it is left off the bar (drawn faded) and
   -- whether it glows (a gold tick in the corner). Clicking a slot selects it
-  -- (spec.select(i); spec.selected() says which is, outlined in gold), and
+  -- (spec.select(i); spec.selected() says which is, outlined in the accent color), and
   -- dragging a slot onto another runs spec.move(from, to). spec.empty is
   -- shown while the list is empty.
   local SLOT, SLOT_GAP = 36, 6
@@ -412,7 +515,7 @@ function ns.BuildOptions()
       b.sel:SetPoint("TOPLEFT", -3, 3)
       b.sel:SetPoint("BOTTOMRIGHT", 3, -3)
       b.sel:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
-      b.sel:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
+      Paint(function(t) b.sel:SetBackdropBorderColor(RGB(t.accent)) end)
       b:RegisterForDrag("LeftButton")
       b:SetScript("OnClick", function()
         spec.select(i)
@@ -502,7 +605,7 @@ function ns.BuildOptions()
   end
 
   ------------------------------------------------------------------------------
-  -- General tab, in two columns so it fits the Settings panel: the rage bar on
+  -- General tab, in two columns so it fits the window: the rage bar on
   -- the left; the range display (warriors), slash commands and Discord link on
   -- the right. The link is a read-only edit box because addons can't open URLs
   -- or write to the clipboard; clicking it selects the text for Ctrl+C.
@@ -539,6 +642,9 @@ function ns.BuildOptions()
   Text("Click it to open these options" .. (ns.isWarrior and "; right-click to unlock the trinket bars" or "")
     .. ". Drag it around the minimap's edge to move it.")
   OnOff("Show minimap icon", "minimapOff", ns.RefreshMinimap)
+
+  Heading("Options window")
+  Choice("Colors", "optTheme", Repaint)
 
   Begin(right)
   if ns.isWarrior then
@@ -599,9 +705,9 @@ function ns.BuildOptions()
   -- Warriors only (see Tabs).
   ------------------------------------------------------------------------------
   if pages.range then
-    local sub, ShowSub = Tabs(pages.range, {
-      { "display", "Display" }, { "plates", "Nameplate & Labels" }, { "zones", "Zones" },
-    }, 0, 0, 150, -36, 0, 0)
+    local list = { { "display", "Display" }, { "plates", "Nameplate & Labels" }, { "zones", "Zones" } }
+    local sub, ShowSub = Tabs(pages.range, list, 0, 0, 0, 0)
+    subs.range = { list = list, show = ShowSub }
     local function Off() return db.rangeOff end
     local function NotTape() return db.rangeOff or db.rangeLook ~= "tape" end
 
@@ -700,7 +806,8 @@ function ns.BuildOptions()
       { "stances", "Stances" }, { "shout", "Battle Shout" }, { "debuffs", "Debuffs" },
       { "custom", "Custom" }, { "look", "Appearance" },
     }
-    local sub, ShowSub = Tabs(pages.cdm, list, 0, 0, 94, -36, 0, 0)
+    local sub, ShowSub = Tabs(pages.cdm, list, 0, 0, 0, 0)
+    subs.cdm = { list = list, show = ShowSub }
 
     -- Stances sub-tab: one stance at a time, picked from the dropdown at the
     -- top (see CooldownBar.lua). On the left the stance's bar and glow
@@ -1062,16 +1169,18 @@ function ns.BuildOptions()
     })
     OnOff("Show trinket bar", "trinketOff", ns.RefreshTrinkets)
     OnOff("Show the list on hover", "trinketMenuOff", ns.RefreshTrinkets)
+    OnOff("Show tooltips", "trinketTipOff", Nothing)
     OnOff("Show usable gear bar", "gearOff", ns.RefreshTrinkets)
     Choice("Bar border", "trinketBorder", ns.RefreshTrinkets)
 
     Heading("Mount")
-    OnOff("Carrot or Riding Crop when mounted", "mountSwapOff", ns.RefreshTrinkets)
+    Text("Carrot on a Stick or Riding Crop, or The Desert Rose in Tanaris and Silithus.")
+    OnOff("Riding trinket when mounted", "mountSwapOff", ns.RefreshTrinkets)
     Choice("Put it in", "mountSlot", ns.RefreshTrinkets, function() return db.mountSwapOff end)
 
     Begin(right)
     Heading("Rotation")
-    Text("When your trinket is on cooldown, the first ready one on the list goes on (out of combat)."
+    Text("When your trinket is on cooldown, the first ready one on the list goes on (in combat, when combat ends)."
       .. " " .. Key("Drag") .. " to change the order.")
     for i, slot in ipairs({ 13, 14 }) do
       local picked = 1
@@ -1111,7 +1220,9 @@ function ns.BuildOptions()
   -- off in the game's options. Warriors only (see Tabs).
   ------------------------------------------------------------------------------
   if pages.combat then
-    local sub, ShowSub = Tabs(pages.combat, { { "mover", "Mover" } }, 0, 0, 120, -36, 0, 0)
+    local list = { { "mover", "Mover" } }
+    local sub, ShowSub = Tabs(pages.combat, list, 0, 0, 0, 0)
+    subs.combat = { list = list, show = ShowSub }
     local left, right = Columns(sub.mover)
     Begin(left)
     Heading("Target text")
@@ -1173,18 +1284,18 @@ function ns.BuildOptions()
   ------------------------------------------------------------------------------
   -- Change log: the Change Log button at the top right shows every version's
   -- changes (ns.CHANGELOG, see Changelog.lua) in a scrolling page in place of
-  -- the tabs, filtered by the Version dropdown. Clicking a tab goes back.
+  -- the tabs, filtered by the Version dropdown. Clicking a sidebar row goes
+  -- back.
   ------------------------------------------------------------------------------
   local log = CreateFrame("Frame", nil, opt)
-  log:SetPoint("TOPLEFT", 18, -96)
+  log:SetPoint("TOPLEFT", NAV_W + 18, -HEAD_H - 14)
   log:SetPoint("BOTTOMRIGHT", -18, 16)
   log:Hide()
   pages.changelog = log
   local logButton = CreateFrame("Button", nil, opt, "UIPanelButtonTemplate")
   logButton:SetSize(100, 22)
   logButton:SetText("Change Log")
-  logButton:SetPoint("TOPRIGHT", -18, -14)
-  logButton:SetScript("OnClick", function() ShowTab("changelog") end)
+  logButton:SetPoint("RIGHT", head, "RIGHT", -40, 0)
 
   local shown = "all" -- the version picked in the dropdown
   local SECTIONS = { { "added", "New" }, { "changed", "Changed" }, { "removed", "Removed" }, { "fixed", "Fixed" } }
@@ -1201,7 +1312,8 @@ function ns.BuildOptions()
   -- Writes the picked version (or every version) into the page and sizes
   -- the scrolling area to fit it.
   local function DrawLog()
-    local gold, bullet, lines = "|cffe6cc80", "|cffe6cc80\226\128\162|r  ", {}
+    local accent = "|cff" .. Theme().accent
+    local gold, bullet, lines = accent, accent .. "\226\128\162|r  ", {}
     for _, v in ipairs(ns.CHANGELOG) do
       if shown == "all" or shown == v.version then
         lines[#lines + 1] = gold .. "Version " .. v.version .. "|r  |cff9d9d9d" .. v.date .. "|r"
@@ -1241,15 +1353,101 @@ function ns.BuildOptions()
     for _, v in ipairs(ns.CHANGELOG) do Radio(v.version, v.version) end
   end)
 
-  ShowTab("general")
+  ------------------------------------------------------------------------------
+  -- Sidebar: a row per tab, with its sub-tabs as smaller rows under it. The
+  -- selected row has the theme's selected background and an accent bar on its
+  -- left; for a tab with sub-tabs that is the sub-tab, and the tab's own
+  -- label turns white. Clicking a tab shows its first sub-tab.
+  ------------------------------------------------------------------------------
+  local nav = opt:CreateTexture(nil, "BACKGROUND", nil, 1)
+  local navLine = opt:CreateTexture(nil, "BORDER")
+  navLine:SetPoint("TOPLEFT", nav, "TOPRIGHT")
+  navLine:SetPoint("BOTTOMLEFT", nav, "BOTTOMRIGHT")
+  navLine:SetWidth(1)
+  Paint(function(t)
+    local inset = t.inset or 4
+    nav:ClearAllPoints()
+    nav:SetPoint("TOPLEFT", inset, -HEAD_H)
+    nav:SetPoint("BOTTOMLEFT", inset, inset)
+    nav:SetWidth(NAV_W - inset)
+    nav:SetColorTexture(RGB(t.nav))
+    navLine:SetColorTexture(RGB(t.border))
+  end)
 
-  category = Settings.RegisterCanvasLayoutCategory(opt, "WU - Warrior Utilities")
-  Settings.RegisterAddOnCategory(category)
+  local rows, tab, subTab = {}, nil, nil
+
+  -- Places and colors every row for the theme and the tab and sub-tab shown.
+  local function DrawNav(t)
+    local inset = t.inset or 4
+    for _, r in ipairs(rows) do
+      r:ClearAllPoints()
+      r:SetPoint("TOPLEFT", inset, r.top)
+      r:SetWidth(NAV_W - inset)
+      local on = r.tab == tab and r.sub == subTab
+      r.bg:SetShown(on)
+      r.bar:SetShown(on)
+      r.bg:SetColorTexture(RGB(t.active))
+      r.bar:SetColorTexture(RGB(t.accent))
+      r:GetHighlightTexture():SetVertexColor(RGB(t.active, 0.6))
+      if on or (not r.sub and r.tab == tab) then
+        r.label:SetTextColor(1, 1, 1)
+      else
+        r.label:SetTextColor(RGB(t.muted))
+      end
+    end
+  end
+
+  -- Shows tab key (and sub-tab subKey on it), or the change log.
+  local function Select(key, subKey)
+    ShowTab(key)
+    if subKey then subs[key].show(subKey) end
+    tab, subTab = key, subKey
+    DrawNav(Theme())
+  end
+  logButton:SetScript("OnClick", function() Select("changelog") end)
+
+  -- Adds a sidebar row under the last one: a tab (larger and heavier), or
+  -- with subKey one of its sub-tabs (smaller and further in).
+  local function Row(key, subKey, name)
+    local r = CreateFrame("Button", nil, opt)
+    r:SetHeight(subKey and 22 or 28)
+    r.top = -HEAD_H - 8 - (rows.y or 0) -- placed by DrawNav, as the inset depends on the theme
+    rows.y = (rows.y or 0) + r:GetHeight()
+    r.tab, r.sub = key, subKey
+    r.bg = r:CreateTexture(nil, "BACKGROUND", nil, 2)
+    r.bg:SetAllPoints()
+    r.bar = r:CreateTexture(nil, "ARTWORK")
+    r.bar:SetPoint("TOPLEFT")
+    r.bar:SetPoint("BOTTOMLEFT")
+    r.bar:SetWidth(3)
+    r:SetHighlightTexture(WHITE)
+    r.label = r:CreateFontString(nil, "OVERLAY", subKey and "GameFontHighlightSmall" or "GameFontHighlight")
+    r.label:SetPoint("LEFT", subKey and 30 or 16, 0)
+    r.label:SetText(name)
+    if not subKey then
+      -- The game's fonts have no bold weight, so a tab's label is 2 points
+      -- larger with a thin outline to stand out from its sub-tabs.
+      local file, size = r.label:GetFont()
+      r.label:SetFont(file, size + 2, "OUTLINE")
+    end
+    r:SetScript("OnClick", function()
+      Select(key, subKey or (subs[key] and subs[key].list[1][1]))
+    end)
+    rows[#rows + 1] = r
+  end
+
+  for _, info in ipairs(TABS) do
+    Row(info[1], nil, info[2])
+    for _, s in ipairs(subs[info[1]] and subs[info[1]].list or {}) do Row(info[1], s[1], s[2]) end
+  end
+  Paint(DrawNav)
+
+  Select("general")
 end
 
 --------------------------------------------------------------------------------
 -- Slash commands: /wu (or /wuutil)
---   /wu            open options
+--   /wu            open or close options
 --   /wu 30 60 [90] set marks (the third is optional; 0 = off)
 --   /wu reset
 --   /wu range list | stats | clear   range debug output (warriors, see Range.lua)
@@ -1261,7 +1459,7 @@ SlashCmdList.WU = function(msg)
   msg = strtrim(msg:lower())
   local a, b, c = msg:match("^(%d+)%s+(%d+)%s*(%d*)$")
   if msg == "" then
-    ns.OpenOptions()
+    ns.ToggleOptions()
   elseif ns.isWarrior and msg:match("^range") then
     ns.RangeCommand(strtrim(msg:sub(6)))
   elseif msg == "reset" then
