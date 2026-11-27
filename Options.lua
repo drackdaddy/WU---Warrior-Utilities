@@ -40,6 +40,7 @@ local db = ns.db
 --   ctX, ctY
 --------------------------------------------------------------------------------
 local WIDTH, HEIGHT, NAV_W, HEAD_H = 840, 640, 150, 40
+local INSET = 4 -- pixels inside the rounded edge where the header and sidebar start
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 -- Window colors per theme (db.optTheme, see ns.LISTS.optTheme in Core.lua),
 -- as RRGGBB: window, header and sidebar backgrounds, the border and rule
@@ -99,10 +100,13 @@ function ns.BuildOptions()
   opt:SetFrameStrata("HIGH") -- below the color picker and other dialogs it opens
   opt:SetToplevel(true)
   opt:SetClampedToScreen(true)
-  opt:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 1 })
+  -- The tooltip border gives the window rounded corners; it is tinted with
+  -- the theme's muted color at half strength for a soft edge.
+  opt:SetBackdrop({ bgFile = WHITE, edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 16,
+    insets = { left = INSET, right = INSET, top = INSET, bottom = INSET } })
   Paint(function(t)
     opt:SetBackdropColor(RGB(t.panel))
-    opt:SetBackdropBorderColor(RGB(t.border))
+    opt:SetBackdropBorderColor(RGB(t.muted, 0.5))
   end)
   opt:EnableMouse(true)
   opt:SetMovable(true)
@@ -119,9 +123,9 @@ function ns.BuildOptions()
   -- the accent color, the name and the version (read from the TOC so it is
   -- only ever set in one place).
   local head = opt:CreateTexture(nil, "BACKGROUND", nil, 1)
-  head:SetPoint("TOPLEFT", 1, -1)
-  head:SetPoint("TOPRIGHT", -1, -1)
-  head:SetHeight(HEAD_H - 1)
+  head:SetPoint("TOPLEFT", INSET, -INSET)
+  head:SetPoint("TOPRIGHT", -INSET, -INSET)
+  head:SetHeight(HEAD_H - INSET)
   local headLine = opt:CreateTexture(nil, "BORDER")
   headLine:SetPoint("TOPLEFT", head, "BOTTOMLEFT")
   headLine:SetPoint("TOPRIGHT", head, "BOTTOMRIGHT")
@@ -1342,9 +1346,9 @@ function ns.BuildOptions()
   -- label turns white. Clicking a tab shows its first sub-tab.
   ------------------------------------------------------------------------------
   local nav = opt:CreateTexture(nil, "BACKGROUND", nil, 1)
-  nav:SetPoint("TOPLEFT", 1, -HEAD_H)
-  nav:SetPoint("BOTTOMLEFT", 1, 1)
-  nav:SetWidth(NAV_W - 1)
+  nav:SetPoint("TOPLEFT", INSET, -HEAD_H)
+  nav:SetPoint("BOTTOMLEFT", INSET, INSET)
+  nav:SetWidth(NAV_W - INSET)
   local navLine = opt:CreateTexture(nil, "BORDER")
   navLine:SetPoint("TOPLEFT", nav, "TOPRIGHT")
   navLine:SetPoint("BOTTOMLEFT", nav, "BOTTOMRIGHT")
@@ -1386,8 +1390,8 @@ function ns.BuildOptions()
   -- with subKey one of its sub-tabs (smaller and further in).
   local function Row(key, subKey, name)
     local r = CreateFrame("Button", nil, opt)
-    r:SetSize(NAV_W - 1, subKey and 22 or 28)
-    r:SetPoint("TOPLEFT", 1, -HEAD_H - 8 - (rows.y or 0))
+    r:SetSize(NAV_W - INSET, subKey and 22 or 28)
+    r:SetPoint("TOPLEFT", INSET, -HEAD_H - 8 - (rows.y or 0))
     rows.y = (rows.y or 0) + r:GetHeight()
     r.tab, r.sub = key, subKey
     r.bg = r:CreateTexture(nil, "BACKGROUND", nil, 2)
