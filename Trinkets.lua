@@ -193,7 +193,7 @@ local function ShowMenu(b)
         end
       end)
       m:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip_SetDefaultAnchor(GameTooltip, self) -- the game's usual spot, clear of the list
         GameTooltip:SetItemByID(self.id)
         if menu.slot == 13 or menu.slot == 14 then
           GameTooltip:AddLine("Alt+click: add to or take off this slot's rotation.", 0.8, 0.8, 0.8, true)
@@ -255,7 +255,7 @@ local function SlotButton(bar, slot)
   b.queued.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
   b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
   b:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip_SetDefaultAnchor(GameTooltip, self) -- the game's usual spot, clear of the swap list
     GameTooltip:SetInventoryItem("player", self.slot)
     GameTooltip:Show()
     ShowMenu(self)
