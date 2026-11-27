@@ -2,7 +2,7 @@
 
 Changes in each version of WU - Warrior Utilities, newest first. The same list is in game: **Change Log** at the top right of the options page (`/wu`).
 
-## 3.11.1 (2026-11-25)
+## 3.12.0 (2026-11-27)
 
 ### Added
 - Vertical in Edit Mode for WU Trinket Bar and WU Gear Bar: shows the bar as a column instead of a row, with the swap list opening beside the slot.
