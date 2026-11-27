@@ -1369,8 +1369,8 @@ function ns.BuildOptions()
   end
   logButton:SetScript("OnClick", function() Select("changelog") end)
 
-  -- Adds a sidebar row under the last one: a tab, or with subKey one of its
-  -- sub-tabs (smaller and further in).
+  -- Adds a sidebar row under the last one: a tab (larger and heavier), or
+  -- with subKey one of its sub-tabs (smaller and further in).
   local function Row(key, subKey, name)
     local r = CreateFrame("Button", nil, opt)
     r:SetSize(NAV_W - 1, subKey and 22 or 28)
@@ -1387,6 +1387,12 @@ function ns.BuildOptions()
     r.label = r:CreateFontString(nil, "OVERLAY", subKey and "GameFontHighlightSmall" or "GameFontHighlight")
     r.label:SetPoint("LEFT", subKey and 30 or 16, 0)
     r.label:SetText(name)
+    if not subKey then
+      -- The game's fonts have no bold weight, so a tab's label is 2 points
+      -- larger with a thin outline to stand out from its sub-tabs.
+      local file, size = r.label:GetFont()
+      r.label:SetFont(file, size + 2, "OUTLINE")
+    end
     r:SetScript("OnClick", function()
       Select(key, subKey or (subs[key] and subs[key].list[1][1]))
     end)
