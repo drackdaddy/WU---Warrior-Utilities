@@ -20,13 +20,15 @@ local db = ns.db
 --                one it replaced goes back. Until it is back, the rotation
 --                leaves that trinket in the bags so it is there to go back.
 --                A flight path doesn't count as mounting: nothing is swapped
---                while you fly one.
+--                while the flight map is open, while you fly, or for HOLD
+--                seconds after either ends.
 -- The game won't change gear in combat, and both only put items on: nothing
 -- ever uses an item or casts for the player. In combat both queue their swap
 -- instead (see ns.Equip): the slot shows it waiting and it goes on when combat
 -- ends. Both are checked twice a second, as Forever Trinket Menu does. A
 -- cooldown the game hides in combat is never read or worked around: the
 -- rotation just waits until it can see it.
+-- Events: TAXIMAP_OPENED, TAXIMAP_CLOSED (the flight map, see CheckMount)
 -- SavedVariables: trinketQueue, rotate13Off, rotate14Off, mountSwapOff,
 --   mountSlot, mountPrev (the trinket that belongs in the mount slot)
 --------------------------------------------------------------------------------
@@ -38,7 +40,8 @@ local SANDY = { [71] = true, [1446] = true, [81] = true, [1451] = true }
 local READY = 30 -- seconds left that count as ready
 local INTERVAL = 0.5 -- seconds between checks
 local RETRY = 3 -- seconds between tries at a mount swap the game refused
-local mounted, nextTry
+local HOLD = 3 -- seconds the mount swap keeps waiting after a flight path or the flight map
+local mounted, nextTry, taxiMap, taxiEnd
 
 -- Adds item id to slot's rotation, or takes it off. Used by the swap list.
 function ns.ToggleRotation(slot, id)
@@ -137,10 +140,13 @@ end
 -- the mount leaves it a moment before combat starts, so the first try can be
 -- refused before the queue is used. A pick made by hand in the fight is never
 -- overwritten, and it is tried again after combat if the queued swap fails.
--- On a flight path IsMounted() is true, so the check waits until you land,
--- leaving the mounted state as it was before the flight.
+-- On a flight path IsMounted() is true, and for a moment as the flight
+-- starts or ends it can be true while UnitOnTaxi() is not yet (or no longer)
+-- true. So the check waits while the flight map is open or you fly, and for
+-- HOLD seconds after, leaving the mounted state as it was before the flight.
 local function CheckMount()
-  if UnitOnTaxi("player") then return end
+  if taxiMap or UnitOnTaxi("player") then taxiEnd = GetTime() return end
+  if taxiEnd and GetTime() - taxiEnd < HOLD then return end
   local now = IsMounted()
   local changed = now ~= mounted
   mounted = now
@@ -163,6 +169,12 @@ local function CheckMount()
     end
   end
 end
+
+ns.On("TAXIMAP_OPENED", function() taxiMap = true end)
+ns.On("TAXIMAP_CLOSED", function()
+  taxiMap = false
+  taxiEnd = GetTime()
+end)
 
 function ns.BuildTrinketAuto()
   local elapsed = 0
