@@ -15,7 +15,8 @@ local db, LEM = ns.db, ns.LibEditMode
 --                Click one to put it on; Alt+click a trinket to add it to or
 --                take it off that slot's rotation (see TrinketAuto.lua).
 --   combat queue the game won't change gear in combat, so a pick made then
---                waits (gold border) and goes on when combat ends.
+--                waits (gold border, with a small icon of the waiting item in
+--                the bottom left corner) and goes on when combat ends.
 -- The slot buttons are secure action buttons ("/use <slot>"): one click uses
 -- the item once, and nothing ever uses one by itself. Secure buttons can't be
 -- shown, hidden, moved or changed in combat, so the bars are laid out out of
@@ -220,7 +221,8 @@ end
 --------------------------------------------------------------------------------
 
 -- Secure button that uses the item in slot on a left click or its key, with
--- its icon, cooldown, key and a gold border while a swap waits for combat.
+-- its icon, cooldown, key and, while a swap waits for combat, a gold border
+-- with the waiting item's icon in the bottom left corner.
 -- Hovering it opens the swap list. Named, so a key can be bound to it.
 local function SlotButton(bar, slot)
   local b = CreateFrame("Button", "WUSlot" .. slot, bar.holder, "SecureActionButtonTemplate")
@@ -242,6 +244,10 @@ local function SlotButton(bar, slot)
   b.queued:SetBackdrop({ edgeFile = WHITE, edgeSize = 2 })
   b.queued:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
   b.queued:SetFrameLevel(b.cd:GetFrameLevel() + 2)
+  b.queued.icon = b.queued:CreateTexture(nil, "OVERLAY")
+  b.queued.icon:SetPoint("BOTTOMLEFT", 3, 3)
+  b.queued.icon:SetPoint("TOPRIGHT", b, "CENTER")
+  b.queued.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
   b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
   b:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -310,7 +316,7 @@ local function Layout(bar)
 end
 
 -- Redraws every shown button: icon (empty slots greyed), cooldown, bound key
--- and whether a swap waits. Doesn't touch secure attributes or layout.
+-- and the item whose swap waits, if any. Doesn't touch secure attributes or layout.
 Refresh = function()
   for _, bar in ipairs(bars) do
     for slot, b in pairs(bar.buttons) do
@@ -320,6 +326,7 @@ Refresh = function()
       b.cd:SetCooldown(start, duration)
       b.key:SetText(GetBindingText(GetBindingKey("CLICK WUSlot" .. slot .. ":LeftButton") or "", true))
       b.queued:SetShown(queued[slot] ~= nil)
+      if queued[slot] then b.queued.icon:SetTexture(C_Item.GetItemIconByID(queued[slot])) end
     end
   end
 end

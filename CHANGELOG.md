@@ -5,6 +5,7 @@ Changes in each version of WU - Warrior Utilities, newest first. The same list i
 ## 3.11.1 (2026-11-25)
 
 ### Added
+- A swap waiting for combat to end now shows a small icon of the incoming item in the bottom left corner of the slot, along with the gold border.
 - The Desert Rose as a riding trinket: it goes on when you mount in a sandy zone (Tanaris and Silithus), with Carrot on a Stick or Riding Crop elsewhere, and swaps as you ride in or out.
 
 ### Changed
