@@ -11,6 +11,7 @@ Changes in each version of WU - Warrior Utilities, newest first. The same list i
 - The mount option is now "Riding trinket when mounted".
 
 ### Fixed
+- After a swap back failed once, the riding trinket could stay on for good, as the addon forgot which trinket it had replaced. It now always remembers the trinket you wear in that slot off the mount.
 - Mining, crafting or any other cast that took you off your mount made the swap back fail. It now waits until the cast and any loot window are done, then swaps at once.
 - Getting off your mount in combat could fill the screen with "You can't do that right now" (the swap back was tried twice a second while you looted or swung) and sometimes left the riding trinket in the other slot, as the rotation took your own trinket first. The swap back now tries every 3 seconds, and the rotation leaves your trinket alone until it is back on.
 - Getting off your mount didn't always put back the trinket the riding trinket replaced. It now keeps trying until the trinket is back, and the trinket rotation no longer takes that trinket while you ride.
