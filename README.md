@@ -216,6 +216,7 @@ Adapted from [Forever Trinket Menu](https://www.curseforge.com/wow/addons/foreve
 | --- | --- |
 | Show trinket bar | (default on) |
 | Show the list on hover | The swap list (default on) |
+| Show tooltips | Item tooltips on the trinket and gear bars and the swap list (default on) |
 | Show usable gear bar | (default off) |
 | Bar border | Around both bars: None, Thin line, Dark panel, Tooltip, Gold (default None) |
 | Riding trinket when mounted | (default off); **Put it in** Trinket 1 or Trinket 2 (default Trinket 2) |

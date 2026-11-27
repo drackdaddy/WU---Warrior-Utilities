@@ -35,7 +35,7 @@ local db = ns.db
 --   battleCdOff, defensiveCdOff, berserkerCdOff, battleAlertOff,
 --   defensiveAlertOff, berserkerAlertOff, cdHide, cdOrder, cdNoGlow,
 --   customOff, customList, glowStyle, glowColor, glowSpeed, glowSize,
---   glowOocOff, cdLook, trinketOff, trinketMenuOff, gearOff, trinketQueue,
+--   glowOocOff, cdLook, trinketOff, trinketMenuOff, trinketTipOff, gearOff, trinketQueue,
 --   rotate13Off, rotate14Off, mountSwapOff, mountSlot, trinketBorder, ctRaised,
 --   ctX, ctY
 --------------------------------------------------------------------------------
@@ -1156,6 +1156,7 @@ function ns.BuildOptions()
     })
     OnOff("Show trinket bar", "trinketOff", ns.RefreshTrinkets)
     OnOff("Show the list on hover", "trinketMenuOff", ns.RefreshTrinkets)
+    OnOff("Show tooltips", "trinketTipOff", Nothing)
     OnOff("Show usable gear bar", "gearOff", ns.RefreshTrinkets)
     Choice("Bar border", "trinketBorder", ns.RefreshTrinkets)
 

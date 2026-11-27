@@ -29,7 +29,7 @@ local db, LEM = ns.db, ns.LibEditMode
 -- Events: PLAYER_ENTERING_WORLD, PLAYER_REGEN_ENABLED, PLAYER_EQUIPMENT_CHANGED,
 --   BAG_UPDATE_DELAYED, BAG_UPDATE_COOLDOWN, UPDATE_BINDINGS,
 --   GET_ITEM_INFO_RECEIVED
--- SavedVariables: trinketOff, trinketMenuOff, trinketLayouts, trinketSize,
+-- SavedVariables: trinketOff, trinketMenuOff, trinketTipOff, trinketLayouts, trinketSize,
 --   trinketCombatOnly, gearOff, gearLayouts, gearSize, gearCombatOnly,
 --   trinketBorder
 --------------------------------------------------------------------------------
@@ -193,6 +193,7 @@ local function ShowMenu(b)
         end
       end)
       m:SetScript("OnEnter", function(self)
+        if db.trinketTipOff then return end
         GameTooltip_SetDefaultAnchor(GameTooltip, self) -- the game's usual spot, clear of the list
         GameTooltip:SetItemByID(self.id)
         if menu.slot == 13 or menu.slot == 14 then
@@ -255,9 +256,11 @@ local function SlotButton(bar, slot)
   b.queued.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
   b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
   b:SetScript("OnEnter", function(self)
-    GameTooltip_SetDefaultAnchor(GameTooltip, self) -- the game's usual spot, clear of the swap list
-    GameTooltip:SetInventoryItem("player", self.slot)
-    GameTooltip:Show()
+    if not db.trinketTipOff then
+      GameTooltip_SetDefaultAnchor(GameTooltip, self) -- the game's usual spot, clear of the swap list
+      GameTooltip:SetInventoryItem("player", self.slot)
+      GameTooltip:Show()
+    end
     ShowMenu(self)
   end)
   b:SetScript("OnLeave", GameTooltip_Hide)
