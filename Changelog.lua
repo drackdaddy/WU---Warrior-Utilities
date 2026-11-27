@@ -10,7 +10,7 @@ local _, ns = ...
 -- and fixed lists (any may be left out).
 --------------------------------------------------------------------------------
 ns.CHANGELOG = {
-  { version = "3.11.1", date = "2026-11-25",
+  { version = "3.12.0", date = "2026-11-27",
     added = {
       "Vertical in Edit Mode for WU Trinket Bar and WU Gear Bar: shows the bar as a column instead of a row, with the swap list opening beside the slot.",
       "Show tooltips on the Trinket tab turns off the item tooltips on the trinket and gear bars and the swap list.",
