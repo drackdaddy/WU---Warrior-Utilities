@@ -12,6 +12,7 @@ local _, ns = ...
 ns.CHANGELOG = {
   { version = "3.11.1", date = "2026-11-25",
     added = {
+      "The trinket rotation now works in combat too: when your trinket goes on cooldown in a fight, the next one on the list is queued and shown on the slot (gold border and icon), and goes on when combat ends.",
       "Getting off your mount in combat now queues the swap back like a pick made in combat: the slot shows the gold border and your trinket's icon, and it goes on when combat ends.",
       "A swap waiting for combat to end now shows a small icon of the incoming item in the bottom left corner of the slot, along with the gold border.",
       "The Desert Rose as a riding trinket: it goes on when you mount in a sandy zone (Tanaris and Silithus), with Carrot on a Stick or Riding Crop elsewhere, and swaps as you ride in or out.",

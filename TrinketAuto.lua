@@ -20,11 +20,11 @@ local db = ns.db
 --                one it replaced goes back. Until it is back, the rotation
 --                leaves that trinket in the bags so it is there to go back.
 -- The game won't change gear in combat, and both only put items on: nothing
--- ever uses an item or casts for the player. Getting off the mount in combat
--- queues the swap back (see ns.Equip): the slot shows it waiting and it goes
--- on when combat ends. Mounting is checked twice a second, as Forever Trinket
--- Menu does; the rotation only runs out of combat, where cooldowns are plain
--- values.
+-- ever uses an item or casts for the player. In combat both queue their swap
+-- instead (see ns.Equip): the slot shows it waiting and it goes on when combat
+-- ends. Both are checked twice a second, as Forever Trinket Menu does. A
+-- cooldown the game hides in combat is never read or worked around: the
+-- rotation just waits until it can see it.
 -- SavedVariables: trinketQueue, rotate13Off, rotate14Off, mountSwapOff,
 --   mountSlot, mountPrev (the trinket that belongs in the mount slot)
 --------------------------------------------------------------------------------
@@ -45,12 +45,13 @@ function ns.ToggleRotation(slot, id)
   if i then table.remove(list, i) else list[#list + 1] = id end
 end
 
--- Seconds left on item id's cooldown, worn in slot or in the bags.
+-- Seconds left on item id's cooldown, worn in slot or in the bags, or nil
+-- while the game hides it.
 local function Left(id, slot)
   if slot and GetInventoryItemID("player", slot) == id then
-    return ns.CooldownLeft(GetInventoryItemCooldown("player", slot)) or 0
+    return ns.CooldownLeft(GetInventoryItemCooldown("player", slot))
   end
-  return ns.CooldownLeft(C_Item.GetItemCooldown(id)) or 0
+  return ns.CooldownLeft(C_Item.GetItemCooldown(id))
 end
 
 -- True when item id is one of the riding trinkets.
@@ -58,19 +59,25 @@ local function IsRiding(id)
   return id == DESERT_ROSE or tContains(RIDING, id)
 end
 
--- Puts the first ready trinket on slot's list on, while the one worn is on
--- cooldown. While mounted, the slot the mount swap holds is skipped. While a
--- riding trinket is in that slot, the trinket that goes back there is left in
--- the bags, or the swap back would only trade the riding trinket into the
--- other slot.
+-- Puts the first ready trinket on slot's list on (queued in combat), while
+-- the one worn is on cooldown. Nothing changes while a swap already waits for
+-- the slot, so a pick made by hand in combat is kept, and a trinket queued
+-- for the other slot is skipped. While mounted, the slot the mount swap holds
+-- is skipped. While a riding trinket is in that slot, the trinket that goes
+-- back there is left in the bags, or the swap back would only trade the
+-- riding trinket into the other slot.
 local function Rotate(slot)
   local list = db.trinketQueue[slot]
   if db["rotate" .. slot .. "Off"] or #list == 0 or (mounted and slot == db.mountSlot) then return end
+  if ns.QueuedItem(slot) then return end
   local worn = GetInventoryItemID("player", slot)
-  if worn and (not ns.HasUse(worn) or Left(worn, slot) <= READY) then return end
+  local wornLeft = worn and Left(worn, slot)
+  if worn and (not ns.HasUse(worn) or not wornLeft or wornLeft <= READY) then return end
   local held = not db.mountSwapOff and IsRiding(GetInventoryItemID("player", db.mountSlot)) and db.mountPrev
+  local taken = ns.QueuedItem(slot == 13 and 14 or 13)
   for _, id in ipairs(list) do
-    if id ~= worn and id ~= held and ns.FindInBags(id) and Left(id) <= READY then
+    local left = id ~= worn and id ~= held and id ~= taken and ns.FindInBags(id) and Left(id)
+    if left and left <= READY then
       ns.Equip(id, slot)
       return
     end
@@ -146,7 +153,7 @@ local function CheckMount()
   elseif prev ~= 0 and IsRiding(worn) then
     if not UnitAffectingCombat("player") then
       Swap(prev, slot)
-    elseif not ns.IsQueued(slot) then
+    elseif not ns.QueuedItem(slot) then
       ns.Equip(prev, slot)
     end
   end
@@ -159,9 +166,7 @@ function ns.BuildTrinketAuto()
     if elapsed < INTERVAL then return end
     elapsed = 0
     CheckMount()
-    if not UnitAffectingCombat("player") then
-      Rotate(13)
-      Rotate(14)
-    end
+    Rotate(13)
+    Rotate(14)
   end)
 end

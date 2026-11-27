@@ -149,9 +149,9 @@ local function Choices(slot)
   return list
 end
 
--- True when a swap into slot waits for combat to end.
-function ns.IsQueued(slot)
-  return queued[slot] ~= nil
+-- The item whose swap into slot waits for combat to end, or nil.
+function ns.QueuedItem(slot)
+  return queued[slot]
 end
 
 -- Equips whatever is waiting for combat to end; used when it ends.

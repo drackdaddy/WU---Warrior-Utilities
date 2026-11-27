@@ -1072,7 +1072,7 @@ function ns.BuildOptions()
 
     Begin(right)
     Heading("Rotation")
-    Text("When your trinket is on cooldown, the first ready one on the list goes on (out of combat)."
+    Text("When your trinket is on cooldown, the first ready one on the list goes on (in combat, when combat ends)."
       .. " " .. Key("Drag") .. " to change the order.")
     for i, slot in ipairs({ 13, 14 }) do
       local picked = 1
