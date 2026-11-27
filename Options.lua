@@ -115,8 +115,9 @@ function ns.BuildOptions()
   local close = CreateFrame("Button", nil, opt, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", -2, -4)
 
-  -- Header: a band across the top with an accent square, the name and the
-  -- version (read from the TOC so it is only ever set in one place).
+  -- Header: a band across the top with the addon's logo in a circle ringed in
+  -- the accent color, the name and the version (read from the TOC so it is
+  -- only ever set in one place).
   local head = opt:CreateTexture(nil, "BACKGROUND", nil, 1)
   head:SetPoint("TOPLEFT", 1, -1)
   head:SetPoint("TOPRIGHT", -1, -1)
@@ -125,11 +126,23 @@ function ns.BuildOptions()
   headLine:SetPoint("TOPLEFT", head, "BOTTOMLEFT")
   headLine:SetPoint("TOPRIGHT", head, "BOTTOMRIGHT")
   headLine:SetHeight(1)
-  local mark = opt:CreateTexture(nil, "ARTWORK")
-  mark:SetSize(8, 8)
-  mark:SetPoint("LEFT", head, "LEFT", 16, 0)
+  -- Returns a texture size px across on opt, cut to a circle by a mask.
+  local function Circle(size, layer)
+    local tex = opt:CreateTexture(nil, layer)
+    tex:SetSize(size, size)
+    local mask = opt:CreateMaskTexture()
+    mask:SetTexture("Interface\\CharacterFrame\\TempPortraitAlphaMask", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    mask:SetAllPoints(tex)
+    tex:AddMaskTexture(mask)
+    return tex
+  end
+  local mark = Circle(30, "ARTWORK")
+  mark:SetPoint("LEFT", head, "LEFT", 12, 0)
+  local logo = Circle(26, "OVERLAY")
+  logo:SetPoint("CENTER", mark)
+  logo:SetTexture("Interface\\AddOns\\" .. addonName .. "\\icon")
   local title = opt:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-  title:SetPoint("LEFT", mark, "RIGHT", 10, 0)
+  title:SetPoint("LEFT", mark, "RIGHT", 8, 0)
   title:SetTextColor(1, 1, 1)
   title:SetText("WU")
   local subtitle = opt:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
