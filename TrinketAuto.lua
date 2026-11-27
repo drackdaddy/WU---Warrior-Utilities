@@ -19,12 +19,12 @@ local db = ns.db
 --                have no riding trinket for that zone). On getting off, the
 --                one it replaced goes back. Until it is back, the rotation
 --                leaves that trinket in the bags so it is there to go back.
--- The game won't change gear in combat, so both only swap out of combat, and
--- they only put items on: nothing ever uses an item or casts for the player.
--- Swaps that come due in combat wait for it to end (see ns.Equip). Mounting
--- and cooldowns are checked twice a second out of combat, as Forever Trinket
--- Menu does; cooldowns are plain values then.
--- Events: PLAYER_REGEN_DISABLED, PLAYER_REGEN_ENABLED
+-- The game won't change gear in combat, and both only put items on: nothing
+-- ever uses an item or casts for the player. Getting off the mount in combat
+-- queues the swap back (see ns.Equip): the slot shows it waiting and it goes
+-- on when combat ends. Mounting is checked twice a second, as Forever Trinket
+-- Menu does; the rotation only runs out of combat, where cooldowns are plain
+-- values.
 -- SavedVariables: trinketQueue, rotate13Off, rotate14Off, mountSwapOff,
 --   mountSlot, mountPrev (the trinket that belongs in the mount slot)
 --------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ local SANDY = { [71] = true, [1446] = true, [81] = true, [1451] = true }
 local READY = 30 -- seconds left that count as ready
 local INTERVAL = 0.5 -- seconds between checks
 local RETRY = 3 -- seconds between tries at a mount swap the game refused
-local ticker, mounted, nextTry
+local mounted, nextTry
 
 -- Adds item id to slot's rotation, or takes it off. Used by the swap list.
 function ns.ToggleRotation(slot, id)
@@ -93,14 +93,14 @@ local function InSand()
   end
 end
 
--- Starts a mount swap of item id into slot. The game refuses gear swaps while
--- you cast or channel (mining, crafting, both of which also take you off the
--- mount), loot or are dead, so it waits for those to end and then goes at
--- once. Any other refusal is tried again at most once every RETRY seconds, so
--- it doesn't fill the screen with errors.
+-- Starts a mount swap of item id into slot, out of combat only. The game
+-- refuses gear swaps while you cast or channel (mining, crafting, both of
+-- which also take you off the mount), loot or are dead, so it waits for those
+-- to end and then goes at once. Any other refusal is tried again at most once
+-- every RETRY seconds, so it doesn't fill the screen with errors.
 local function Swap(id, slot)
   local now = GetTime()
-  if UnitIsDeadOrGhost("player") or UnitCastingInfo("player") or UnitChannelInfo("player")
+  if UnitAffectingCombat("player") or UnitIsDeadOrGhost("player") or UnitCastingInfo("player") or UnitChannelInfo("player")
     or GetNumLootItems() > 0 or (nextTry and now < nextTry) then return end
   nextTry = now + RETRY
   ns.Equip(id, slot)
@@ -123,7 +123,9 @@ end
 -- crossing into or out of a sandy zone swaps to the right riding trinket, or
 -- back to mountPrev when there is none for the zone; a trinket put on by hand
 -- is left alone. Off the mount, while a riding trinket is in the slot,
--- mountPrev is put back, tried again until it takes (see Swap).
+-- mountPrev is put back, tried again until it takes (see Swap). Getting off
+-- in combat queues it once instead, so a pick made by hand in that fight
+-- isn't overwritten; it is tried again after combat if the queued swap fails.
 local function CheckMount()
   local now = IsMounted()
   local changed = now ~= mounted
@@ -140,23 +142,24 @@ local function CheckMount()
       Swap(want, slot)
     end
   elseif prev ~= 0 and IsRiding(worn) then
-    Swap(prev, slot)
+    if not UnitAffectingCombat("player") then
+      Swap(prev, slot)
+    elseif changed then
+      ns.Equip(prev, slot)
+    end
   end
 end
 
-ns.On("PLAYER_REGEN_DISABLED", function() if ticker then ticker:Hide() end end)
-ns.On("PLAYER_REGEN_ENABLED", function() if ticker then ticker:Show() end end)
-
 function ns.BuildTrinketAuto()
   local elapsed = 0
-  ticker = CreateFrame("Frame")
-  ticker:SetShown(not UnitAffectingCombat("player"))
-  ticker:SetScript("OnUpdate", function(_, dt)
+  CreateFrame("Frame"):SetScript("OnUpdate", function(_, dt)
     elapsed = elapsed + dt
     if elapsed < INTERVAL then return end
     elapsed = 0
     CheckMount()
-    Rotate(13)
-    Rotate(14)
+    if not UnitAffectingCombat("player") then
+      Rotate(13)
+      Rotate(14)
+    end
   end)
 end
