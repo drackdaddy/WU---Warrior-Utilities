@@ -35,7 +35,7 @@ local LEM = ns.LibEditMode
 --------------------------------------------------------------------------------
 local defaults = {
   minimapOff = false, minimapAngle = 225, -- minimap icon; angle in degrees, counterclockwise from the right
-  optTheme = "fury", -- options window colors (see Options.lua)
+  optTheme = "std", -- options window colors (see Options.lua)
   barOff = false, marksOff = false, mark1 = 30, mark2 = 60, mark3 = 0, hideTicks = false, -- mark 0 = off
   layouts = {}, -- rage bar position per Edit Mode layout name: { point, x, y }
   combatOnly = false, scale = 100,

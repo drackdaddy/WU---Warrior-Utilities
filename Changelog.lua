@@ -10,6 +10,18 @@ local _, ns = ...
 -- and fixed lists (any may be left out).
 --------------------------------------------------------------------------------
 ns.CHANGELOG = {
+  { version = "3.12.1", date = "2026-11-27",
+    changed = {
+      "The options window now uses the Standard theme by default (new installs and after /wu reset; pick it under Options window > Colors to switch now).",
+      "The mount option is now \"Mount Trinket\".",
+    },
+    removed = {
+      "The /wuutil command (use /wu).",
+    },
+    fixed = {
+      "Taking a flight path put on your riding trinket. Flight paths no longer count as mounting.",
+    },
+  },
   { version = "3.12.0", date = "2026-11-27",
     added = {
       "Vertical in Edit Mode for WU Trinket Bar and WU Gear Bar: shows the bar as a column instead of a row, with the swap list opening beside the slot.",
